@@ -7,10 +7,10 @@ export default function Home() {
     <div className="p-4 sm:p-6 lg:p-8">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-foreground mb-1">
-          Discover Books You'll Love
+          ShelfScanner: Find Your Next Great Read
         </h1>
         <p className="text-muted-foreground">
-          Scan your bookshelf to get personalized recommendations
+          Take photos of books at stores or libraries to discover which ones match your reading preferences
         </p>
       </div>
 
@@ -34,9 +34,9 @@ export default function Home() {
                   <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
                 </svg>
               </div>
-              <h2 className="text-xl font-semibold text-foreground">Shelf Scanner</h2>
+              <h2 className="text-xl font-semibold text-foreground">Bookstore & Library Assistant</h2>
               <p className="mt-2 text-muted-foreground max-w-md mx-auto">
-                Take a photo of your bookshelf and we'll identify your books to provide personalized recommendations.
+                Take photos of entire bookshelves at stores or libraries and we'll identify which books best match your reading preferences.
               </p>
             </div>
             <div className="flex justify-center">
@@ -87,7 +87,7 @@ export default function Home() {
               </div>
               <h2 className="text-xl font-semibold text-foreground">How It Works</h2>
               <p className="mt-2 text-muted-foreground max-w-md mx-auto">
-                Our app uses computer vision to identify books from your photos and matches them with your preferences to provide tailored recommendations.
+                Take a photo of entire bookshelves at stores or libraries, and our app identifies the books and ranks them based on how well they match your reading preferences.
               </p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
@@ -96,7 +96,7 @@ export default function Home() {
                   <span className="font-semibold">1</span>
                 </div>
                 <h3 className="font-medium text-sm text-foreground">Upload Photo</h3>
-                <p className="text-xs text-muted-foreground mt-1">Take a photo of your bookshelf</p>
+                <p className="text-xs text-muted-foreground mt-1">Take a photo of books at a store or library</p>
               </div>
               <div className="border border-slate-700 bg-slate-900 rounded-lg p-4 text-center">
                 <div className="bg-accent/20 text-accent h-10 w-10 rounded-full mx-auto flex items-center justify-center mb-3">
@@ -109,8 +109,8 @@ export default function Home() {
                 <div className="bg-accent/20 text-accent h-10 w-10 rounded-full mx-auto flex items-center justify-center mb-3">
                   <span className="font-semibold">3</span>
                 </div>
-                <h3 className="font-medium text-sm text-foreground">Get Recommendations</h3>
-                <p className="text-xs text-muted-foreground mt-1">Receive personalized book suggestions</p>
+                <h3 className="font-medium text-sm text-foreground">Find Matching Books</h3>
+                <p className="text-xs text-muted-foreground mt-1">Discover which books best match your taste</p>
               </div>
             </div>
           </CardContent>
