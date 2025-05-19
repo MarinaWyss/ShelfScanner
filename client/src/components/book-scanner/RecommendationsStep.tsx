@@ -38,7 +38,11 @@ export default function RecommendationsStep({ recommendations, isLoading }: Reco
 
   return (
     <div>
-      <h3 className="text-lg font-semibold mb-4">Your Personalized Recommendations</h3>
+      <h3 className="text-lg font-semibold mb-4">Book Matches Based on Your Preferences</h3>
+      <p className="text-slate-400 mb-4">
+        We've analyzed the books in your photo and matched them against your reading preferences.
+        Here are the books that best match your taste.
+      </p>
       
       {isLoading && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -123,8 +127,15 @@ export default function RecommendationsStep({ recommendations, isLoading }: Reco
                   <h4 className="font-semibold text-neutral-800 line-clamp-2">{book.title}</h4>
                   <p className="text-neutral-500 text-sm">{book.author}</p>
                   
-                  <div className="mt-2">
+                  <div className="mt-2 flex items-center">
                     {renderRating(book.rating)}
+                    {book.matchScore !== undefined && (
+                      <span className="ml-2 bg-green-100 text-green-800 text-xs font-medium px-2 py-0.5 rounded">
+                        {book.matchScore > 8 ? "Perfect match!" : 
+                         book.matchScore > 5 ? "Great match" : 
+                         book.matchScore > 3 ? "Good match" : "Possible match"}
+                      </span>
+                    )}
                   </div>
                 </div>
               </div>

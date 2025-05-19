@@ -189,7 +189,11 @@ export default function UploadStep({ onBooksDetected, detectedBooks }: UploadSte
 
   return (
     <div>
-      <h3 className="text-lg font-semibold mb-4">Upload a photo of your bookshelf</h3>
+      <h3 className="text-lg font-semibold mb-4">Upload a photo of books</h3>
+      <p className="text-slate-400 mb-4">
+        Take a photo of books at a store, library, or friend's bookshelf. 
+        We'll identify the books and recommend which ones match your reading preferences.
+      </p>
       
       <div 
         className={`border-2 border-dashed border-slate-600 rounded-lg p-6 text-center ${

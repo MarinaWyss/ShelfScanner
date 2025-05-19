@@ -26,37 +26,112 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'No image file provided' });
       }
 
+      const userId = 1; // Default user ID
+      
+      // Get user preferences to match with detected books
+      const preferences = await storage.getPreferencesByUserId(userId);
+      
       // Convert buffer to base64
       const base64Image = req.file.buffer.toString('base64');
       
       // Analyze the image using Google Vision API
       const analysis = await analyzeImage(base64Image);
       
-      if (!analysis.isBookshelf) {
-        return res.status(400).json({ 
-          message: 'The uploaded image does not appear to contain books',
-          analysis 
-        });
-      }
-      
-      // Search for books based on extracted text
+      // Extract potential book titles from the image text
       const bookTitles = analysis.text.split('\n')
         .filter((line: string) => line.length > 3) // Filter out very short lines
-        .slice(0, 5); // Take only top results
+        .slice(0, 10); // Take up to 10 potential titles
+      
+      console.log("Extracted potential book titles:", bookTitles);
       
       // Search for books based on extracted text
-      const books = [];
+      const detectedBooks = [];
       for (const title of bookTitles) {
         const bookResults = await searchBooksByTitle(title);
         if (bookResults.length > 0) {
-          books.push(...bookResults);
+          detectedBooks.push(...bookResults);
         }
       }
       
-      // Return the analysis and book information
+      // If no preferences exist, just return the detected books
+      if (!preferences) {
+        return res.status(200).json({
+          books: detectedBooks.slice(0, 8), 
+          analysis,
+          message: "Books detected. Set your preferences to get personalized matches."
+        });
+      }
+      
+      // Score and rank books based on user preferences
+      const rankedBooks = detectedBooks.map(book => {
+        // Initialize match score
+        let matchScore = 0;
+        
+        // Match against preferred genres
+        if (preferences.genres && book.categories) {
+          for (const genre of preferences.genres) {
+            if (book.categories.some((category: string) => 
+              category.toLowerCase().includes(genre.toLowerCase()))) {
+              matchScore += 3;
+            }
+          }
+        }
+        
+        // Match against preferred authors
+        if (preferences.authors && book.author) {
+          for (const author of preferences.authors) {
+            if (book.author.toLowerCase().includes(author.toLowerCase())) {
+              matchScore += 5;
+            }
+          }
+        }
+        
+        // Check Goodreads data for highly rated books by same author or genre
+        if (preferences.goodreadsData && Array.isArray(preferences.goodreadsData)) {
+          for (const entry of preferences.goodreadsData) {
+            // Match author from Goodreads
+            if (entry["Author"] && book.author && 
+                entry["Author"].toLowerCase().includes(book.author.toLowerCase())) {
+              matchScore += 2;
+              
+              // Add bonus if it was highly rated
+              if (entry["My Rating"] && parseInt(entry["My Rating"]) >= 4) {
+                matchScore += 3;
+              }
+            }
+            
+            // Match shelf categories from Goodreads
+            if (entry["Bookshelves"] && book.categories) {
+              const shelves = entry["Bookshelves"].split(';').map((s: string) => s.trim().toLowerCase());
+              for (const shelf of shelves) {
+                if (book.categories.some((category: string) => 
+                  category.toLowerCase().includes(shelf))) {
+                  matchScore += 1;
+                  
+                  // Add bonus if it was highly rated
+                  if (entry["My Rating"] && parseInt(entry["My Rating"]) >= 4) {
+                    matchScore += 2;
+                  }
+                }
+              }
+            }
+          }
+        }
+        
+        return {
+          ...book,
+          matchScore
+        };
+      });
+      
+      // Sort by match score (highest first)
+      rankedBooks.sort((a, b) => b.matchScore - a.matchScore);
+      
+      // Return the top matches
       return res.status(200).json({
-        books: books.slice(0, 5), // Only return top 5 results
-        analysis
+        books: rankedBooks.slice(0, 8), 
+        analysis,
+        message: "Books ranked based on your preferences."
       });
     } catch (error) {
       console.error('Error processing image:', error);
