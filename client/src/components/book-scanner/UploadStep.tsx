@@ -219,17 +219,27 @@ export default function UploadStep({ onBooksDetected, detectedBooks }: UploadSte
             <p className="text-slate-400 mb-4">
               Drag and drop a photo of your bookshelf here, or click to browse
             </p>
-            <label className="cursor-pointer">
-              <Button className="bg-primary hover:bg-primary/90 text-white">
+            <div className="relative cursor-pointer">
+              <Button 
+                className="bg-primary hover:bg-primary/90 text-white"
+                onClick={() => {
+                  // Find the input element and trigger a click
+                  const fileInput = document.getElementById('photo-upload');
+                  if (fileInput) {
+                    fileInput.click();
+                  }
+                }}
+              >
                 Upload Photo
-                <input 
-                  type="file" 
-                  className="hidden" 
-                  accept="image/*" 
-                  onChange={handleFileChange}
-                />
               </Button>
-            </label>
+              <input 
+                id="photo-upload"
+                type="file" 
+                className="sr-only" 
+                accept="image/*" 
+                onChange={handleFileChange}
+              />
+            </div>
           </div>
         )}
         

@@ -265,11 +265,18 @@ export default function PreferencesStep({ preferences, onSubmit, isLoading }: Pr
             </p>
             
             <div className="flex items-center">
-              <label className="cursor-pointer">
+              <div className="relative cursor-pointer">
                 <Button 
                   variant="outline" 
                   disabled={uploading}
                   className="border-slate-600 text-foreground hover:bg-slate-700"
+                  onClick={() => {
+                    // Find the input element and trigger a click
+                    const fileInput = document.getElementById('goodreads-csv-upload');
+                    if (fileInput) {
+                      fileInput.click();
+                    }
+                  }}
                 >
                   {uploading ? (
                     <>
@@ -302,13 +309,14 @@ export default function PreferencesStep({ preferences, onSubmit, isLoading }: Pr
                   )}
                 </Button>
                 <input 
+                  id="goodreads-csv-upload"
                   type="file" 
-                  className="hidden" 
+                  className="sr-only" 
                   accept=".csv" 
                   onChange={handleGoodreadsUpload}
                   disabled={uploading}
                 />
-              </label>
+              </div>
               
               {goodreadsData && (
                 <span className="ml-3 text-sm text-green-400 flex items-center">
