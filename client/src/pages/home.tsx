@@ -143,7 +143,7 @@ export default function Home() {
               </p>
             </div>
             <div className="flex justify-center">
-              <Link href="/books">
+              <Link href="/books" onClick={() => window.scrollTo(0, 0)}>
                 <Button variant="outline" className="w-full sm:w-auto border-slate-600 text-white hover:bg-slate-700">
                   <svg 
                     xmlns="http://www.w3.org/2000/svg" 
