@@ -217,17 +217,18 @@ export default function Books() {
             >
               Back
             </button>
-            {currentStep === 1 && (
+            {/* Continue button for steps 2 and 3 only - step 1 has its own button */}
+            {currentStep === 2 && (
               <button 
-                onClick={() => savePreferencesMutation.mutate(userPreferences)}
-                disabled={savePreferencesMutation.isPending || userPreferences.genres.length === 0}
+                onClick={() => recommendationsMutation.mutate()}
+                disabled={detectedBooks.length === 0 || recommendationsMutation.isPending}
                 className={`px-4 py-2 bg-primary text-white rounded-md text-sm font-medium ${
-                  savePreferencesMutation.isPending || userPreferences.genres.length === 0
+                  detectedBooks.length === 0 || recommendationsMutation.isPending
                     ? 'opacity-70 cursor-not-allowed' 
                     : 'hover:bg-primary/90 transition-colors'
                 }`}
               >
-                {savePreferencesMutation.isPending ? 'Saving...' : 'Continue'}
+                {recommendationsMutation.isPending ? 'Processing...' : 'Get Recommendations'}
               </button>
             )}
           </div>
