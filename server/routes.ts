@@ -34,35 +34,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Convert buffer to base64
       const base64Image = req.file.buffer.toString('base64');
       
-      // Analyze the image using Google Vision API
+      // Analyze the image using Google Vision API to extract text
       const analysis = await analyzeImage(base64Image);
       
       // Extract potential book titles from the image text
-      const bookTitles = analysis.text.split('\n')
+      const textLines = analysis.text.split('\n')
         .filter((line: string) => line.length > 3) // Filter out very short lines
-        .slice(0, 10); // Take up to 10 potential titles
+        .map(line => line.trim());
       
-      console.log("Extracted potential book titles:", bookTitles);
+      console.log("Extracted potential book titles:", textLines);
       
-      // Search for books based on extracted text
+      // Search for books based on extracted text - only look for exact matches to text in the image
       const detectedBooks = [];
-      for (const title of bookTitles) {
-        const bookResults = await searchBooksByTitle(title);
-        if (bookResults.length > 0) {
-          detectedBooks.push(...bookResults);
+      const searchPromises = textLines.map(line => searchBooksByTitle(line));
+      const searchResults = await Promise.all(searchPromises);
+      
+      // Process results - filter to keep only books that likely match titles in the image
+      searchResults.forEach((results, index) => {
+        if (results && results.length > 0) {
+          const lineText = textLines[index].toLowerCase();
+          
+          // Only include books whose titles closely match text from the image
+          const matchingBooks = results.filter(book => {
+            const bookTitle = book.title.toLowerCase();
+            // Check for significant overlap between the detected text and book title
+            return (
+              bookTitle.includes(lineText) || 
+              lineText.includes(bookTitle) ||
+              // Calculate similarity score - accept if more than 70% match
+              calculateSimilarity(lineText, bookTitle) > 0.7
+            );
+          });
+          
+          if (matchingBooks.length > 0) {
+            detectedBooks.push(...matchingBooks);
+          }
         }
+      });
+      
+      // If no books were detected, provide a helpful message
+      if (detectedBooks.length === 0) {
+        return res.status(200).json({
+          books: [], 
+          analysis,
+          message: "No books could be clearly identified in the image. Try taking a clearer photo with better lighting and make sure book titles are visible."
+        });
       }
       
       // If no preferences exist, just return the detected books
       if (!preferences) {
         return res.status(200).json({
-          books: detectedBooks.slice(0, 8), 
+          books: detectedBooks, 
           analysis,
-          message: "Books detected. Set your preferences to get personalized matches."
+          message: "Books detected in your photo. Set your preferences to get personalized rankings."
         });
       }
       
-      // Score and rank books based on user preferences
+      // Score and rank the detected books based on user preferences
       const rankedBooks = detectedBooks.map(book => {
         // Initialize match score
         let matchScore = 0;
@@ -71,7 +99,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (preferences.genres && book.categories) {
           for (const genre of preferences.genres) {
             if (book.categories.some((category: string) => 
-              category.toLowerCase().includes(genre.toLowerCase()))) {
+              category && category.toLowerCase().includes(genre.toLowerCase()))) {
               matchScore += 3;
             }
           }
@@ -100,12 +128,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
               }
             }
             
+            // Exact title match is a strong signal
+            if (entry["Title"] && entry["Title"].toLowerCase() === book.title.toLowerCase()) {
+              const rating = entry["My Rating"] ? parseInt(entry["My Rating"]) : 0;
+              if (rating >= 4) {
+                matchScore += 8; // You already read and liked this book!
+              } else if (rating > 0) {
+                matchScore += rating; // Score based on your rating
+              }
+            }
+            
             // Match shelf categories from Goodreads
             if (entry["Bookshelves"] && book.categories) {
               const shelves = entry["Bookshelves"].split(';').map((s: string) => s.trim().toLowerCase());
               for (const shelf of shelves) {
                 if (book.categories.some((category: string) => 
-                  category.toLowerCase().includes(shelf))) {
+                  category && category.toLowerCase().includes(shelf))) {
                   matchScore += 1;
                   
                   // Add bonus if it was highly rated
@@ -127,11 +165,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Sort by match score (highest first)
       rankedBooks.sort((a, b) => b.matchScore - a.matchScore);
       
-      // Return the top matches
+      // Return the ranked books found in the image
       return res.status(200).json({
-        books: rankedBooks.slice(0, 8), 
+        books: rankedBooks, 
         analysis,
-        message: "Books ranked based on your preferences."
+        message: "Books from your photo have been ranked based on your preferences."
       });
     } catch (error) {
       console.error('Error processing image:', error);
@@ -141,6 +179,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+  
+  // Helper function to calculate similarity between two strings
+  function calculateSimilarity(str1: string, str2: string): number {
+    const longer = str1.length > str2.length ? str1 : str2;
+    const shorter = str1.length > str2.length ? str2 : str1;
+    
+    if (longer.length === 0) {
+      return 1.0;
+    }
+    
+    // Calculate Levenshtein distance
+    const distance = levenshteinDistance(longer, shorter);
+    return (longer.length - distance) / longer.length;
+  }
+  
+  // Levenshtein distance calculation for string similarity
+  function levenshteinDistance(str1: string, str2: string): number {
+    const matrix: number[][] = [];
+    
+    // Initialize the matrix
+    for (let i = 0; i <= str1.length; i++) {
+      matrix[i] = [i];
+    }
+    
+    for (let j = 0; j <= str2.length; j++) {
+      matrix[0][j] = j;
+    }
+    
+    // Fill the matrix
+    for (let i = 1; i <= str1.length; i++) {
+      for (let j = 1; j <= str2.length; j++) {
+        const cost = str1.charAt(i - 1) === str2.charAt(j - 1) ? 0 : 1;
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j] + 1,      // deletion
+          matrix[i][j - 1] + 1,      // insertion
+          matrix[i - 1][j - 1] + cost  // substitution
+        );
+      }
+    }
+    
+    return matrix[str1.length][str2.length];
+  }
 
   // Save user preferences
   app.post('/api/preferences', async (req: Request, res: Response) => {
