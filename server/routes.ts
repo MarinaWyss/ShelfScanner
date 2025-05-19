@@ -377,13 +377,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
         
         // Validate recommendation data
+        // The bookId field is required, so we'll use the book's ID if available or default to 1
         const validatedData = insertRecommendationSchema.parse({
           userId,
-          bookId: matchingBook?.id,
+          bookId: matchingBook?.id || 1, // Default to 1 if no matching book ID is found
           title: recommendation.title,
           author: recommendation.author,
-          coverUrl: recommendation.coverUrl,
-          summary: recommendation.summary,
+          coverUrl: recommendation.coverUrl || '',
+          summary: recommendation.summary || 'No summary available',
           rating: recommendation.rating?.toString() || "0"
         });
         

@@ -9,6 +9,7 @@ interface Recommendation {
   coverUrl: string;
   rating: string;
   summary: string;
+  matchScore?: number;
 }
 
 interface RecommendationsStepProps {
