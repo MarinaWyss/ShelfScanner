@@ -51,7 +51,7 @@ export default function Books() {
   
   // Use effect to set preferences when they're loaded
   // This prevents the React state update during render issue
-  React.useEffect(() => {
+  useEffect(() => {
     if (existingPreferences && existingPreferences.genres) {
       setUserPreferences({
         genres: existingPreferences.genres || [],
