@@ -108,15 +108,11 @@ export async function analyzeImage(base64Image: string): Promise<any> {
   } catch (error) {
     log(`Error analyzing image: ${error instanceof Error ? error.message : String(error)}`, 'vision');
     
-    // Return fallback data for demo purposes when there's a connection error
+    // Return empty data so that the user knows there was an error
     return {
-      isBookshelf: true,
-      text: "Harry Potter and the Philosopher's Stone\nTo Kill a Mockingbird\nThe Great Gatsby\n1984\nPride and Prejudice",
-      labels: [
-        { description: "book", score: 0.98 },
-        { description: "shelf", score: 0.95 },
-        { description: "library", score: 0.92 }
-      ]
+      isBookshelf: false,
+      text: "Error analyzing image. Please try again with a clearer photo.",
+      labels: []
     };
   }
 }

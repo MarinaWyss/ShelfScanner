@@ -2,6 +2,7 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { analyzeImage } from "./vision";
+import { analyzeBookshelfImage } from "./openai-vision";
 import { searchBooksByTitle, getRecommendations } from "./books";
 import multer from "multer";
 import { z } from "zod";
@@ -77,16 +78,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(200).json({
           books: [], 
           analysis,
+          detectedTitles: textLines,
           message: "No books could be clearly identified in the image. Try taking a clearer photo with better lighting and make sure book titles are visible."
         });
       }
+      
+      // Create a debug message listing the books found in the image
+      const bookTitlesFound = detectedBooks.map(book => book.title).join(", ");
       
       // If no preferences exist, just return the detected books
       if (!preferences) {
         return res.status(200).json({
           books: detectedBooks, 
           analysis,
-          message: "Books detected in your photo. Set your preferences to get personalized rankings."
+          detectedTitles: textLines,
+          booksFound: bookTitlesFound,
+          message: `Found ${detectedBooks.length} books: ${bookTitlesFound}. Set preferences to get rankings.`
         });
       }
       
@@ -169,7 +176,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(200).json({
         books: rankedBooks, 
         analysis,
-        message: "Books from your photo have been ranked based on your preferences."
+        detectedTitles: textLines,
+        booksFound: bookTitlesFound,
+        message: `Found ${detectedBooks.length} books in your photo: ${bookTitlesFound}. These have been ranked based on your preferences.`
       });
     } catch (error) {
       console.error('Error processing image:', error);
