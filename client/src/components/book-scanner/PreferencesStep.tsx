@@ -154,39 +154,53 @@ export default function PreferencesStep({ preferences, onSubmit, isLoading }: Pr
     
     const result = [];
     
-    // Only keep essential data for top rated books (max 100 entries)
-    const maxEntries = 100;
-    let entryCount = 0;
-    
-    for (let i = 1; i < lines.length && entryCount < maxEntries; i++) {
+    // Store all rated books, focusing on higher quality ratings
+    for (let i = 1; i < lines.length; i++) {
       if (!lines[i].trim()) continue;
       
-      const values = lines[i].split(',');
+      // Handle CSV properly - this accounts for quoted entries containing commas
+      let values = [];
+      let inQuote = false;
+      let currentValue = '';
+      
+      for (let j = 0; j < lines[i].length; j++) {
+        const char = lines[i][j];
+        
+        if (char === '"' && (j === 0 || lines[i][j-1] !== '\\')) {
+          inQuote = !inQuote;
+        } else if (char === ',' && !inQuote) {
+          values.push(currentValue);
+          currentValue = '';
+        } else {
+          currentValue += char;
+        }
+      }
+      values.push(currentValue); // Don't forget the last value
+      
       // Skip entries without rating or with low ratings
       const ratingIndex = headers.indexOf('My Rating');
-      if (ratingIndex >= 0) {
+      if (ratingIndex >= 0 && ratingIndex < values.length) {
         const rating = parseInt(values[ratingIndex] || '0');
         if (rating < 3) continue; // Only keep books rated 3 or higher
       }
       
-      // Only store essential fields
+      // Only store essential fields to keep payload size manageable
       const essentialFields = ['Title', 'Author', 'My Rating', 'Bookshelves'];
       const entry: Record<string, string> = {};
       
       essentialFields.forEach(field => {
         const index = headers.indexOf(field);
-        if (index >= 0) {
+        if (index >= 0 && index < values.length) {
           entry[field] = values[index] ? values[index].trim() : '';
         }
       });
       
       if (Object.keys(entry).length > 0) {
         result.push(entry);
-        entryCount++;
       }
     }
     
-    console.log(`Processed ${entryCount} books from Goodreads data`);
+    console.log(`Processed ${result.length} books from Goodreads data`);
     return result;
   };
 

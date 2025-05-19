@@ -76,28 +76,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Extract data from request body
       let { genres, authors, goodreadsData } = req.body;
       
-      // Handle Goodreads data - extract only essential information to reduce payload size
-      if (goodreadsData && Array.isArray(goodreadsData)) {
-        // Limit to top 50 entries only
-        const maxEntries = 50;
-        const essentialFields = ['Title', 'Author', 'My Rating', 'Bookshelves'];
-        
-        const trimmedData = goodreadsData
-          .slice(0, maxEntries)
-          .map(entry => {
-            // Extract only essential fields from each entry
-            const trimmedEntry: Record<string, any> = {};
-            essentialFields.forEach(field => {
-              if (entry[field]) {
-                trimmedEntry[field] = entry[field];
-              }
-            });
-            return trimmedEntry;
-          });
-        
-        console.log(`Processed Goodreads data: ${trimmedData.length} entries (trimmed from ${goodreadsData.length})`);
-        goodreadsData = trimmedData;
-      }
+      // Don't trim Goodreads data - keep all book entries from the CSV regardless of size
+      // This will preserve all the user's data as requested
       
       // Prepare data
       const preferenceData = {
