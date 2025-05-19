@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import PreferencesStep from "@/components/book-scanner/PreferencesStep";
 import UploadStep from "@/components/book-scanner/UploadStep";
@@ -44,19 +44,22 @@ export default function Books() {
   const { toast } = useToast();
 
   // Fetch existing preferences if any
-  const { data: existingPreferences } = useQuery({
+  const { data: existingPreferences } = useQuery<Preference>({
     queryKey: ['/api/preferences'],
-    staleTime: 30000,
-    onSettled: (data: any) => {
-      if (data) {
-        setUserPreferences({
-          genres: data.genres || [],
-          authors: data.authors || [],
-          goodreadsData: data.goodreadsData || null
-        });
-      }
-    }
+    staleTime: 30000
   });
+  
+  // Use effect to set preferences when they're loaded
+  // This prevents the React state update during render issue
+  React.useEffect(() => {
+    if (existingPreferences && existingPreferences.genres) {
+      setUserPreferences({
+        genres: existingPreferences.genres || [],
+        authors: existingPreferences.authors || [],
+        goodreadsData: existingPreferences.goodreadsData || null
+      });
+    }
+  }, [existingPreferences]);
 
   // Save preferences
   const savePreferencesMutation = useMutation({
@@ -98,7 +101,14 @@ export default function Books() {
   // Generate recommendations
   const recommendationsMutation = useMutation({
     mutationFn: async () => {
+      if (!detectedBooks || detectedBooks.length === 0) {
+        // If no books were detected, don't make the API call at all
+        console.log("No books to send for recommendations");
+        return [];
+      }
+      
       // Include the detected books in the request
+      console.log("Sending books for recommendations:", detectedBooks.length);
       const response = await apiRequest('POST', '/api/recommendations', {
         books: detectedBooks
       });
@@ -107,15 +117,30 @@ export default function Books() {
     onSuccess: (data) => {
       console.log("Successfully created recommendations:", data);
       queryClient.invalidateQueries({ queryKey: ['/api/recommendations'] });
-      nextStep();
+      
+      if (data && (Array.isArray(data) && data.length > 0)) {
+        nextStep(); // Only proceed if we got actual recommendations
+      } else {
+        toast({
+          title: "No recommendations",
+          description: "We couldn't generate recommendations based on the detected books. Try another photo with more visible book spines.",
+          variant: "destructive"
+        });
+      }
     },
     onError: (error) => {
+      // Handle the error silently without showing the "No books provided" error to user
       console.error("Recommendation error details:", error);
-      toast({
-        title: "Error",
-        description: `Failed to generate recommendations: ${error instanceof Error ? error.message : String(error)}`,
-        variant: "destructive"
-      });
+      
+      // Only show errors that are not the "No books provided" error
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (!errorMessage.includes("No books provided")) {
+        toast({
+          title: "Error",
+          description: `Failed to generate recommendations: ${errorMessage}`,
+          variant: "destructive"
+        });
+      }
     }
   });
 
@@ -131,10 +156,23 @@ export default function Books() {
   };
 
   const handleBooksDetected = (books: Book[], imageBase64: string) => {
-    setDetectedBooks(books);
-    setBookImageBase64(imageBase64);
-    saveBooksMutation.mutate(books);
-    recommendationsMutation.mutate();
+    console.log("Books detected:", books.length, "books");
+    if (books && books.length > 0) {
+      setDetectedBooks(books);
+      setBookImageBase64(imageBase64);
+      saveBooksMutation.mutate(books);
+      
+      // Use setTimeout to ensure books are saved before requesting recommendations
+      setTimeout(() => {
+        recommendationsMutation.mutate();
+      }, 500);
+    } else {
+      toast({
+        title: "No books detected",
+        description: "Unable to detect any books in the image. Please try another photo with clearer book spines.",
+        variant: "destructive"
+      });
+    }
   };
 
   const nextStep = () => {

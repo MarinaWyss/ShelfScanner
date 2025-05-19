@@ -15,14 +15,14 @@ export async function analyzeBookshelfImage(base64Image: string): Promise<{
       messages: [
         {
           role: "system",
-          content: "You are a precise book identification expert. Your task is to identify EXACTLY which books appear in an image of a bookshelf. Read the visible text on book spines and covers extremely carefully. DO NOT make assumptions or guess books that aren't clearly visible. Only return the exact titles you can read with certainty. If text is partially visible, include only complete titles you're 100% confident about."
+          content: "You are a precise book identification expert specializing in reading book spines on bookshelves. Your ONLY task is to identify the exact titles of books visible in the image. Never invent or guess titles. Only include titles where you can clearly read the complete title from the spine or cover. If you're uncertain about any title, exclude it completely."
         },
         {
           role: "user",
           content: [
             {
               type: "text",
-              text: "This is a photo of a bookshelf. Please identify ONLY the specific books that are clearly visible. Read each book spine or cover exactly as printed. Respond with a JSON object containing:\n\n1. 'bookTitles': an array of strings with ONLY the exact book titles you can definitely identify. Be extremely precise - only include titles you can read clearly and completely.\n\n2. 'isBookshelf': a boolean (true/false) indicating if this is an image of multiple books.\n\nFor example, books that might appear in this photo include 'The Promise', 'The Rift', 'North and South', 'Mythos', 'Awe', 'Cognitive Behavioral Therapy Made Simple', 'Stranger in a Strange Land', 'Overdiagnosed', and 'Leviathan Wakes'. DO NOT include these specific examples unless you actually see them in the image. Only return titles you can read directly from the image."
+              text: "This is a photo of a bookshelf. I need you to identify ONLY the books that are clearly visible and legible in this image. Read the text directly from the book spines or covers.\n\nYour response should be a JSON object with these fields:\n\n1. 'bookTitles': An array containing ONLY the exact titles of books you can read with 100% certainty from the image. Do not include partial or guessed titles.\n\n2. 'isBookshelf': A boolean (true) if this shows multiple books on a shelf.\n\nIMPORTANT: Do not try to be helpful by guessing titles! Only include titles that you can read directly and completely from the image. Read each spine carefully - do not include books where you can only make out a few letters. For books with series names, include the complete title as shown on the spine."
             },
             {
               type: "image_url", 
