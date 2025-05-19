@@ -100,25 +100,41 @@ export async function getRecommendations(
   preferences: any
 ): Promise<any[]> {
   try {
-    console.log('Generating recommendations for books:', books);
-    console.log('Based on preferences:', preferences);
+    // CRITICAL: We will ONLY use the books that were detected in the image
+    // No external recommendations will be added at all
+    console.log(`ONLY using ${books.length} detected books for recommendations:`, 
+      books.map(b => b.title));
+    console.log('Using preferences:', preferences);
     
-    // Get genres from preferences
+    // Get user's preferred genres
     const preferredGenres = preferences.genres || [];
     
-    // IMPORTANT: Only use the books that were detected in the image
     // Score each book based on user preferences
     const scoredBooks = books.map(book => {
       // Start with a base score
       let score = 0;
       
-      // Score based on genres
+      // Score based on genres (if book has categories and they match preferred genres)
       if (book.categories && Array.isArray(book.categories)) {
         for (const category of book.categories) {
+          if (!category) continue;
+          
           for (const preferredGenre of preferredGenres) {
             if (category.toLowerCase().includes(preferredGenre.toLowerCase())) {
               score += 5;
+              console.log(`${book.title} matches genre ${preferredGenre}, +5 points`);
             }
+          }
+        }
+      }
+      
+      // If Science Fiction is a preferred genre, score books with Sci-Fi related keywords in title
+      if (preferredGenres.includes('Science Fiction')) {
+        const scifiKeywords = ['space', 'planet', 'alien', 'future', 'robot', 'star', 'galaxy', 'cosmic'];
+        for (const keyword of scifiKeywords) {
+          if (book.title.toLowerCase().includes(keyword)) {
+            score += 3;
+            console.log(`${book.title} contains sci-fi keyword ${keyword}, +3 points`);
           }
         }
       }
@@ -130,10 +146,12 @@ export async function getRecommendations(
           if (entry["Author"] && book.author && 
               book.author.toLowerCase().includes(entry["Author"].toLowerCase())) {
             score += 2;
+            console.log(`${book.title} author matches ${entry["Author"]}, +2 points`);
             
             // Bonus for highly rated books by same author
             if (entry["My Rating"] && parseInt(entry["My Rating"]) >= 4) {
               score += 3;
+              console.log(`${book.title} by ${entry["Author"]} was highly rated, +3 points`);
             }
           }
           
@@ -142,8 +160,10 @@ export async function getRecommendations(
             const rating = entry["My Rating"] ? parseInt(entry["My Rating"]) : 0;
             if (rating >= 4) {
               score += 6; // Already read and liked
+              console.log(`${book.title} exactly matches highly rated book, +6 points`);
             } else if (rating > 0) {
               score += rating; // Score based on rating
+              console.log(`${book.title} exactly matches book with rating ${rating}, +${rating} points`);
             }
           }
           
@@ -154,10 +174,12 @@ export async function getRecommendations(
               if (book.categories.some((category: string) => 
                 category && category.toLowerCase().includes(shelf))) {
                 score += 1;
+                console.log(`${book.title} matches shelf ${shelf}, +1 point`);
                 
                 // Bonus for highly rated
                 if (entry["My Rating"] && parseInt(entry["My Rating"]) >= 4) {
                   score += 2;
+                  console.log(`${book.title} on shelf ${shelf} was highly rated, +2 points`);
                 }
               }
             }
@@ -173,8 +195,9 @@ export async function getRecommendations(
     
     // Sort books by score, highest first
     scoredBooks.sort((a, b) => b.score - a.score);
+    console.log("Final scored books:", scoredBooks.map(b => `${b.title}: ${b.score}`));
     
-    // Return the sorted books with proper format for recommendations
+    // Return the original books, just sorted by preference score
     return scoredBooks.map(book => ({
       title: book.title || 'Unknown Title',
       author: book.author || 'Unknown Author',
