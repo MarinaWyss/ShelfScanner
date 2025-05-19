@@ -12,10 +12,10 @@ export default function Navbar({ sidebarOpen, toggleSidebar, toggleChat }: Navba
   return (
     <>
       {/* Top Navigation Bar */}
-      <header className="bg-white border-b border-neutral-200 sticky top-0 z-20">
+      <header className="bg-slate-900 border-b border-slate-800 sticky top-0 z-20">
         <div className="px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
           <div className="flex items-center">
-            <button onClick={toggleSidebar} className="lg:hidden mr-4 text-neutral-500 hover:text-neutral-700">
+            <button onClick={toggleSidebar} className="lg:hidden mr-4 text-slate-300 hover:text-white">
               <svg 
                 xmlns="http://www.w3.org/2000/svg" 
                 width="24" 
@@ -36,7 +36,7 @@ export default function Navbar({ sidebarOpen, toggleSidebar, toggleChat }: Navba
             <div className="flex items-center gap-2">
               <svg 
                 xmlns="http://www.w3.org/2000/svg" 
-                className="h-8 w-8 text-primary-600" 
+                className="h-8 w-8 text-primary" 
                 viewBox="0 0 24 24" 
                 fill="currentColor"
               >
@@ -45,12 +45,12 @@ export default function Navbar({ sidebarOpen, toggleSidebar, toggleChat }: Navba
                 <circle cx="9" cy="14" r="2" fill="white"></circle>
                 <circle cx="15" cy="8" r="2" fill="white"></circle>
               </svg>
-              <span className="text-xl font-semibold text-neutral-800">BookLens</span>
+              <span className="text-xl font-semibold text-white">ShelfScanner</span>
             </div>
           </div>
           
           <div className="flex items-center gap-4">
-            <button onClick={toggleChat} className="text-neutral-500 hover:text-neutral-700">
+            <button onClick={toggleChat} className="text-slate-300 hover:text-white">
               <svg 
                 xmlns="http://www.w3.org/2000/svg" 
                 width="24" 
@@ -72,7 +72,7 @@ export default function Navbar({ sidebarOpen, toggleSidebar, toggleChat }: Navba
       
       {/* Sidebar Navigation */}
       <aside 
-        className={`w-64 bg-white border-r border-neutral-200 fixed top-[69px] bottom-0 left-0 z-20 transition-transform duration-300 ease-in-out lg:relative lg:top-0 ${
+        className={`w-64 bg-slate-800 border-r border-slate-700 fixed top-[69px] bottom-0 left-0 z-20 transition-transform duration-300 ease-in-out lg:relative lg:top-0 ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >
@@ -80,15 +80,15 @@ export default function Navbar({ sidebarOpen, toggleSidebar, toggleChat }: Navba
           <div className="p-4 flex-1 overflow-y-auto scrollbar-hide">
             <div className="space-y-6">
               <div>
-                <div className="text-neutral-400 uppercase text-xs font-medium tracking-wider px-3 mb-2">
+                <div className="text-slate-400 uppercase text-xs font-medium tracking-wider px-3 mb-2">
                   Main
                 </div>
                 <ul className="space-y-1">
                   <li>
                     <Link href="/" className={`flex items-center gap-3 w-full px-3 py-2 rounded-md font-medium transition-colors duration-150 ${
                         location === '/' 
-                          ? 'bg-primary-50 text-primary-600' 
-                          : 'text-neutral-700 hover:bg-neutral-100'
+                          ? 'bg-slate-700 text-primary' 
+                          : 'text-slate-300 hover:bg-slate-700 hover:text-white'
                       }`}>
                         <svg 
                           xmlns="http://www.w3.org/2000/svg" 
@@ -111,8 +111,8 @@ export default function Navbar({ sidebarOpen, toggleSidebar, toggleChat }: Navba
                   <li>
                     <Link href="/books" className={`flex items-center gap-3 w-full px-3 py-2 rounded-md font-medium transition-colors duration-150 ${
                         location === '/books' 
-                          ? 'bg-primary-50 text-primary-600' 
-                          : 'text-neutral-700 hover:bg-neutral-100'
+                          ? 'bg-slate-700 text-primary' 
+                          : 'text-slate-300 hover:bg-slate-700 hover:text-white'
                       }`}>
                         <svg 
                           xmlns="http://www.w3.org/2000/svg" 
@@ -136,14 +136,14 @@ export default function Navbar({ sidebarOpen, toggleSidebar, toggleChat }: Navba
             </div>
           </div>
           
-          <div className="p-4 border-t border-neutral-200">
-            <div className="bg-primary-50 rounded-lg p-3">
-              <p className="text-sm text-primary-800 mb-2">
+          <div className="p-4 border-t border-slate-700">
+            <div className="bg-slate-700 rounded-lg p-3">
+              <p className="text-sm text-slate-300 mb-2">
                 Get personalized book recommendations with our AI assistant
               </p>
               <button 
                 onClick={toggleChat}
-                className="bg-primary-600 text-white text-sm px-3 py-1.5 rounded-md hover:bg-primary-700 transition-colors w-full flex items-center justify-center gap-2">
+                className="bg-primary text-white text-sm px-3 py-1.5 rounded-md hover:bg-opacity-90 transition-colors w-full flex items-center justify-center gap-2">
                 <svg 
                   xmlns="http://www.w3.org/2000/svg" 
                   width="24" 

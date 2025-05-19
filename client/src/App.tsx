@@ -30,7 +30,7 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <div className="min-h-screen flex flex-col">
+        <div className="min-h-screen flex flex-col bg-background text-foreground">
           <Navbar 
             sidebarOpen={sidebarOpen} 
             toggleSidebar={toggleSidebar} 
@@ -41,11 +41,11 @@ function App() {
             {sidebarOpen && (
               <div 
                 onClick={() => setSidebarOpen(false)}
-                className="fixed inset-0 bg-neutral-900 bg-opacity-50 z-10 lg:hidden"
+                className="fixed inset-0 bg-black bg-opacity-50 z-10 lg:hidden"
               />
             )}
             
-            <main className="flex-1 overflow-x-hidden overflow-y-auto bg-neutral-50">
+            <main className="flex-1 overflow-x-hidden overflow-y-auto">
               <Router />
             </main>
             
