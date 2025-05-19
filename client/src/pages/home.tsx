@@ -96,7 +96,7 @@ export default function Home() {
                   <span className="font-semibold">1</span>
                 </div>
                 <h3 className="font-medium text-sm text-foreground">Upload Photo</h3>
-                <p className="text-xs text-muted-foreground mt-1">Take a photo of books at a store or library</p>
+                <p className="text-xs text-muted-foreground mt-1">Take a photo of an entire bookshelf</p>
               </div>
               <div className="border border-slate-700 bg-slate-900 rounded-lg p-4 text-center">
                 <div className="bg-accent/20 text-accent h-10 w-10 rounded-full mx-auto flex items-center justify-center mb-3">
