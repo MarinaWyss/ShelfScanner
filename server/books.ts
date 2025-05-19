@@ -103,31 +103,89 @@ export async function getRecommendations(
     console.log('Generating recommendations for books:', books);
     console.log('Based on preferences:', preferences);
     
-    // Extract titles from books
-    const titles = books.map(book => book.title || '');
-    
     // Get genres from preferences
-    const genres = preferences.genres || [];
+    const preferredGenres = preferences.genres || [];
     
-    // Combine titles with genres for better search results
-    const searchTerms = [...titles, ...genres];
-    const query = searchTerms.join(' OR ');
+    // IMPORTANT: Only use the books that were detected in the image
+    // Score each book based on user preferences
+    const scoredBooks = books.map(book => {
+      // Start with a base score
+      let score = 0;
+      
+      // Score based on genres
+      if (book.categories && Array.isArray(book.categories)) {
+        for (const category of book.categories) {
+          for (const preferredGenre of preferredGenres) {
+            if (category.toLowerCase().includes(preferredGenre.toLowerCase())) {
+              score += 5;
+            }
+          }
+        }
+      }
+      
+      // Check Goodreads data if available
+      if (preferences.goodreadsData && Array.isArray(preferences.goodreadsData)) {
+        for (const entry of preferences.goodreadsData) {
+          // Match by author
+          if (entry["Author"] && book.author && 
+              book.author.toLowerCase().includes(entry["Author"].toLowerCase())) {
+            score += 2;
+            
+            // Bonus for highly rated books by same author
+            if (entry["My Rating"] && parseInt(entry["My Rating"]) >= 4) {
+              score += 3;
+            }
+          }
+          
+          // Match by title (exact match is a strong signal)
+          if (entry["Title"] && entry["Title"].toLowerCase() === book.title.toLowerCase()) {
+            const rating = entry["My Rating"] ? parseInt(entry["My Rating"]) : 0;
+            if (rating >= 4) {
+              score += 6; // Already read and liked
+            } else if (rating > 0) {
+              score += rating; // Score based on rating
+            }
+          }
+          
+          // Match by shelf/category
+          if (entry["Bookshelves"] && book.categories) {
+            const shelves = entry["Bookshelves"].split(';').map((s: string) => s.trim().toLowerCase());
+            for (const shelf of shelves) {
+              if (book.categories.some((category: string) => 
+                category && category.toLowerCase().includes(shelf))) {
+                score += 1;
+                
+                // Bonus for highly rated
+                if (entry["My Rating"] && parseInt(entry["My Rating"]) >= 4) {
+                  score += 2;
+                }
+              }
+            }
+          }
+        }
+      }
+      
+      return {
+        ...book,
+        score
+      };
+    });
     
-    // Get recommendations from Google Books API
-    const url = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(query)}&maxResults=10`;
-    const response = await axios.get(url);
+    // Sort books by score, highest first
+    scoredBooks.sort((a, b) => b.score - a.score);
     
-    if (response.data.items && response.data.items.length > 0) {
-      return response.data.items.map((item: BookResponse) => ({
-        title: item.volumeInfo?.title || 'Unknown Title',
-        author: item.volumeInfo?.authors ? item.volumeInfo.authors.join(', ') : 'Unknown Author',
-        coverUrl: item.volumeInfo?.imageLinks?.thumbnail || '',
-        summary: item.volumeInfo?.description || 'No summary available',
-        rating: item.volumeInfo?.averageRating || 0,
-      }));
-    }
-    
-    return [];
+    // Return the sorted books with proper format for recommendations
+    return scoredBooks.map(book => ({
+      title: book.title || 'Unknown Title',
+      author: book.author || 'Unknown Author',
+      coverUrl: book.coverUrl || '',
+      summary: book.summary || 'No summary available',
+      rating: book.rating || 0,
+      matchScore: book.score,
+      isbn: book.isbn,
+      // Include the source that detected this book (for debugging)
+      detectedFrom: book.detectedFrom
+    }));
   } catch (error) {
     log(`Error getting recommendations: ${error instanceof Error ? error.message : String(error)}`, 'books');
     return [];
