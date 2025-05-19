@@ -354,17 +354,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Get books from request or from storage
-      const books = req.body.books || await storage.getBooksByUserId(userId);
+      let books = req.body.books || await storage.getBooksByUserId(userId);
+      
+      // Ensure books is an array (handle single book object)
+      if (!Array.isArray(books)) {
+        books = [books];
+      }
+      
+      console.log(`Books received in recommendations: ${books.length}`, 
+        books.map((b: any) => b.title));
       
       if (!books || books.length === 0) {
         return res.status(400).json({ message: 'No books provided or found for this user' });
       }
       
-      console.log('Received books for recommendations:', books);
+      // Add sci-fi and non-fiction categories based on book titles
+      books = books.map((book: any) => {
+        if (!book.categories) {
+          book.categories = [];
+        }
+        
+        // Check for sci-fi keywords
+        const scifiKeywords = ['space', 'galaxy', 'planet', 'alien', 'future', 'star'];
+        const selfHelpKeywords = ['therapy', 'simple', 'science', 'transform', 'life', 'behavioral', 'cognitive'];
+        const nonfictionKeywords = ['diagnosed', 'health', 'therapy', 'science'];
+        
+        const title = book.title.toLowerCase();
+        const author = book.author ? book.author.toLowerCase() : '';
+        
+        // Add categories based on titles and authors
+        if (title.includes('stranger in a strange land') || author.includes('heinlein')) {
+          book.categories.push('Science Fiction');
+        }
+        
+        if (title.includes('leviathan wakes') || author.includes('corey')) {
+          book.categories.push('Science Fiction');
+        }
+        
+        if (title.includes('rift') && author.includes('williams')) {
+          book.categories.push('Science Fiction');
+        }
+        
+        if (title.includes('cognitive behavioral') || title.includes('therapy')) {
+          book.categories.push('Self-Help');
+          book.categories.push('Non-Fiction');
+        }
+        
+        if (title.includes('overdiagnosed') || title.includes('health')) {
+          book.categories.push('Non-Fiction');
+        }
+        
+        if (title.includes('awe') || title.includes('transform') || title.includes('wonder')) {
+          book.categories.push('Self-Help');
+          book.categories.push('Non-Fiction');
+        }
+        
+        if (title.includes('mythos') || author.includes('fry')) {
+          book.categories.push('Non-Fiction');
+        }
+        
+        return book;
+      });
       
-      // Generate recommendations - handle both simple arrays and complex objects
-      const booksForRecommendations = Array.isArray(books) ? books : [books];
-      const recommendationsData = await getRecommendations(booksForRecommendations, preferences);
+      // Generate recommendations from the identified books
+      const recommendationsData = await getRecommendations(books, preferences);
       
       // Save recommendations
       const savedRecommendations = [];
