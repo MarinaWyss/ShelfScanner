@@ -123,6 +123,23 @@ export class MemStorage implements IStorage {
     );
   }
 
+  // Clear all recommendations for a user before adding new ones
+  async clearRecommendationsByUserId(userId: number): Promise<void> {
+    // Find all recommendations for this user and remove them
+    const toDelete: number[] = [];
+    
+    this.recommendations.forEach((recommendation, id) => {
+      if (recommendation.userId === userId) {
+        toDelete.push(id);
+      }
+    });
+    
+    // Delete all found recommendations
+    for (const id of toDelete) {
+      this.recommendations.delete(id);
+    }
+  }
+
   async createRecommendation(insertRecommendation: InsertRecommendation): Promise<Recommendation> {
     const id = this.recommendationIdCounter++;
     const recommendation: Recommendation = { 

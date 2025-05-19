@@ -455,10 +455,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return book;
       });
       
+      // First, clear any existing recommendations for this user
+      await storage.clearRecommendationsByUserId(userId);
+      
       // Generate recommendations ONLY from the identified books (no external API requests)
       const recommendationsData = await getRecommendations(books, preferences);
       
-      // Save recommendations
+      // Save new recommendations
       const savedRecommendations = [];
       
       for (const recommendation of recommendationsData) {
