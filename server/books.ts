@@ -96,10 +96,19 @@ export async function searchBooksByTitle(title: string): Promise<any[]> {
 }
 
 export async function getRecommendations(
-  titles: string[], 
-  genres: string[]
+  books: any[],
+  preferences: any
 ): Promise<any[]> {
   try {
+    console.log('Generating recommendations for books:', books);
+    console.log('Based on preferences:', preferences);
+    
+    // Extract titles from books
+    const titles = books.map(book => book.title || '');
+    
+    // Get genres from preferences
+    const genres = preferences.genres || [];
+    
     // Combine titles with genres for better search results
     const searchTerms = [...titles, ...genres];
     const query = searchTerms.join(' OR ');
