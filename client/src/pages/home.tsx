@@ -132,34 +132,37 @@ export default function Home() {
                   strokeLinejoin="round" 
                   className="h-8 w-8"
                 >
-                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                  <path d="M12 3v12"></path>
+                  <path d="m8 11 4 4 4-4"></path>
+                  <path d="M8 5H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-4"></path>
                 </svg>
               </div>
-              <h2 className="text-xl font-semibold text-foreground">Import Your Goodreads Library</h2>
+              <h2 className="text-xl font-semibold text-foreground">Start Using ShelfScanner Today</h2>
               <p className="mt-2 text-muted-foreground max-w-md mx-auto">
-                Already have a Goodreads account? Import your reading history to get even more accurate recommendations.
+                Never miss a great book again. Our app helps you quickly find books that match your unique reading preferences at any bookstore or library.
               </p>
             </div>
             <div className="flex justify-center">
-              <Button variant="outline" className="w-full sm:w-auto border-slate-600 text-white hover:bg-slate-700">
-                <svg 
-                  xmlns="http://www.w3.org/2000/svg" 
-                  width="24" 
-                  height="24" 
-                  viewBox="0 0 24 24" 
-                  fill="none" 
-                  stroke="currentColor" 
-                  strokeWidth="2" 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round" 
-                  className="h-4 w-4 mr-2"
-                >
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                  <polyline points="17 8 12 3 7 8" />
-                  <line x1="12" y1="3" x2="12" y2="15" />
-                </svg>
-                Upload Goodreads CSV
-              </Button>
+              <Link href="/books">
+                <Button variant="outline" className="w-full sm:w-auto border-slate-600 text-white hover:bg-slate-700">
+                  <svg 
+                    xmlns="http://www.w3.org/2000/svg" 
+                    width="24" 
+                    height="24" 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    strokeWidth="2" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round" 
+                    className="h-4 w-4 mr-2"
+                  >
+                    <path d="m5 12 7-7 7 7"></path>
+                    <path d="M12 19V5"></path>
+                  </svg>
+                  Get Started Now
+                </Button>
+              </Link>
             </div>
           </CardContent>
         </Card>
