@@ -190,8 +190,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Generate recommendations based on books and preferences
       const recommendations = await getRecommendations(
         bookTitles,
-        preferences.genres,
-        preferences.readingFrequency
+        preferences.genres
       );
       
       // Save recommendations

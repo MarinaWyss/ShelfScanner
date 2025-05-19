@@ -19,15 +19,15 @@ export const preferences = pgTable("preferences", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
   genres: text("genres").array().notNull(),
-  readingFrequency: text("reading_frequency").notNull(),
   authors: text("authors").array(),
+  goodreadsData: jsonb("goodreads_data"),
 });
 
 export const insertPreferenceSchema = createInsertSchema(preferences).pick({
   userId: true,
   genres: true,
-  readingFrequency: true,
   authors: true,
+  goodreadsData: true,
 });
 
 // Scanned books schema

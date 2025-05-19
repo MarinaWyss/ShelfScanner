@@ -77,8 +77,7 @@ export async function searchBooksByTitle(title: string): Promise<any[]> {
 
 export async function getRecommendations(
   titles: string[], 
-  genres: string[], 
-  readingFrequency: string
+  genres: string[]
 ): Promise<any[]> {
   try {
     // Combine titles with genres for better search results

@@ -28,16 +28,16 @@ type Recommendation = {
 
 type Preference = {
   genres: string[];
-  readingFrequency: string;
   authors: string[];
+  goodreadsData?: any;
 };
 
 export default function Books() {
   const [currentStep, setCurrentStep] = useState(1);
   const [userPreferences, setUserPreferences] = useState<Preference>({
     genres: [],
-    readingFrequency: '',
-    authors: []
+    authors: [],
+    goodreadsData: null
   });
   const [detectedBooks, setDetectedBooks] = useState<Book[]>([]);
   const [bookImageBase64, setBookImageBase64] = useState<string>('');
@@ -46,12 +46,12 @@ export default function Books() {
   // Fetch existing preferences if any
   const { data: existingPreferences } = useQuery({
     queryKey: ['/api/preferences'],
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       if (data) {
         setUserPreferences({
           genres: data.genres || [],
-          readingFrequency: data.readingFrequency || '',
-          authors: data.authors || []
+          authors: data.authors || [],
+          goodreadsData: data.goodreadsData || null
         });
       }
     }
@@ -146,32 +146,32 @@ export default function Books() {
   return (
     <div className="p-4 sm:p-6 lg:p-8">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-neutral-800 mb-1">Book Scanner</h1>
-        <p className="text-neutral-500">
+        <h1 className="text-2xl font-bold text-foreground mb-1">Book Scanner</h1>
+        <p className="text-muted-foreground">
           Scan books to get personalized recommendations
         </p>
       </div>
 
       {/* Progress Bar */}
-      <Card className="mb-6">
+      <Card className="mb-6 border-slate-700 bg-slate-800 shadow-lg">
         <CardContent className="pt-6">
           <div className="flex items-center mb-6">
             <div className="flex-1">
               <div className="relative">
-                <div className="h-1 bg-neutral-200 rounded-full w-full"></div>
+                <div className="h-1 bg-slate-700 rounded-full w-full"></div>
                 <div 
-                  className="absolute inset-y-0 left-0 bg-primary-600 rounded-full"
+                  className="absolute inset-y-0 left-0 bg-primary rounded-full"
                   style={{ width: `${(currentStep / 3) * 100}%` }}
                 ></div>
               </div>
               <div className="flex justify-between mt-2">
-                <span className={`text-sm ${currentStep >= 1 ? 'text-primary-600 font-medium' : 'text-neutral-500'}`}>
+                <span className={`text-sm ${currentStep >= 1 ? 'text-primary font-medium' : 'text-slate-400'}`}>
                   Preferences
                 </span>
-                <span className={`text-sm ${currentStep >= 2 ? 'text-primary-600 font-medium' : 'text-neutral-500'}`}>
+                <span className={`text-sm ${currentStep >= 2 ? 'text-primary font-medium' : 'text-slate-400'}`}>
                   Book Upload
                 </span>
-                <span className={`text-sm ${currentStep >= 3 ? 'text-primary-600 font-medium' : 'text-neutral-500'}`}>
+                <span className={`text-sm ${currentStep >= 3 ? 'text-primary font-medium' : 'text-slate-400'}`}>
                   Recommendations
                 </span>
               </div>
@@ -208,10 +208,10 @@ export default function Books() {
             <button 
               onClick={prevStep}
               disabled={currentStep === 1}
-              className={`px-4 py-2 border border-neutral-300 rounded-md text-sm font-medium ${
+              className={`px-4 py-2 border rounded-md text-sm font-medium ${
                 currentStep === 1 
-                  ? 'text-neutral-400 cursor-not-allowed' 
-                  : 'text-neutral-700 hover:bg-neutral-50 transition-colors'
+                  ? 'text-slate-600 border-slate-700 cursor-not-allowed' 
+                  : 'text-slate-300 border-slate-600 hover:bg-slate-700 transition-colors'
               }`}
             >
               Back
@@ -219,11 +219,11 @@ export default function Books() {
             {currentStep === 1 && (
               <button 
                 onClick={() => savePreferencesMutation.mutate(userPreferences)}
-                disabled={savePreferencesMutation.isPending || userPreferences.genres.length === 0 || !userPreferences.readingFrequency}
-                className={`px-4 py-2 bg-primary-600 text-white rounded-md text-sm font-medium ${
-                  savePreferencesMutation.isPending || userPreferences.genres.length === 0 || !userPreferences.readingFrequency
+                disabled={savePreferencesMutation.isPending || userPreferences.genres.length === 0}
+                className={`px-4 py-2 bg-primary text-white rounded-md text-sm font-medium ${
+                  savePreferencesMutation.isPending || userPreferences.genres.length === 0
                     ? 'opacity-70 cursor-not-allowed' 
-                    : 'hover:bg-primary-700 transition-colors'
+                    : 'hover:bg-primary/90 transition-colors'
                 }`}
               >
                 {savePreferencesMutation.isPending ? 'Saving...' : 'Continue'}
