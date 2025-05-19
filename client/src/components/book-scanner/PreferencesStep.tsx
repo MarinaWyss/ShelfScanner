@@ -147,61 +147,98 @@ export default function PreferencesStep({ preferences, onSubmit, isLoading }: Pr
     reader.readAsText(file);
   }, []);
 
-  // Simple CSV parser for Goodreads data
+  // Advanced CSV parser for Goodreads data
   const parseGoodreadsCSV = (csvText: string): any[] => {
-    const lines = csvText.split('\n');
-    const headers = lines[0].split(',').map(h => h.trim());
-    
-    const result = [];
-    
-    // Store all rated books, focusing on higher quality ratings
-    for (let i = 1; i < lines.length; i++) {
-      if (!lines[i].trim()) continue;
+    try {
+      // Split into lines, being careful with Windows/Unix line endings
+      const lines = csvText.split(/\r?\n/);
+      if (lines.length === 0) return [];
       
-      // Handle CSV properly - this accounts for quoted entries containing commas
-      let values = [];
-      let inQuote = false;
-      let currentValue = '';
+      // Extract headers from first line
+      const headerLine = lines[0];
+      const headers = parseCSVLine(headerLine);
       
-      for (let j = 0; j < lines[i].length; j++) {
-        const char = lines[i][j];
-        
-        if (char === '"' && (j === 0 || lines[i][j-1] !== '\\')) {
-          inQuote = !inQuote;
-        } else if (char === ',' && !inQuote) {
-          values.push(currentValue);
-          currentValue = '';
-        } else {
-          currentValue += char;
-        }
-      }
-      values.push(currentValue); // Don't forget the last value
+      const result = [];
       
-      // Skip entries without rating or with low ratings
+      // Track indices for fields we care about to avoid repeatedly searching
+      const titleIndex = headers.indexOf('Title');
+      const authorIndex = headers.indexOf('Author');
       const ratingIndex = headers.indexOf('My Rating');
-      if (ratingIndex >= 0 && ratingIndex < values.length) {
-        const rating = parseInt(values[ratingIndex] || '0');
-        if (rating < 3) continue; // Only keep books rated 3 or higher
+      const bookshelvesIndex = headers.indexOf('Bookshelves');
+      
+      // Process all lines (except header)
+      for (let i = 1; i < lines.length; i++) {
+        if (!lines[i].trim()) continue;
+        
+        // Parse this line, handling quotes and commas properly
+        const values = parseCSVLine(lines[i]);
+        if (values.length < headers.length) continue; // Malformed line
+        
+        // Create an entry with just the fields we need
+        const entry: Record<string, string> = {};
+        
+        if (titleIndex >= 0 && titleIndex < values.length) {
+          entry['Title'] = values[titleIndex].trim();
+        }
+        
+        if (authorIndex >= 0 && authorIndex < values.length) {
+          entry['Author'] = values[authorIndex].trim();
+        }
+        
+        if (ratingIndex >= 0 && ratingIndex < values.length) {
+          entry['My Rating'] = values[ratingIndex].trim();
+        }
+        
+        if (bookshelvesIndex >= 0 && bookshelvesIndex < values.length) {
+          entry['Bookshelves'] = values[bookshelvesIndex].trim();
+        }
+        
+        if (entry['Title']) { // Only require a title to include the book
+          result.push(entry);
+        }
       }
       
-      // Only store essential fields to keep payload size manageable
-      const essentialFields = ['Title', 'Author', 'My Rating', 'Bookshelves'];
-      const entry: Record<string, string> = {};
+      console.log(`Processed ${result.length} books from Goodreads data`);
+      return result;
+    } catch (error) {
+      console.error("Error parsing CSV:", error);
+      return [];
+    }
+  };
+  
+  // Helper function to properly parse a CSV line with quoted values
+  const parseCSVLine = (line: string): string[] => {
+    const values = [];
+    let inQuote = false;
+    let currentValue = '';
+    
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
       
-      essentialFields.forEach(field => {
-        const index = headers.indexOf(field);
-        if (index >= 0 && index < values.length) {
-          entry[field] = values[index] ? values[index].trim() : '';
+      if (char === '"') {
+        // Toggle quote state, but check if it's an escaped quote
+        if (i + 1 < line.length && line[i + 1] === '"') {
+          // This is an escaped quote inside a quoted field
+          currentValue += '"';
+          i++; // Skip the next quote
+        } else {
+          // Toggle quote state
+          inQuote = !inQuote;
         }
-      });
-      
-      if (Object.keys(entry).length > 0) {
-        result.push(entry);
+      } else if (char === ',' && !inQuote) {
+        // End of value
+        values.push(currentValue);
+        currentValue = '';
+      } else {
+        // Regular character
+        currentValue += char;
       }
     }
     
-    console.log(`Processed ${result.length} books from Goodreads data`);
-    return result;
+    // Add the last value
+    values.push(currentValue);
+    
+    return values;
   };
 
   // Extract authors from Goodreads data
@@ -287,6 +324,29 @@ export default function PreferencesStep({ preferences, onSubmit, isLoading }: Pr
       <div>
         <h3 className="text-lg font-semibold mb-4 text-foreground">Tell us about your reading preferences</h3>
 
+        {/* Genres */}
+        <div className="mb-6">
+          <Label className="block text-sm font-medium text-foreground mb-2">
+            What genres do you enjoy?
+          </Label>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+            {allGenres.map(genre => (
+              <button
+                key={genre}
+                type="button"
+                onClick={() => toggleGenre(genre)}
+                className={`px-3 py-2 border rounded-md text-sm font-medium transition-colors ${
+                  selectedGenres.includes(genre)
+                    ? 'bg-primary/20 text-primary border-primary/40'
+                    : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
+                }`}
+              >
+                {genre}
+              </button>
+            ))}
+          </div>
+        </div>
+        
         {/* Goodreads Import */}
         <Card className="p-4 mb-6 border-slate-700 bg-slate-800">
           <div className="flex flex-col">
@@ -379,29 +439,6 @@ export default function PreferencesStep({ preferences, onSubmit, isLoading }: Pr
             </div>
           </div>
         </Card>
-
-        {/* Genres */}
-        <div className="mb-6">
-          <Label className="block text-sm font-medium text-foreground mb-2">
-            What genres do you enjoy?
-          </Label>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-            {allGenres.map(genre => (
-              <button
-                key={genre}
-                type="button"
-                onClick={() => toggleGenre(genre)}
-                className={`px-3 py-2 border rounded-md text-sm font-medium transition-colors ${
-                  selectedGenres.includes(genre)
-                    ? 'bg-primary/20 text-primary border-primary/40'
-                    : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
-                }`}
-              >
-                {genre}
-              </button>
-            ))}
-          </div>
-        </div>
 
         {/* Favorite Authors */}
         <div>
