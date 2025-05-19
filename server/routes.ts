@@ -360,8 +360,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'No books provided or found for this user' });
       }
       
-      // Generate recommendations
-      const recommendationsData = await getRecommendations(books, preferences);
+      console.log('Received books for recommendations:', books);
+      
+      // Generate recommendations - handle both simple arrays and complex objects
+      const booksForRecommendations = Array.isArray(books) ? books : [books];
+      const recommendationsData = await getRecommendations(booksForRecommendations, preferences);
       
       // Save recommendations
       const savedRecommendations = [];
