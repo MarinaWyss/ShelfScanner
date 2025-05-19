@@ -38,7 +38,19 @@ export async function analyzeBookshelfImage(base64Image: string): Promise<{
     });
 
     // Parse the response
-    const result = JSON.parse(response.choices[0].message.content);
+    const content = response.choices[0].message.content || '';
+    let result;
+    
+    try {
+      result = JSON.parse(content);
+    } catch (error) {
+      log(`Error parsing OpenAI response: ${error}`, "vision");
+      // Fallback with empty results
+      return {
+        bookTitles: [],
+        isBookshelf: false
+      };
+    }
     
     log(`OpenAI identified ${result.bookTitles?.length || 0} books`, "vision");
     
