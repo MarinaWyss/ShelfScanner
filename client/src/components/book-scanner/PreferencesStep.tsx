@@ -100,13 +100,21 @@ export default function PreferencesStep({ preferences, onSubmit, isLoading }: Pr
         
         // Update states with extracted data
         setAuthors(prev => {
-          // Create a combined array of previous and new authors
-          return Array.from(new Set([...prev, ...goodreadsAuthors]));
+          // Create a combined array with all authors (previous and new)
+          const allAuthors = [...prev, ...goodreadsAuthors];
+          // Filter to only keep unique values
+          return allAuthors.filter((author, index) => 
+            allAuthors.indexOf(author) === index
+          );
         });
         
         setSelectedGenres(prev => {
-          // Create a combined array of previous and new genres
-          return Array.from(new Set([...prev, ...goodreadsGenres]));
+          // Create a combined array with all genres (previous and new)
+          const allGenres = [...prev, ...goodreadsGenres];
+          // Filter to only keep unique values
+          return allGenres.filter((genre, index) => 
+            allGenres.indexOf(genre) === index
+          );
         });
         
         // Store the raw parsed data
@@ -168,7 +176,12 @@ export default function PreferencesStep({ preferences, onSubmit, isLoading }: Pr
       .filter(item => item['Author'] && item['My Rating'] && parseInt(item['My Rating']) >= 4)
       .map(item => item['Author']);
     
-    return [...new Set(authors)].slice(0, 10); // Return top 10 unique authors
+    // Use array methods to get unique values
+    const uniqueAuthors = authors.filter((author, index) => 
+      authors.indexOf(author) === index
+    );
+    
+    return uniqueAuthors.slice(0, 10); // Return top 10 unique authors
   };
 
   // Extract genres from Goodreads data
@@ -177,8 +190,13 @@ export default function PreferencesStep({ preferences, onSubmit, isLoading }: Pr
     
     data.forEach(item => {
       if (item['Bookshelves'] && item['My Rating'] && parseInt(item['My Rating']) >= 4) {
-        const shelves = item['Bookshelves'].split(';').map((s: string) => s.trim());
+        // Split the bookshelves string into individual shelves
+        let shelves: string[] = [];
+        if (typeof item['Bookshelves'] === 'string') {
+          shelves = item['Bookshelves'].split(';').map((s: string) => s.trim());
+        }
         
+        // Process each shelf
         shelves.forEach((shelf: string) => {
           // Convert shelf names to match our genre list
           const genre = mapShelfToGenre(shelf);
@@ -189,10 +207,12 @@ export default function PreferencesStep({ preferences, onSubmit, isLoading }: Pr
       }
     });
     
-    return Object.entries(genreMap)
-      .sort((a, b) => b[1] - a[1])
-      .map(([genre]) => genre)
-      .slice(0, 5); // Return top 5 genres
+    // Sort genres by frequency and return top 5
+    const sortedGenres = Object.keys(genreMap).sort(
+      (a, b) => (genreMap[b] || 0) - (genreMap[a] || 0)
+    );
+    
+    return sortedGenres.slice(0, 5); // Return top 5 genres
   };
 
   // Map Goodreads shelves to our genre list

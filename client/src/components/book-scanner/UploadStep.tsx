@@ -75,8 +75,26 @@ export default function UploadStep({ onBooksDetected, detectedBooks }: UploadSte
     try {
       // Create form data
       const formData = new FormData();
-      // Convert base64 to blob
-      const blob = await fetch(base64Image).then((res) => res.blob());
+      // Get the raw base64 data without the prefix
+      const base64Data = base64Image.split(',')[1] || base64Image;
+      
+      // Create a blob from the base64 data
+      const byteCharacters = atob(base64Data);
+      const byteArrays = [];
+      
+      for (let i = 0; i < byteCharacters.length; i += 512) {
+        const slice = byteCharacters.slice(i, i + 512);
+        const byteNumbers = new Array(slice.length);
+        
+        for (let j = 0; j < slice.length; j++) {
+          byteNumbers[j] = slice.charCodeAt(j);
+        }
+        
+        const byteArray = new Uint8Array(byteNumbers);
+        byteArrays.push(byteArray);
+      }
+      
+      const blob = new Blob(byteArrays, { type: 'image/jpeg' });
       formData.append("image", blob);
 
       // Send to backend

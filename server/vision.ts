@@ -47,6 +47,8 @@ export async function analyzeImage(base64Image: string): Promise<any> {
     // Remove data URL prefix if present
     const imageContent = base64Image.replace(/^data:image\/\w+;base64,/, '');
     
+    console.log("Processing image data of length:", imageContent.length);
+    
     const visionRequest: VisionRequest = {
       requests: [
         {
