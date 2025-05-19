@@ -98,14 +98,19 @@ export default function Books() {
   // Generate recommendations
   const recommendationsMutation = useMutation({
     mutationFn: async () => {
-      const response = await apiRequest('POST', '/api/recommendations', {});
+      // Include the detected books in the request
+      const response = await apiRequest('POST', '/api/recommendations', {
+        books: detectedBooks
+      });
       return response.json();
     },
     onSuccess: (data) => {
+      console.log("Successfully created recommendations:", data);
       queryClient.invalidateQueries({ queryKey: ['/api/recommendations'] });
       nextStep();
     },
     onError: (error) => {
+      console.error("Recommendation error details:", error);
       toast({
         title: "Error",
         description: `Failed to generate recommendations: ${error instanceof Error ? error.message : String(error)}`,
