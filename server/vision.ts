@@ -37,10 +37,12 @@ interface VisionResponse {
 
 export async function analyzeImage(base64Image: string): Promise<any> {
   try {
-    const apiKey = process.env.GOOGLE_VISION_API_KEY || '';
+    const apiKey = process.env.GOOGLE_VISION_API_KEY;
     if (!apiKey) {
       throw new Error('Google Vision API key is not configured');
     }
+    
+    console.log("Using Google Vision API with key configured");
 
     // Remove data URL prefix if present
     const imageContent = base64Image.replace(/^data:image\/\w+;base64,/, '');

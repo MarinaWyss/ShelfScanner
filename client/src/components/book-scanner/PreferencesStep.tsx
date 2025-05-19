@@ -100,13 +100,13 @@ export default function PreferencesStep({ preferences, onSubmit, isLoading }: Pr
         
         // Update states with extracted data
         setAuthors(prev => {
-          const uniqueAuthors = [...new Set([...prev, ...goodreadsAuthors])];
-          return uniqueAuthors;
+          // Create a combined array of previous and new authors
+          return Array.from(new Set([...prev, ...goodreadsAuthors]));
         });
         
         setSelectedGenres(prev => {
-          const uniqueGenres = [...new Set([...prev, ...goodreadsGenres])];
-          return uniqueGenres;
+          // Create a combined array of previous and new genres
+          return Array.from(new Set([...prev, ...goodreadsGenres]));
         });
         
         // Store the raw parsed data

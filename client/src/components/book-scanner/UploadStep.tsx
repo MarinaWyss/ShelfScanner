@@ -174,8 +174,8 @@ export default function UploadStep({ onBooksDetected, detectedBooks }: UploadSte
       <h3 className="text-lg font-semibold mb-4">Upload a photo of your bookshelf</h3>
       
       <div 
-        className={`border-2 border-dashed border-neutral-300 rounded-lg p-6 text-center ${
-          isUploading || isProcessing ? 'bg-neutral-50' : ''
+        className={`border-2 border-dashed border-slate-600 rounded-lg p-6 text-center ${
+          isUploading || isProcessing ? 'bg-slate-800' : ''
         }`}
         onDragOver={handleDragOver}
         onDrop={handleDrop}
@@ -192,17 +192,17 @@ export default function UploadStep({ onBooksDetected, detectedBooks }: UploadSte
               strokeWidth="2" 
               strokeLinecap="round" 
               strokeLinejoin="round" 
-              className="h-12 w-12 text-neutral-400 mx-auto mb-4"
+              className="h-12 w-12 text-slate-400 mx-auto mb-4"
             >
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
               <polyline points="17 8 12 3 7 8" />
               <line x1="12" x2="12" y1="3" y2="15" />
             </svg>
-            <p className="text-neutral-600 mb-4">
+            <p className="text-slate-400 mb-4">
               Drag and drop a photo of your bookshelf here, or click to browse
             </p>
             <label className="cursor-pointer">
-              <Button>
+              <Button className="bg-primary hover:bg-primary/90 text-white">
                 Upload Photo
                 <input 
                   type="file" 
@@ -252,7 +252,7 @@ export default function UploadStep({ onBooksDetected, detectedBooks }: UploadSte
           <h4 className="font-medium mb-3">Detected Books</h4>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
             {detectedBooks.map((book, index) => (
-              <div key={index} className="bg-white border border-neutral-200 rounded-lg overflow-hidden shadow-sm">
+              <div key={index} className="bg-slate-800 border border-slate-700 rounded-lg overflow-hidden shadow-lg">
                 {book.coverUrl ? (
                   <img 
                     src={book.coverUrl} 
@@ -260,7 +260,7 @@ export default function UploadStep({ onBooksDetected, detectedBooks }: UploadSte
                     className="w-full h-40 object-cover" 
                   />
                 ) : (
-                  <div className="w-full h-40 bg-neutral-100 flex items-center justify-center">
+                  <div className="w-full h-40 bg-slate-700 flex items-center justify-center">
                     <svg 
                       xmlns="http://www.w3.org/2000/svg" 
                       width="24" 
@@ -271,16 +271,16 @@ export default function UploadStep({ onBooksDetected, detectedBooks }: UploadSte
                       strokeWidth="2" 
                       strokeLinecap="round" 
                       strokeLinejoin="round" 
-                      className="h-10 w-10 text-neutral-400"
+                      className="h-10 w-10 text-slate-400"
                     >
                       <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
                     </svg>
                   </div>
                 )}
                 <div className="p-3">
-                  <p className="font-medium text-neutral-800 truncate">{book.title}</p>
-                  <p className="text-xs text-neutral-500 truncate">{book.author}</p>
-                  <p className="text-xs text-green-600 mt-1">
+                  <p className="font-medium text-white truncate">{book.title}</p>
+                  <p className="text-xs text-slate-400 truncate">{book.author}</p>
+                  <p className="text-xs text-green-500 mt-1">
                     <svg 
                       xmlns="http://www.w3.org/2000/svg" 
                       width="24" 
