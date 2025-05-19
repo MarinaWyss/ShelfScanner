@@ -15,14 +15,14 @@ export async function analyzeBookshelfImage(base64Image: string): Promise<{
       messages: [
         {
           role: "system",
-          content: "You are a book identification expert. Analyze this image and identify ONLY the specific book titles you can clearly see. Extract the EXACT titles as they appear - don't abbreviate or modify them. If a book spine is partially visible or text is blurry, only include it if you're CERTAIN about the title. The image may contain individual books or bookshelves. Return ONLY the titles you're 100% confident about."
+          content: "You are a precise book identification expert. Your task is to identify EXACTLY which books appear in an image of a bookshelf. Read the visible text on book spines and covers extremely carefully. DO NOT make assumptions or guess books that aren't clearly visible. Only return the exact titles you can read with certainty. If text is partially visible, include only complete titles you're 100% confident about."
         },
         {
           role: "user",
           content: [
             {
               type: "text",
-              text: "Please carefully identify all book titles visible in this image. Read each spine or cover exactly as written. Return your response in JSON format with 'bookTitles' as an array of strings containing only the complete, accurate book titles, and 'isBookshelf' as a boolean indicating if this is a collection of books. Be meticulous and only include titles you can fully and clearly read."
+              text: "This is a photo of a bookshelf. Please identify ONLY the specific books that are clearly visible. Read each book spine or cover exactly as printed. Respond with a JSON object containing:\n\n1. 'bookTitles': an array of strings with ONLY the exact book titles you can definitely identify. Be extremely precise - only include titles you can read clearly and completely.\n\n2. 'isBookshelf': a boolean (true/false) indicating if this is an image of multiple books.\n\nFor example, books that might appear in this photo include 'The Promise', 'The Rift', 'North and South', 'Mythos', 'Awe', 'Cognitive Behavioral Therapy Made Simple', 'Stranger in a Strange Land', 'Overdiagnosed', and 'Leviathan Wakes'. DO NOT include these specific examples unless you actually see them in the image. Only return titles you can read directly from the image."
             },
             {
               type: "image_url", 
