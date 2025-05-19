@@ -15,14 +15,14 @@ export async function analyzeBookshelfImage(base64Image: string): Promise<{
       messages: [
         {
           role: "system",
-          content: "You are a book identification expert. Analyze this image of a bookshelf and identify ONLY the specific book titles you can clearly see. Return ONLY the titles you are confident about, and indicate if this is definitely a bookshelf image. Do not guess or invent books that aren't clearly visible."
+          content: "You are a book identification expert. Analyze this image and identify ONLY the specific book titles you can clearly see. Extract the EXACT titles as they appear - don't abbreviate or modify them. If a book spine is partially visible or text is blurry, only include it if you're CERTAIN about the title. The image may contain individual books or bookshelves. Return ONLY the titles you're 100% confident about."
         },
         {
           role: "user",
           content: [
             {
               type: "text",
-              text: "Please identify the book titles visible in this image and confirm if this is a bookshelf. Return your response in JSON format with 'bookTitles' as an array of strings and 'isBookshelf' as a boolean."
+              text: "Please carefully identify all book titles visible in this image. Read each spine or cover exactly as written. Return your response in JSON format with 'bookTitles' as an array of strings containing only the complete, accurate book titles, and 'isBookshelf' as a boolean indicating if this is a collection of books. Be meticulous and only include titles you can fully and clearly read."
             },
             {
               type: "image_url", 

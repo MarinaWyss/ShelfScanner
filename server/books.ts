@@ -36,11 +36,22 @@ interface OpenLibraryResponse {
 
 export async function searchBooksByTitle(title: string): Promise<any[]> {
   try {
-    // Try Google Books API first
-    const googleBooksUrl = `https://www.googleapis.com/books/v1/volumes?q=${encodeURIComponent(title)}&maxResults=5`;
+    if (!title || title.trim().length < 2) {
+      console.log(`Skipping search for invalid title: "${title}"`);
+      return [];
+    }
+    
+    console.log(`Searching for book: "${title}"`);
+    
+    // Try Google Books API first with exact title search
+    const exactQuery = `intitle:"${encodeURIComponent(title.trim())}"`;
+    const googleBooksUrl = `https://www.googleapis.com/books/v1/volumes?q=${exactQuery}&maxResults=5`;
+    
     const googleResponse = await axios.get(googleBooksUrl);
     
     if (googleResponse.data.items && googleResponse.data.items.length > 0) {
+      console.log(`Found ${googleResponse.data.items.length} results for "${title}"`);
+      
       return googleResponse.data.items.map((item: BookResponse) => ({
         title: item.volumeInfo?.title || 'Unknown Title',
         author: item.volumeInfo?.authors ? item.volumeInfo.authors.join(', ') : 'Unknown Author',
@@ -49,6 +60,9 @@ export async function searchBooksByTitle(title: string): Promise<any[]> {
         summary: item.volumeInfo?.description || '',
         rating: item.volumeInfo?.averageRating || 0,
         publisher: item.volumeInfo?.publisher || '',
+        categories: item.volumeInfo?.categories || [],
+        // Include the detected book title for debugging
+        detectedFrom: title
       }));
     }
 
@@ -57,6 +71,8 @@ export async function searchBooksByTitle(title: string): Promise<any[]> {
     const openLibraryResponse = await axios.get<OpenLibraryResponse>(openLibraryUrl);
     
     if (openLibraryResponse.data.docs && openLibraryResponse.data.docs.length > 0) {
+      console.log(`Found ${openLibraryResponse.data.docs.length} OpenLibrary results for "${title}"`);
+      
       return openLibraryResponse.data.docs.map(doc => ({
         title: doc.title || 'Unknown Title',
         author: doc.author_name ? doc.author_name.join(', ') : 'Unknown Author',
@@ -65,9 +81,13 @@ export async function searchBooksByTitle(title: string): Promise<any[]> {
         summary: '',
         rating: 0,
         publisher: doc.publisher ? doc.publisher[0] : '',
+        categories: [],
+        // Include the detected book title for debugging
+        detectedFrom: title
       }));
     }
-
+    
+    console.log(`No results found for "${title}"`);
     return [];
   } catch (error) {
     log(`Error searching for books: ${error instanceof Error ? error.message : String(error)}`, 'books');
