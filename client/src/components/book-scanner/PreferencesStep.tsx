@@ -154,19 +154,39 @@ export default function PreferencesStep({ preferences, onSubmit, isLoading }: Pr
     
     const result = [];
     
-    for (let i = 1; i < lines.length; i++) {
+    // Only keep essential data for top rated books (max 100 entries)
+    const maxEntries = 100;
+    let entryCount = 0;
+    
+    for (let i = 1; i < lines.length && entryCount < maxEntries; i++) {
       if (!lines[i].trim()) continue;
       
       const values = lines[i].split(',');
+      // Skip entries without rating or with low ratings
+      const ratingIndex = headers.indexOf('My Rating');
+      if (ratingIndex >= 0) {
+        const rating = parseInt(values[ratingIndex] || '0');
+        if (rating < 3) continue; // Only keep books rated 3 or higher
+      }
+      
+      // Only store essential fields
+      const essentialFields = ['Title', 'Author', 'My Rating', 'Bookshelves'];
       const entry: Record<string, string> = {};
       
-      headers.forEach((header, index) => {
-        entry[header] = values[index] ? values[index].trim() : '';
+      essentialFields.forEach(field => {
+        const index = headers.indexOf(field);
+        if (index >= 0) {
+          entry[field] = values[index] ? values[index].trim() : '';
+        }
       });
       
-      result.push(entry);
+      if (Object.keys(entry).length > 0) {
+        result.push(entry);
+        entryCount++;
+      }
     }
     
+    console.log(`Processed ${entryCount} books from Goodreads data`);
     return result;
   };
 
