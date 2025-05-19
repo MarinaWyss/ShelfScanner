@@ -46,7 +46,8 @@ export default function Books() {
   // Fetch existing preferences if any
   const { data: existingPreferences } = useQuery({
     queryKey: ['/api/preferences'],
-    onSuccess: (data: any) => {
+    staleTime: 30000,
+    onSettled: (data: any) => {
       if (data) {
         setUserPreferences({
           genres: data.genres || [],

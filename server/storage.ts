@@ -75,7 +75,13 @@ export class MemStorage implements IStorage {
 
   async createPreference(insertPreference: InsertPreference): Promise<Preference> {
     const id = this.preferenceIdCounter++;
-    const preference: Preference = { ...insertPreference, id };
+    // Ensure all required fields are present
+    const preference: Preference = { 
+      ...insertPreference, 
+      id,
+      authors: insertPreference.authors || null,
+      goodreadsData: insertPreference.goodreadsData || null
+    };
     this.preferences.set(id, preference);
     return preference;
   }
@@ -98,7 +104,14 @@ export class MemStorage implements IStorage {
 
   async createBook(insertBook: InsertBook): Promise<Book> {
     const id = this.bookIdCounter++;
-    const book: Book = { ...insertBook, id };
+    const book: Book = { 
+      ...insertBook, 
+      id,
+      author: insertBook.author || null,
+      isbn: insertBook.isbn || null,
+      coverUrl: insertBook.coverUrl || null,
+      metadata: insertBook.metadata || null
+    };
     this.books.set(id, book);
     return book;
   }
@@ -112,7 +125,13 @@ export class MemStorage implements IStorage {
 
   async createRecommendation(insertRecommendation: InsertRecommendation): Promise<Recommendation> {
     const id = this.recommendationIdCounter++;
-    const recommendation: Recommendation = { ...insertRecommendation, id };
+    const recommendation: Recommendation = { 
+      ...insertRecommendation, 
+      id,
+      coverUrl: insertRecommendation.coverUrl || null,
+      rating: insertRecommendation.rating || null,
+      summary: insertRecommendation.summary || null
+    };
     this.recommendations.set(id, recommendation);
     return recommendation;
   }

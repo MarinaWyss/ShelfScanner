@@ -73,11 +73,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // For demo purposes, use a default user ID
       const userId = 1;
       
-      // Validate request
-      const preferenceData = insertPreferenceSchema.parse({
-        ...req.body,
-        userId
-      });
+      // Extract data from request body
+      const { genres, authors, goodreadsData } = req.body;
+      
+      // Prepare data
+      const preferenceData = {
+        userId,
+        genres,
+        authors: authors || null,
+        goodreadsData: goodreadsData || null
+      };
       
       // Check if user already has preferences
       const existingPreference = await storage.getPreferencesByUserId(userId);
