@@ -74,9 +74,22 @@ export async function searchBooksByTitle(title: string): Promise<any[]> {
         };
       });
       
+      // Define explicit type for book objects
+      interface BookObject {
+        title: string;
+        author: string;
+        isbn: string;
+        coverUrl: string;
+        summary: string;
+        rating: string;
+        publisher: string;
+        categories: string[];
+        detectedFrom: string;
+      }
+      
       // Fetch Amazon ratings for each book asynchronously
       const booksWithRatings = await Promise.all(
-        books.map(async (book) => {
+        books.map(async (book: BookObject) => {
           // Try to get rating from Amazon
           const amazonRating = await getAmazonBookRating(book.title, book.author, book.isbn);
           
@@ -102,18 +115,41 @@ export async function searchBooksByTitle(title: string): Promise<any[]> {
     if (openLibraryResponse.data.docs && openLibraryResponse.data.docs.length > 0) {
       console.log(`Found ${openLibraryResponse.data.docs.length} OpenLibrary results for "${title}"`);
       
-      return openLibraryResponse.data.docs.map(doc => ({
+      // Map Open Library results
+      const books = openLibraryResponse.data.docs.map(doc => ({
         title: doc.title || 'Unknown Title',
         author: doc.author_name ? doc.author_name.join(', ') : 'Unknown Author',
         isbn: doc.isbn ? doc.isbn[0] : '',
         coverUrl: doc.cover_i ? `https://covers.openlibrary.org/b/id/${doc.cover_i}-M.jpg` : '',
         summary: '',
-        rating: 0,
+        rating: '',  // Will be filled with Amazon rating or estimate
         publisher: doc.publisher ? doc.publisher[0] : '',
         categories: [],
         // Include the detected book title for debugging
         detectedFrom: title
       }));
+      
+      // Reuse our BookObject interface from above
+      
+      // Fetch Amazon ratings for each book asynchronously
+      const booksWithRatings = await Promise.all(
+        books.map(async (book: any) => {
+          // Try to get rating from Amazon
+          const amazonRating = await getAmazonBookRating(book.title, book.author, book.isbn);
+          
+          if (amazonRating) {
+            // If we got an Amazon rating, use it
+            book.rating = amazonRating;
+          } else {
+            // If no rating from Amazon, use our estimation function
+            book.rating = getEstimatedBookRating(book.title, book.author);
+          }
+          
+          return book;
+        })
+      );
+      
+      return booksWithRatings;
     }
     
     console.log(`No results found for "${title}"`);
@@ -306,7 +342,7 @@ export async function getRecommendations(
       author: book.author || 'Unknown Author',
       coverUrl: book.coverUrl || '',
       summary: book.summary || 'No summary available',
-      rating: book.rating || 0,
+      rating: book.rating || getEstimatedBookRating(book.title, book.author),
       matchScore: Math.round(book.score), // Round to whole number for display
       isbn: book.isbn,
       alreadyRead: false,
@@ -319,7 +355,7 @@ export async function getRecommendations(
       author: book.author || 'Unknown Author',
       coverUrl: book.coverUrl || '',
       summary: book.summary || 'No summary available',
-      rating: book.rating || 0,
+      rating: book.rating || getEstimatedBookRating(book.title, book.author),
       matchScore: Math.round(book.score), // Round to whole number for display
       isbn: book.isbn,
       alreadyRead: true,
