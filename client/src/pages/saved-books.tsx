@@ -149,13 +149,29 @@ export default function SavedBooks() {
                     <div className="mt-3">
                       <div className="flex items-center">
                         <div className="flex text-yellow-400">
-                          {[...Array(Math.floor(parseFloat(book.rating)))].map((_, i) => (
-                            <Star key={i} className="h-4 w-4 fill-current" />
-                          ))}
-                          {parseFloat(book.rating) % 1 >= 0.5 && <StarHalf className="h-4 w-4 fill-current" />}
-                          {[...Array(5 - Math.ceil(parseFloat(book.rating)))].map((_, i) => (
-                            <Star key={`empty-${i}`} className="h-4 w-4 text-gray-700" />
-                          ))}
+                          {(() => {
+                            const numericRating = parseFloat(book.rating);
+                            const fullStars = Math.floor(numericRating);
+                            const hasHalfStar = numericRating % 1 >= 0.3;
+                            const emptyStars = 5 - (fullStars + (hasHalfStar ? 1 : 0));
+                            
+                            return (
+                              <>
+                                {/* Full stars */}
+                                {Array.from({ length: fullStars }).map((_, i) => (
+                                  <Star key={`full-${i}`} className="h-4 w-4 fill-current" />
+                                ))}
+                                
+                                {/* Half star if needed */}
+                                {hasHalfStar && <StarHalf className="h-4 w-4 fill-current" />}
+                                
+                                {/* Empty stars */}
+                                {Array.from({ length: emptyStars }).map((_, i) => (
+                                  <Star key={`empty-${i}`} className="h-4 w-4 text-gray-700" />
+                                ))}
+                              </>
+                            );
+                          })()}
                         </div>
                         <span className="text-sm ml-2 text-slate-400 whitespace-nowrap">
                           {book.rating}
