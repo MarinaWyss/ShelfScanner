@@ -71,34 +71,30 @@ export default function SavedBooks() {
     }
   };
 
-  // Function to render star ratings directly
+  // Function to render star ratings directly - same logic as RecommendationsStep
   const renderStarRating = (rating: string) => {
-    const ratingValue = parseFloat(rating);
-    const stars = [];
-    
-    // Full stars
-    for (let i = 1; i <= Math.floor(ratingValue); i++) {
-      stars.push(<Star key={`full-${i}`} className="h-4 w-4 text-yellow-400 fill-current" />);
-    }
-    
-    // Half star if needed
-    if (ratingValue % 1 >= 0.5) {
-      stars.push(<StarHalf key="half" className="h-4 w-4 text-yellow-400 fill-current" />);
-    }
-    
-    // Empty stars
-    const emptyStars = 5 - stars.length;
-    for (let i = 1; i <= emptyStars; i++) {
-      stars.push(<Star key={`empty-${i}`} className="h-4 w-4 text-gray-700" />);
-    }
+    const numRating = parseFloat(rating);
+    const fullStars = Math.floor(numRating);
+    const hasHalfStar = numRating % 1 >= 0.5;
     
     return (
       <div className="flex items-center">
-        <div className="flex">
-          {stars}
+        <div className="flex text-yellow-400">
+          {/* Render each full star */}
+          {Array.from({ length: fullStars }).map((_, i) => (
+            <Star key={`star-${i}`} className="h-4 w-4 fill-current" />
+          ))}
+          
+          {/* Render half star if needed */}
+          {hasHalfStar && <StarHalf className="h-4 w-4 fill-current" />}
+          
+          {/* Render empty stars to fill the rest */}
+          {Array.from({ length: 5 - (fullStars + (hasHalfStar ? 1 : 0)) }).map((_, i) => (
+            <Star key={`empty-${i}`} className="h-4 w-4 text-gray-700" />
+          ))}
         </div>
         <span className="text-sm ml-2 text-slate-400 whitespace-nowrap">
-          {rating}
+          {numRating.toFixed(1)}
         </span>
       </div>
     );
