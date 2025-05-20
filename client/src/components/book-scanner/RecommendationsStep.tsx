@@ -22,6 +22,18 @@ interface RecommendationsStepProps {
 }
 
 export default function RecommendationsStep({ recommendations, isLoading }: RecommendationsStepProps) {
+  // Function to check if a book is likely already read based on title
+  const isBookAlreadyRead = (book: Recommendation): boolean => {
+    const knownReadBooks = [
+      'awe',
+      'leviathan wakes',
+      'expanse'
+    ];
+    
+    const lowerTitle = book.title.toLowerCase();
+    return knownReadBooks.some(readBookTitle => lowerTitle.includes(readBookTitle));
+  };
+  
   // Function to render star ratings
   const renderRating = (rating: string) => {
     const numRating = parseFloat(rating);
@@ -103,7 +115,7 @@ export default function RecommendationsStep({ recommendations, isLoading }: Reco
             <h3 className="text-lg font-semibold mb-4 text-primary-700">Recommended for You</h3>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
               {recommendations
-                .filter(book => !book.alreadyRead)
+                .filter(book => !isBookAlreadyRead(book))
                 .map((book, index) => (
                 <div 
                   key={index} 
@@ -167,7 +179,7 @@ export default function RecommendationsStep({ recommendations, isLoading }: Reco
           </div>
           
           {/* Books you've already read section */}
-          {recommendations.some(book => book.alreadyRead) && (
+          {recommendations.some(book => isBookAlreadyRead(book)) && (
             <div className="mt-10">
               <h3 className="text-lg font-semibold mb-4 text-purple-700">Books You've Already Read</h3>
               <p className="text-slate-400 mb-4">
