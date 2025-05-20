@@ -263,20 +263,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Save user preferences
   app.post('/api/preferences', async (req: Request, res: Response) => {
     try {
-      const userId = 1; // Default user ID
+      // Get or create device ID for the user
+      const deviceId = getOrCreateDeviceId(req, res);
+      const userId = 1; // Default user ID (kept for compatibility)
       
       // Validate request body
       const validatedData = insertPreferenceSchema.parse({
         ...req.body,
-        userId
+        userId,
+        deviceId // Store the device ID with preferences
       });
       
-      // Check if preferences already exist for this user
-      const existingPreferences = await storage.getPreferencesByUserId(userId);
+      // Check if preferences already exist for this device
+      const existingPreferences = await storage.getPreferencesByDeviceId(deviceId);
       
       let preferences;
       if (existingPreferences) {
-        // Update existing preferences
+        // Update existing preferences, preserving Goodreads data if not provided in the new request
+        if (!validatedData.goodreadsData && existingPreferences.goodreadsData) {
+          validatedData.goodreadsData = existingPreferences.goodreadsData;
+        }
         preferences = await storage.updatePreference(existingPreferences.id, validatedData);
       } else {
         // Create new preferences
@@ -296,9 +302,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get user preferences
   app.get('/api/preferences', async (req: Request, res: Response) => {
     try {
-      const userId = 1; // Default user ID
+      // Get device ID from the request
+      const deviceId = getOrCreateDeviceId(req, res);
       
-      const preferences = await storage.getPreferencesByUserId(userId);
+      // First try to get preferences by device ID
+      let preferences = await storage.getPreferencesByDeviceId(deviceId);
+      
+      // If not found, fall back to user ID for backward compatibility
+      if (!preferences) {
+        const userId = 1; // Default user ID
+        preferences = await storage.getPreferencesByUserId(userId);
+      }
       
       if (!preferences) {
         return res.status(404).json({ message: 'Preferences not found' });

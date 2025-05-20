@@ -15,6 +15,7 @@ export interface IStorage {
   
   // Preferences methods
   getPreferencesByUserId(userId: number): Promise<Preference | undefined>;
+  getPreferencesByDeviceId(deviceId: string): Promise<Preference | undefined>;
   createPreference(preference: InsertPreference): Promise<Preference>;
   updatePreference(id: number, preference: Partial<InsertPreference>): Promise<Preference | undefined>;
   
@@ -80,6 +81,12 @@ export class MemStorage implements IStorage {
   async getPreferencesByUserId(userId: number): Promise<Preference | undefined> {
     return Array.from(this.preferences.values()).find(
       (preference) => preference.userId === userId,
+    );
+  }
+  
+  async getPreferencesByDeviceId(deviceId: string): Promise<Preference | undefined> {
+    return Array.from(this.preferences.values()).find(
+      (preference) => preference.deviceId === deviceId,
     );
   }
 

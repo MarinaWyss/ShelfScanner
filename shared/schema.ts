@@ -18,6 +18,7 @@ export const insertUserSchema = createInsertSchema(users).pick({
 export const preferences = pgTable("preferences", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
+  deviceId: text("device_id"),
   genres: text("genres").array().notNull(),
   authors: text("authors").array(),
   goodreadsData: jsonb("goodreads_data"),
@@ -25,6 +26,7 @@ export const preferences = pgTable("preferences", {
 
 export const insertPreferenceSchema = createInsertSchema(preferences).pick({
   userId: true,
+  deviceId: true,
   genres: true,
   authors: true,
   goodreadsData: true,
