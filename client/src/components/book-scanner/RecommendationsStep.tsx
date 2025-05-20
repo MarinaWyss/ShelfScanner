@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Star, StarHalf } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -27,10 +27,51 @@ interface RecommendationsStepProps {
 
 export default function RecommendationsStep({ recommendations, isLoading, goodreadsData }: RecommendationsStepProps) {
   const [savingBookIds, setSavingBookIds] = useState<number[]>([]);
+  const [savedBookIds, setSavedBookIds] = useState<number[]>([]);
   const { toast } = useToast();
+
+  // Fetch saved books when component mounts to know which books are already saved
+  useEffect(() => {
+    const fetchSavedBooks = async () => {
+      try {
+        const response = await fetch('/api/saved-books');
+        if (!response.ok) {
+          throw new Error('Failed to fetch saved books');
+        }
+        const savedBooks = await response.json();
+        
+        // Check which of the current recommendations are already saved
+        // We compare by title and author since the IDs might not match
+        const alreadySavedIds = recommendations
+          .filter(rec => savedBooks.some((saved: {title: string, author: string}) => 
+            saved.title === rec.title && saved.author === rec.author
+          ))
+          .map(rec => rec.id || 0)
+          .filter(id => id !== 0);
+        
+        setSavedBookIds(alreadySavedIds);
+      } catch (error) {
+        console.error("Error fetching saved books:", error);
+      }
+    };
+
+    if (recommendations.length > 0) {
+      fetchSavedBooks();
+    }
+  }, [recommendations]);
 
   // Function to save a book to the reading list
   const saveBookForLater = async (book: Recommendation) => {
+    // Don't do anything if book is already saved
+    if (savedBookIds.includes(book.id || 0)) {
+      toast({
+        title: "Already saved",
+        description: `${book.title} is already in your reading list`,
+        variant: "default",
+      });
+      return;
+    }
+    
     try {
       // Add book ID to loading state
       setSavingBookIds(prev => [...prev, book.id || 0]);
@@ -47,6 +88,9 @@ export default function RecommendationsStep({ recommendations, isLoading, goodre
           summary: book.summary || 'No summary available'
         }
       );
+      
+      // Add to saved books state
+      setSavedBookIds(prev => [...prev, book.id || 0]);
       
       // Show success message
       toast({
@@ -235,7 +279,12 @@ export default function RecommendationsStep({ recommendations, isLoading, goodre
                     <p className="text-sm text-neutral-600 line-clamp-3">{book.summary}</p>
                     <div className="mt-3 flex justify-between">
                       <button 
-                        className={`bg-white border border-gray-300 hover:bg-gray-50 text-black text-sm font-medium flex items-center px-3 py-1 rounded ${savingBookIds.includes(book.id || 0) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        className={`
+                          ${savedBookIds.includes(book.id || 0) 
+                            ? 'bg-indigo-100 border border-indigo-300 text-indigo-700 hover:bg-indigo-200' 
+                            : 'bg-white border border-gray-300 hover:bg-gray-50 text-black'} 
+                          text-sm font-medium flex items-center px-3 py-1 rounded ${savingBookIds.includes(book.id || 0) ? 'opacity-50 cursor-not-allowed' : ''}
+                        `}
                         onClick={() => saveBookForLater(book)}
                         disabled={savingBookIds.includes(book.id || 0)}
                       >
@@ -248,14 +297,14 @@ export default function RecommendationsStep({ recommendations, isLoading, goodre
                           <svg 
                             xmlns="http://www.w3.org/2000/svg" 
                             className="h-4 w-4 mr-1" 
-                            fill="none" 
+                            fill={savedBookIds.includes(book.id || 0) ? "currentColor" : "none"}
                             viewBox="0 0 24 24" 
                             stroke="currentColor"
                           >
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 3H7a2 2 0 0 0-2 2v16l7-3 7 3V5a2 2 0 0 0-2-2z" />
                           </svg>
                         )}
-                        Save for Later
+                        {savedBookIds.includes(book.id || 0) ? 'Saved to List' : 'Save for Later'}
                       </button>
                       <a 
                         href={`https://www.amazon.com/s?k=${encodeURIComponent(book.title + ' ' + book.author)}&tag=gratitudedriv-20`}
