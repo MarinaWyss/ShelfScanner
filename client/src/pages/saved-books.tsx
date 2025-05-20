@@ -27,6 +27,7 @@ export default function SavedBooks() {
     const fetchSavedBooks = async () => {
       try {
         setIsLoading(true);
+        setError(null); // Clear any previous errors
         
         // Set consistent deviceId cookie with longer expiration
         const deviceId = "device_1747757269918_qk38pmaz8";
@@ -50,13 +51,14 @@ export default function SavedBooks() {
         
         if (Array.isArray(books)) {
           setSavedBooks(books);
+          // No error message needed for empty arrays - it's valid to have no saved books
         } else {
           console.error("Unexpected response format:", books);
           setError("Received invalid data format from server");
         }
       } catch (err) {
         console.error("Error fetching saved books:", err);
-        setError("Failed to load your saved books. Please try again later.");
+        setError("Failed to load your reading list. Please try again later.");
       } finally {
         setIsLoading(false);
       }
