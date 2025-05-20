@@ -336,31 +336,65 @@ export async function getRecommendations(
     scoredNewBooks.sort((a, b) => b.score - a.score);
     scoredReadBooks.sort((a, b) => b.score - a.score);
     
-    // Format new books for display
-    const formattedNewBooks = scoredNewBooks.map(book => ({
-      title: book.title || 'Unknown Title',
-      author: book.author || 'Unknown Author',
-      coverUrl: book.coverUrl || '',
-      summary: book.summary || 'No summary available',
-      rating: book.rating || getEstimatedBookRating(book.title, book.author),
-      matchScore: Math.round(book.score), // Round to whole number for display
-      isbn: book.isbn,
-      alreadyRead: false,
-      isBookRecommendation: true  // This is a new book recommendation
+    // Format new books for display with Amazon ratings
+    const formattedNewBooks = await Promise.all(scoredNewBooks.map(async book => {
+      // Try to get Amazon rating first
+      let amazonRating = null;
+      try {
+        // Only attempt to get Amazon rating if we have both title and author
+        if (book.title && book.author) {
+          console.log(`Fetching Amazon rating for "${book.title}" by ${book.author}`);
+          amazonRating = await getAmazonBookRating(book.title, book.author, book.isbn);
+          if (amazonRating) {
+            console.log(`Amazon rating for "${book.title}": ${amazonRating}`);
+          }
+        }
+      } catch (error) {
+        console.error(`Error getting Amazon rating for "${book.title}":`, error);
+      }
+      
+      return {
+        title: book.title || 'Unknown Title',
+        author: book.author || 'Unknown Author',
+        coverUrl: book.coverUrl || '',
+        summary: book.summary || 'No summary available',
+        rating: amazonRating || book.rating || getEstimatedBookRating(book.title, book.author),
+        matchScore: Math.round(book.score), // Round to whole number for display
+        isbn: book.isbn,
+        alreadyRead: false,
+        isBookRecommendation: true  // This is a new book recommendation
+      };
     }));
     
-    // Format already read books for display
-    const formattedReadBooks = scoredReadBooks.map(book => ({
-      title: book.title || 'Unknown Title',
-      author: book.author || 'Unknown Author',
-      coverUrl: book.coverUrl || '',
-      summary: book.summary || 'No summary available',
-      rating: book.rating || getEstimatedBookRating(book.title, book.author),
-      matchScore: Math.round(book.score), // Round to whole number for display
-      isbn: book.isbn,
-      alreadyRead: true,
-      originalReadTitle: book.originalReadTitle,
-      isBookYouveRead: true  // This book has been read already
+    // Format already read books for display with Amazon ratings
+    const formattedReadBooks = await Promise.all(scoredReadBooks.map(async book => {
+      // Try to get Amazon rating first
+      let amazonRating = null;
+      try {
+        // Only attempt to get Amazon rating if we have both title and author
+        if (book.title && book.author) {
+          console.log(`Fetching Amazon rating for already read book "${book.title}" by ${book.author}`);
+          amazonRating = await getAmazonBookRating(book.title, book.author, book.isbn);
+          if (amazonRating) {
+            console.log(`Amazon rating for already read book "${book.title}": ${amazonRating}`);
+          }
+        }
+      } catch (error) {
+        console.error(`Error getting Amazon rating for "${book.title}":`, error);
+      }
+      
+      return {
+        title: book.title || 'Unknown Title',
+        author: book.author || 'Unknown Author',
+        coverUrl: book.coverUrl || '',
+        summary: book.summary || 'No summary available',
+        rating: amazonRating || book.rating || getEstimatedBookRating(book.title, book.author),
+        matchScore: Math.round(book.score), // Round to whole number for display
+        isbn: book.isbn,
+        alreadyRead: true,
+        originalReadTitle: book.originalReadTitle,
+        isBookYouveRead: true  // This book has been read already
+      };
     }));
     
     // Log the final sorted books
