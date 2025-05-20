@@ -163,13 +163,30 @@ export default function SavedBooks() {
                     <h3 className="font-semibold text-white line-clamp-2 text-lg">{book.title}</h3>
                     <p className="text-slate-400 text-sm mt-1">{book.author}</p>
                     
-                    <div className="mt-3 flex items-center justify-between">
-                      <div className="flex-grow">
-                        {book.rating && renderRating(book.rating)}
+                    <div className="mt-3 flex items-center">
+                      <div className="flex items-center">
+                        <div className="flex text-yellow-400">
+                          {[...Array(Math.floor(parseFloat(book.rating)))].map((_, i) => (
+                            <Star key={i} className="h-4 w-4 fill-current" />
+                          ))}
+                          {parseFloat(book.rating) % 1 >= 0.5 && <StarHalf className="h-4 w-4 fill-current" />}
+                          {[...Array(5 - Math.ceil(parseFloat(book.rating)))].map((_, i) => (
+                            <Star key={i} className="h-4 w-4 text-gray-700" />
+                          ))}
+                        </div>
+                        <span className="text-sm ml-2 text-slate-400 whitespace-nowrap">
+                          {parseFloat(book.rating).toFixed(1)}
+                        </span>
                       </div>
-                      <span className="text-xs text-slate-400">
-                        {new Date(book.savedAt).toLocaleDateString()}
-                      </span>
+                      <div className="ml-auto">
+                        <span className="text-xs text-slate-500">
+                          {new Date(book.savedAt).toLocaleDateString(undefined, {
+                            month: 'numeric',
+                            day: 'numeric',
+                            year: 'numeric'
+                          })}
+                        </span>
+                      </div>
                     </div>
                   </div>
                 </div>
