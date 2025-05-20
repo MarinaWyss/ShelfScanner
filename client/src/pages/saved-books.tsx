@@ -163,7 +163,7 @@ export default function SavedBooks() {
                     <h3 className="font-semibold text-white line-clamp-2 text-lg">{book.title}</h3>
                     <p className="text-slate-400 text-sm mt-1">{book.author}</p>
                     
-                    <div className="mt-3 flex items-center">
+                    <div className="mt-3">
                       <div className="flex items-center">
                         <div className="flex text-yellow-400">
                           {[...Array(Math.floor(parseFloat(book.rating)))].map((_, i) => (
@@ -178,8 +178,10 @@ export default function SavedBooks() {
                           {parseFloat(book.rating).toFixed(1)}
                         </span>
                       </div>
-                      <div className="ml-auto">
+                      
+                      <div className="mt-2 flex items-center">
                         <span className="text-xs text-slate-500">
+                          <span className="text-slate-600 mr-1">Date added:</span> 
                           {new Date(book.savedAt).toLocaleDateString(undefined, {
                             month: 'numeric',
                             day: 'numeric',
