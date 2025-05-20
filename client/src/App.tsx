@@ -8,7 +8,7 @@ import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
 import Books from "@/pages/books";
 import Navbar from "@/components/layout/Navbar";
-import ChatOverlay from "@/components/chat/ChatOverlay";
+import ContactForm from "@/components/contact/ContactForm";
 
 function Router() {
   return (
@@ -22,10 +22,10 @@ function Router() {
 
 function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [chatOpen, setChatOpen] = useState(false);
+  const [contactOpen, setContactOpen] = useState(false);
   
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
-  const toggleChat = () => setChatOpen(!chatOpen);
+  const toggleContact = () => setContactOpen(!contactOpen);
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -34,7 +34,7 @@ function App() {
           <Navbar 
             sidebarOpen={sidebarOpen} 
             toggleSidebar={toggleSidebar} 
-            toggleChat={toggleChat} 
+            toggleContact={toggleContact} 
           />
           <div className="flex flex-1">
             {/* Overlay for mobile when sidebar is open */}
@@ -49,7 +49,7 @@ function App() {
               <Router />
             </main>
             
-            <ChatOverlay isOpen={chatOpen} onClose={() => setChatOpen(false)} />
+            <ContactForm isOpen={contactOpen} onClose={() => setContactOpen(false)} />
           </div>
         </div>
         <Toaster />
