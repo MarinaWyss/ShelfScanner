@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { log } from './vite';
+import { getAmazonBookRating, getEstimatedBookRating } from './amazon';
 
 interface BookResponse {
   id?: string;
@@ -52,18 +53,46 @@ export async function searchBooksByTitle(title: string): Promise<any[]> {
     if (googleResponse.data.items && googleResponse.data.items.length > 0) {
       console.log(`Found ${googleResponse.data.items.length} results for "${title}"`);
       
-      return googleResponse.data.items.map((item: BookResponse) => ({
-        title: item.volumeInfo?.title || 'Unknown Title',
-        author: item.volumeInfo?.authors ? item.volumeInfo.authors.join(', ') : 'Unknown Author',
-        isbn: item.volumeInfo?.industryIdentifiers?.find(id => id.type === 'ISBN_13')?.identifier || '',
-        coverUrl: item.volumeInfo?.imageLinks?.thumbnail || '',
-        summary: item.volumeInfo?.description || '',
-        rating: item.volumeInfo?.averageRating || 0,
-        publisher: item.volumeInfo?.publisher || '',
-        categories: item.volumeInfo?.categories || [],
-        // Include the detected book title for debugging
-        detectedFrom: title
-      }));
+      // Map the Google Books results
+      const books = googleResponse.data.items.map((item: BookResponse) => {
+        const bookTitle = item.volumeInfo?.title || 'Unknown Title';
+        const bookAuthor = item.volumeInfo?.authors ? item.volumeInfo.authors.join(', ') : 'Unknown Author';
+        const isbn = item.volumeInfo?.industryIdentifiers?.find(id => id.type === 'ISBN_13')?.identifier || '';
+        
+        return {
+          title: bookTitle,
+          author: bookAuthor,
+          isbn: isbn,
+          coverUrl: item.volumeInfo?.imageLinks?.thumbnail || '',
+          summary: item.volumeInfo?.description || '',
+          // Use Google Books rating as initial value (this will be updated with Amazon rating)
+          rating: item.volumeInfo?.averageRating ? item.volumeInfo.averageRating.toString() : '',
+          publisher: item.volumeInfo?.publisher || '',
+          categories: item.volumeInfo?.categories || [],
+          // Include the detected book title for debugging
+          detectedFrom: title
+        };
+      });
+      
+      // Fetch Amazon ratings for each book asynchronously
+      const booksWithRatings = await Promise.all(
+        books.map(async (book) => {
+          // Try to get rating from Amazon
+          const amazonRating = await getAmazonBookRating(book.title, book.author, book.isbn);
+          
+          if (amazonRating) {
+            // If we got an Amazon rating, use it
+            book.rating = amazonRating;
+          } else if (!book.rating) {
+            // If no rating from Google Books or Amazon, use our estimation function
+            book.rating = getEstimatedBookRating(book.title, book.author);
+          }
+          
+          return book;
+        })
+      );
+      
+      return booksWithRatings;
     }
 
     // Fallback to Open Library API
