@@ -150,25 +150,24 @@ export default function SavedBooks() {
                       <div className="flex items-center">
                         <div className="flex text-yellow-400">
                           {(() => {
-                            const numericRating = parseFloat(book.rating);
-                            const fullStars = Math.floor(numericRating);
-                            const hasHalfStar = numericRating % 1 >= 0.3;
-                            const emptyStars = 5 - (fullStars + (hasHalfStar ? 1 : 0));
+                            // Create a rating component based on numeric value directly
+                            const rating = Number(book.rating);
                             
                             return (
                               <>
-                                {/* Full stars */}
-                                {Array.from({ length: fullStars }).map((_, i) => (
-                                  <Star key={`full-${i}`} className="h-4 w-4 fill-current" />
-                                ))}
-                                
-                                {/* Half star if needed */}
-                                {hasHalfStar && <StarHalf className="h-4 w-4 fill-current" />}
-                                
-                                {/* Empty stars */}
-                                {Array.from({ length: emptyStars }).map((_, i) => (
-                                  <Star key={`empty-${i}`} className="h-4 w-4 text-gray-700" />
-                                ))}
+                                <Star className={`h-4 w-4 ${rating >= 1 ? "fill-current" : "text-gray-700"}`} />
+                                <Star className={`h-4 w-4 ${rating >= 2 ? "fill-current" : "text-gray-700"}`} />
+                                <Star className={`h-4 w-4 ${rating >= 3 ? "fill-current" : "text-gray-700"}`} />
+                                <Star className={`h-4 w-4 ${rating >= 4 ? "fill-current" : "text-gray-700"}`} />
+                                {rating >= 5 ? (
+                                  <Star className="h-4 w-4 fill-current" />
+                                ) : (
+                                  rating > 4.2 ? (
+                                    <StarHalf className="h-4 w-4 fill-current" />
+                                  ) : (
+                                    <Star className="h-4 w-4 text-gray-700" />
+                                  )
+                                )}
                               </>
                             );
                           })()}
