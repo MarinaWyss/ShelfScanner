@@ -26,21 +26,33 @@ export default function SavedBooks() {
     const fetchSavedBooks = async () => {
       try {
         setIsLoading(true);
-        // Add a direct device ID via cookie to ensure we get the right data
-        document.cookie = "deviceId=device_1747757269918_qk38pmaz8; path=/";
         
-        const response = await fetch('/api/saved-books');
+        // Set consistent deviceId cookie with longer expiration
+        const deviceId = "device_1747757269918_qk38pmaz8";
+        document.cookie = `deviceId=${deviceId}; path=/; max-age=31536000; SameSite=Lax`;
+        console.log("Setting device ID:", deviceId);
+        
+        // Use the fetch API with credentials included
+        const response = await fetch('/api/saved-books', {
+          credentials: 'include',
+          headers: {
+            'Accept': 'application/json'
+          }
+        });
         
         if (!response.ok) {
           throw new Error(`Failed to fetch books: ${response.status}`);
         }
         
         const books = await response.json();
-        console.log("Retrieved saved books (with fixed device ID):", books);
+        console.log("Retrieved saved books:", books);
         
-        // Let the data come through as-is
-        
-        setSavedBooks(books);
+        if (Array.isArray(books)) {
+          setSavedBooks(books);
+        } else {
+          console.error("Unexpected response format:", books);
+          setError("Received invalid data format from server");
+        }
       } catch (err) {
         console.error("Error fetching saved books:", err);
         setError("Failed to load your saved books. Please try again later.");
