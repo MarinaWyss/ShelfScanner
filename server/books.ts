@@ -1,6 +1,7 @@
 import axios from 'axios';
 import { log } from './vite';
 import { getEstimatedBookRating } from './amazon';
+import { rateLimiter } from './rate-limiter';
 
 /**
  * Local database of popular book ratings to provide accurate ratings without API calls
@@ -104,11 +105,20 @@ export async function searchBooksByTitle(title: string): Promise<any[]> {
     
     console.log(`Searching for book: "${title}"`);
     
+    // Check if we can make a Google Books API request (basic rate limiting to prevent throttling)
+    if (!rateLimiter.isAllowed('google-books')) {
+      log(`Rate limit reached for Google Books API, skipping search for "${title}"`, 'books');
+      return [];
+    }
+    
     // Try Google Books API first with exact title search
     const exactQuery = `intitle:"${encodeURIComponent(title.trim())}"`;
     const googleBooksUrl = `https://www.googleapis.com/books/v1/volumes?q=${exactQuery}&maxResults=5`;
     
     const googleResponse = await axios.get(googleBooksUrl);
+    
+    // Increment the rate limiter counter for Google Books API
+    rateLimiter.increment('google-books');
     
     if (googleResponse.data.items && googleResponse.data.items.length > 0) {
       console.log(`Found ${googleResponse.data.items.length} results for "${title}"`);
@@ -175,8 +185,17 @@ export async function searchBooksByTitle(title: string): Promise<any[]> {
     }
 
     // Fallback to Open Library API
+    // Check if we can make an Open Library API request
+    if (!rateLimiter.isAllowed('open-library')) {
+      log(`Rate limit reached for Open Library API, skipping fallback search for "${title}"`, 'books');
+      return [];
+    }
+    
     const openLibraryUrl = `https://openlibrary.org/search.json?title=${encodeURIComponent(title)}&limit=5`;
     const openLibraryResponse = await axios.get<OpenLibraryResponse>(openLibraryUrl);
+    
+    // Increment the rate limiter counter for Open Library API
+    rateLimiter.increment('open-library');
     
     if (openLibraryResponse.data.docs && openLibraryResponse.data.docs.length > 0) {
       console.log(`Found ${openLibraryResponse.data.docs.length} OpenLibrary results for "${title}"`);

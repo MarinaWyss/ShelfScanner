@@ -8,6 +8,7 @@ import { getAmazonBookRating, getEstimatedBookRating } from "./amazon";
 import multer from "multer";
 import { z } from "zod";
 import { insertPreferenceSchema, insertBookSchema, insertRecommendationSchema, insertSavedBookSchema } from "@shared/schema";
+import { getApiUsageStats, setApiRateLimit, setApiDailyLimit } from "./api-stats";
 
 // In-memory storage for multer
 const upload = multer({
