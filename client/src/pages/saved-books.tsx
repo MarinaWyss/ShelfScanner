@@ -140,7 +140,7 @@ export default function SavedBooks() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {savedBooks.map((book) => (
-              <Card key={book.id} className="overflow-hidden bg-slate-900 border border-slate-800 shadow-sm hover:shadow-md transition-shadow">
+              <Card key={book.id} className="overflow-hidden bg-gray-100 border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
                 <div className="p-5 flex">
                   {book.coverUrl ? (
                     <div className="relative">
@@ -165,8 +165,8 @@ export default function SavedBooks() {
                     </div>
                   )}
                   <div className="ml-5">
-                    <h3 className="font-semibold text-white line-clamp-2 text-lg">{book.title}</h3>
-                    <p className="text-slate-400 text-sm mt-1">{book.author}</p>
+                    <h3 className="font-semibold text-black line-clamp-2 text-lg">{book.title}</h3>
+                    <p className="text-black text-sm mt-1">{book.author}</p>
                     
                     <div className="mt-3">
                       <StarRating rating={book.rating} />
@@ -184,8 +184,8 @@ export default function SavedBooks() {
                     </div>
                   </div>
                 </div>
-                <div className="p-5 border-t border-slate-800">
-                  <p className="text-sm text-slate-300 line-clamp-3">{book.summary}</p>
+                <div className="p-5 border-t border-slate-200">
+                  <p className="text-sm text-black line-clamp-3">{book.summary}</p>
                   <div className="mt-4 flex justify-between gap-3">
                     <a 
                       href={`https://www.amazon.com/s?k=${encodeURIComponent(book.title + ' ' + book.author)}&tag=gratitudedriv-20`}
