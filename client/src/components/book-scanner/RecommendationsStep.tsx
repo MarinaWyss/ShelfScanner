@@ -251,10 +251,7 @@ export default function RecommendationsStep({ recommendations, isLoading, goodre
                       <p className="text-sm text-neutral-600 mb-2">
                         You read this as: <span className="font-medium">{book.originalReadTitle || book.title}</span>
                       </p>
-                      <div className="mt-3 flex justify-between">
-                        <button className="text-purple-600 hover:text-purple-700 text-sm font-medium">
-                          View on Goodreads
-                        </button>
+                      <div className="mt-3 flex justify-end">
                         <button className="text-neutral-600 hover:text-neutral-800 text-sm">
                           View Details
                         </button>
