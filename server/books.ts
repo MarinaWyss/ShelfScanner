@@ -109,8 +109,44 @@ export async function getRecommendations(
     // Get user's preferred genres
     const preferredGenres = preferences.genres || [];
     
+    // Create a set of books the user has already read (if Goodreads data exists)
+    const alreadyReadBooks = new Set<string>();
+    if (preferences.goodreadsData && Array.isArray(preferences.goodreadsData)) {
+      preferences.goodreadsData.forEach((entry: any) => {
+        if (entry["Title"] && entry["My Rating"] && parseInt(entry["My Rating"]) > 0) {
+          alreadyReadBooks.add(entry["Title"].toLowerCase());
+        }
+      });
+      console.log(`Found ${alreadyReadBooks.size} books the user has already read in Goodreads data`);
+    }
+    
+    // Filter out books the user has already read
+    let availableBooks = books;
+    if (alreadyReadBooks.size > 0) {
+      availableBooks = books.filter(book => {
+        const bookTitle = book.title.toLowerCase();
+        const hasRead = alreadyReadBooks.has(bookTitle);
+        
+        // Log when we filter out a book the user has already read
+        if (hasRead) {
+          console.log(`Filtered out "${book.title}" as user has already read it`);
+        }
+        
+        // Only keep books the user hasn't read yet
+        return !hasRead;
+      });
+      
+      console.log(`Filtered ${books.length - availableBooks.length} books the user has already read`);
+    }
+    
+    // If filtering removed all books, use original list (better some recommendations than none)
+    if (availableBooks.length === 0) {
+      console.log("All books were filtered out - using original list");
+      availableBooks = books;
+    }
+    
     // Score each book based on user preferences
-    const scoredBooks = books.map(book => {
+    const scoredBooks = availableBooks.map(book => {
       // Start with a base score based on rating (if available)
       let score = book.rating ? parseFloat(book.rating) : 0;
       
@@ -174,10 +210,10 @@ export async function getRecommendations(
         }
       }
       
-      // Check Goodreads data if available
+      // Check Goodreads data to boost scores for authors the user likes
       if (preferences.goodreadsData && Array.isArray(preferences.goodreadsData)) {
         for (const entry of preferences.goodreadsData) {
-          // Match by author
+          // Match by author - give points for authors the user has read before and rated well
           if (entry["Author"] && book.author && 
               book.author.toLowerCase().includes(entry["Author"].toLowerCase())) {
             score += 3;
@@ -187,18 +223,6 @@ export async function getRecommendations(
             if (entry["My Rating"] && parseInt(entry["My Rating"]) >= 4) {
               score += 3;
               console.log(`${book.title} by ${entry["Author"]} was highly rated, +3 points`);
-            }
-          }
-          
-          // Match by title (exact match is a strong signal)
-          if (entry["Title"] && entry["Title"].toLowerCase() === book.title.toLowerCase()) {
-            const rating = entry["My Rating"] ? parseInt(entry["My Rating"]) : 0;
-            if (rating >= 4) {
-              score += 6; // Already read and liked
-              console.log(`${book.title} exactly matches highly rated book, +6 points`);
-            } else if (rating > 0) {
-              score += rating; // Score based on rating
-              console.log(`${book.title} exactly matches book with rating ${rating}, +${rating} points`);
             }
           }
         }
