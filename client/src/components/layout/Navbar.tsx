@@ -3,10 +3,10 @@ import { Link, useLocation } from "wouter";
 interface NavbarProps {
   sidebarOpen: boolean;
   toggleSidebar: () => void;
-  toggleChat: () => void;
+  toggleContact: () => void;
 }
 
-export default function Navbar({ sidebarOpen, toggleSidebar, toggleChat }: NavbarProps) {
+export default function Navbar({ sidebarOpen, toggleSidebar, toggleContact }: NavbarProps) {
   const [location] = useLocation();
 
   return (
@@ -51,7 +51,7 @@ export default function Navbar({ sidebarOpen, toggleSidebar, toggleChat }: Navba
           </div>
           
           <div className="flex items-center gap-4">
-            <button onClick={toggleChat} className="text-slate-300 hover:text-white">
+            <button onClick={toggleContact} className="text-slate-300 hover:text-white flex items-center gap-2">
               <svg 
                 xmlns="http://www.w3.org/2000/svg" 
                 width="24" 
@@ -64,8 +64,10 @@ export default function Navbar({ sidebarOpen, toggleSidebar, toggleChat }: Navba
                 strokeLinejoin="round" 
                 className="h-6 w-6"
               >
-                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                <rect x="2" y="4" width="20" height="16" rx="2" />
+                <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
               </svg>
+              <span className="hidden md:inline text-sm">Contact</span>
             </button>
           </div>
         </div>
@@ -140,10 +142,10 @@ export default function Navbar({ sidebarOpen, toggleSidebar, toggleChat }: Navba
           <div className="p-4 border-t border-slate-700">
             <div className="bg-slate-700 rounded-lg p-3">
               <p className="text-sm text-slate-300 mb-2">
-                Get personalized book recommendations with our AI assistant
+                Questions or suggestions? Get in touch with our team
               </p>
               <button 
-                onClick={toggleChat}
+                onClick={toggleContact}
                 className="bg-primary text-white text-sm px-3 py-1.5 rounded-md hover:bg-opacity-90 transition-colors w-full flex items-center justify-center gap-2">
                 <svg 
                   xmlns="http://www.w3.org/2000/svg" 
@@ -157,9 +159,10 @@ export default function Navbar({ sidebarOpen, toggleSidebar, toggleChat }: Navba
                   strokeLinejoin="round" 
                   className="h-4 w-4"
                 >
-                  <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+                  <rect x="2" y="4" width="20" height="16" rx="2" />
+                  <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
                 </svg>
-                <span>Open Chat</span>
+                <span>Contact Us</span>
               </button>
             </div>
           </div>
