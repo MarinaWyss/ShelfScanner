@@ -241,18 +241,53 @@ export default function PreferencesStep({ preferences, onSubmit, isLoading }: Pr
     return values;
   };
 
-  // Extract authors from Goodreads data
+  // Extract authors from Goodreads data using a weighted approach
   const extractAuthors = (data: any[]): string[] => {
-    const authors = data
-      .filter(item => item['Author'] && item['My Rating'] && parseInt(item['My Rating']) >= 4)
-      .map(item => item['Author']);
+    // Create a map to track author statistics
+    const authorStats: Record<string, { count: number; totalRating: number; avgRating: number }> = {};
     
-    // Use array methods to get unique values
-    const uniqueAuthors = authors.filter((author, index) => 
-      authors.indexOf(author) === index
+    // Process each book in the data
+    data.forEach(item => {
+      const author = item['Author'];
+      const rating = item['My Rating'] ? parseInt(item['My Rating']) : 0;
+      
+      if (author) {
+        // Initialize if this is the first book by this author
+        if (!authorStats[author]) {
+          authorStats[author] = { count: 0, totalRating: 0, avgRating: 0 };
+        }
+        
+        // Increment count and add rating
+        authorStats[author].count += 1;
+        authorStats[author].totalRating += rating;
+        
+        // Calculate average rating
+        authorStats[author].avgRating = authorStats[author].totalRating / authorStats[author].count;
+      }
+    });
+    
+    // Convert to array for sorting
+    const authors = Object.keys(authorStats).map(author => ({
+      name: author,
+      count: authorStats[author].count,
+      avgRating: authorStats[author].avgRating,
+      // Calculate a score that weights both quantity read and quality of ratings
+      // This formula prioritizes authors with multiple highly-rated books
+      score: authorStats[author].count * (authorStats[author].avgRating / 5) * 10
+    }));
+    
+    // Sort by score (highest first)
+    authors.sort((a, b) => b.score - a.score);
+    
+    // Only include authors with at least one book rated 4+ or multiple books
+    const qualifiedAuthors = authors.filter(author => 
+      author.avgRating >= 4 || author.count >= 2
     );
     
-    return uniqueAuthors.slice(0, 10); // Return top 10 unique authors
+    console.log("Top authors from Goodreads:", qualifiedAuthors.slice(0, 10));
+    
+    // Return names of top 10 authors
+    return qualifiedAuthors.slice(0, 10).map(author => author.name);
   };
 
   // Extract genres from Goodreads data
