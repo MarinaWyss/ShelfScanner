@@ -6,14 +6,26 @@ interface StarRatingProps {
   showNumeric?: boolean;
   className?: string;
   starSize?: number;
+  isLoading?: boolean;
 }
 
 export default function StarRating({ 
   rating, 
   showNumeric = true, 
   className = "", 
-  starSize = 4 
+  starSize = 4,
+  isLoading = false
 }: StarRatingProps) {
+  // If no rating or invalid rating, show "Not rated"
+  if (!rating && rating !== 0 && !isLoading) {
+    return <span className="text-sm text-neutral-500">Not rated</span>;
+  }
+  
+  // Handle loading state
+  if (isLoading) {
+    return <span className="text-sm text-neutral-500">Loading rating...</span>;
+  }
+  
   // Convert rating to number if it's a string
   const numRating = typeof rating === "string" ? parseFloat(rating) : rating;
   
