@@ -4,7 +4,8 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
-import { Star, StarHalf, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
+import StarRating from "@/components/ui/star-rating";
 
 interface SavedBook {
   id: number;
@@ -83,34 +84,7 @@ export default function SavedBooks() {
     }
   };
 
-  // Function to render star ratings directly - same logic as RecommendationsStep
-  const renderStarRating = (rating: string) => {
-    const numRating = parseFloat(rating);
-    const fullStars = Math.floor(numRating);
-    const hasHalfStar = numRating % 1 >= 0.5;
-    
-    return (
-      <div className="flex items-center">
-        <div className="flex text-yellow-400">
-          {/* Render each full star */}
-          {Array.from({ length: fullStars }).map((_, i) => (
-            <Star key={`star-${i}`} className="h-4 w-4 fill-current" />
-          ))}
-          
-          {/* Render half star if needed */}
-          {hasHalfStar && <StarHalf className="h-4 w-4 fill-current" />}
-          
-          {/* Render empty stars to fill the rest */}
-          {Array.from({ length: 5 - (fullStars + (hasHalfStar ? 1 : 0)) }).map((_, i) => (
-            <Star key={`empty-${i}`} className="h-4 w-4 text-gray-700" />
-          ))}
-        </div>
-        <span className="text-sm ml-2 text-slate-400 whitespace-nowrap">
-          {numRating.toFixed(1)}
-        </span>
-      </div>
-    );
-  };
+  // Using the centralized StarRating component instead of local implementation
 
   return (
     <div className="bg-black min-h-screen">
@@ -193,7 +167,7 @@ export default function SavedBooks() {
                     <p className="text-slate-400 text-sm mt-1">{book.author}</p>
                     
                     <div className="mt-3">
-                      {renderStarRating(book.rating)}
+                      <StarRating rating={book.rating} />
                       
                       <div className="mt-2 flex items-center">
                         <span className="text-xs text-slate-500">
