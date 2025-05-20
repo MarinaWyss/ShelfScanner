@@ -109,31 +109,52 @@ export async function getRecommendations(
     // Get user's preferred genres
     const preferredGenres = preferences.genres || [];
     
-    // Create a set of books the user has already read (if Goodreads data exists)
-    const alreadyReadBooks = new Set<string>();
+    // Create a map of books the user has already read (if Goodreads data exists)
+    // We'll use a more robust matching approach using normalized titles
+    const alreadyReadBooks: { normalizedTitle: string, originalTitle: string }[] = [];
     if (preferences.goodreadsData && Array.isArray(preferences.goodreadsData)) {
       preferences.goodreadsData.forEach((entry: any) => {
         if (entry["Title"] && entry["My Rating"] && parseInt(entry["My Rating"]) > 0) {
-          alreadyReadBooks.add(entry["Title"].toLowerCase());
+          // Store both the original title and a normalized version for flexible matching
+          alreadyReadBooks.push({
+            normalizedTitle: normalizeBookTitle(entry["Title"]),
+            originalTitle: entry["Title"]
+          });
         }
       });
-      console.log(`Found ${alreadyReadBooks.size} books the user has already read in Goodreads data`);
+      console.log(`Found ${alreadyReadBooks.length} books the user has already read in Goodreads data`);
+    }
+    
+    // Helper function to normalize book titles for comparison
+    function normalizeBookTitle(title: string): string {
+      return title
+        .toLowerCase()
+        .replace(/[^\w\s]/g, '') // Remove punctuation
+        .replace(/\s+/g, ' ')    // Normalize whitespace
+        .trim();
     }
     
     // Filter out books the user has already read
     let availableBooks = books;
-    if (alreadyReadBooks.size > 0) {
+    if (alreadyReadBooks.length > 0) {
       availableBooks = books.filter(book => {
-        const bookTitle = book.title.toLowerCase();
-        const hasRead = alreadyReadBooks.has(bookTitle);
+        const normalizedBookTitle = normalizeBookTitle(book.title);
         
-        // Log when we filter out a book the user has already read
-        if (hasRead) {
-          console.log(`Filtered out "${book.title}" as user has already read it`);
+        // Check if this book title matches (or is contained in) any of the user's read books
+        // This handles cases where the book title might be slightly different or abbreviated
+        const matchingTitle = alreadyReadBooks.find(readBook => {
+          return normalizedBookTitle.includes(readBook.normalizedTitle) || 
+                 readBook.normalizedTitle.includes(normalizedBookTitle);
+        });
+        
+        // If we found a match, this book has been read already
+        if (matchingTitle) {
+          console.log(`Filtered out "${book.title}" as user has already read "${matchingTitle.originalTitle}"`);
+          return false;
         }
         
-        // Only keep books the user hasn't read yet
-        return !hasRead;
+        // No match found, keep this book
+        return true;
       });
       
       console.log(`Filtered ${books.length - availableBooks.length} books the user has already read`);
