@@ -187,7 +187,7 @@ export default function RecommendationsStep({ recommendations, isLoading }: Reco
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {recommendations
-                  .filter(book => book.alreadyRead)
+                  .filter(book => isBookAlreadyRead(book))
                   .map((book, index) => (
                   <div 
                     key={`read-${index}`} 
