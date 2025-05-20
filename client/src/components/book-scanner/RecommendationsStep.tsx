@@ -19,19 +19,36 @@ interface Recommendation {
 interface RecommendationsStepProps {
   recommendations: Recommendation[];
   isLoading: boolean;
+  goodreadsData?: any[];
 }
 
-export default function RecommendationsStep({ recommendations, isLoading }: RecommendationsStepProps) {
-  // Function to check if a book is likely already read based on title
+export default function RecommendationsStep({ recommendations, isLoading, goodreadsData }: RecommendationsStepProps) {
+  // Function to check if a book has already been read based on Goodreads data
   const isBookAlreadyRead = (book: Recommendation): boolean => {
-    const knownReadBooks = [
-      'awe',
-      'leviathan wakes',
-      'expanse'
-    ];
+    if (!goodreadsData || !Array.isArray(goodreadsData) || goodreadsData.length === 0) {
+      return false;
+    }
     
-    const lowerTitle = book.title.toLowerCase();
-    return knownReadBooks.some(readBookTitle => lowerTitle.includes(readBookTitle));
+    const bookTitle = book.title.toLowerCase().replace(/[^\w\s]/g, '').trim();
+    const bookAuthor = book.author.toLowerCase().replace(/[^\w\s]/g, '').trim();
+    
+    // Check if this book appears in the user's Goodreads history
+    return goodreadsData.some(goodreadsBook => {
+      if (!goodreadsBook["Title"] || !goodreadsBook["Author"]) return false;
+      
+      // Only consider books that have been read (have a rating)
+      if (!goodreadsBook["My Rating"] || parseInt(goodreadsBook["My Rating"]) === 0) return false;
+      
+      const goodreadsTitle = goodreadsBook["Title"].toLowerCase().replace(/[^\w\s]/g, '').trim();
+      const goodreadsAuthor = goodreadsBook["Author"].toLowerCase().replace(/[^\w\s]/g, '').trim();
+      
+      // Check for partial title match and author match
+      const titleMatch = bookTitle.includes(goodreadsTitle) || goodreadsTitle.includes(bookTitle);
+      const authorMatch = bookAuthor.includes(goodreadsAuthor) || goodreadsAuthor.includes(bookAuthor);
+      
+      // Match on title OR a combination of partial title and author
+      return titleMatch || (bookTitle.length > 3 && goodreadsTitle.includes(bookTitle) && authorMatch);
+    });
   };
   
   // Function to render star ratings

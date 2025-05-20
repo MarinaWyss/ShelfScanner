@@ -244,6 +244,7 @@ export default function Books() {
             <RecommendationsStep 
               recommendations={recommendations || []}
               isLoading={recommendationsLoading}
+              goodreadsData={preferences?.goodreadsData}
             />
           )}
 
