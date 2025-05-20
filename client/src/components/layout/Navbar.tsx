@@ -134,6 +134,29 @@ export default function Navbar({ sidebarOpen, toggleSidebar, toggleContact }: Na
                         <span>Book Scanner</span>
                     </Link>
                   </li>
+                  <li>
+                    <Link href="/reading-list" className={`flex items-center gap-3 w-full px-3 py-2 rounded-md font-medium transition-colors duration-150 ${
+                        location === '/reading-list' 
+                          ? 'bg-slate-700 text-primary' 
+                          : 'text-slate-300 hover:bg-slate-700 hover:text-white'
+                      }`}>
+                        <svg 
+                          xmlns="http://www.w3.org/2000/svg" 
+                          width="24" 
+                          height="24" 
+                          viewBox="0 0 24 24" 
+                          fill="none" 
+                          stroke="currentColor" 
+                          strokeWidth="2" 
+                          strokeLinecap="round" 
+                          strokeLinejoin="round" 
+                          className="h-5 w-5"
+                        >
+                          <path d="M17 3H7a2 2 0 0 0-2 2v16l7-3 7 3V5a2 2 0 0 0-2-2z" />
+                        </svg>
+                        <span>Reading List</span>
+                    </Link>
+                  </li>
                 </ul>
               </div>
             </div>

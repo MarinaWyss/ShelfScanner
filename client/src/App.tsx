@@ -16,7 +16,7 @@ function Router() {
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/books" component={Books} />
-      <Route path="/reading-list" component={import('./pages/saved-books').default} />
+      <Route path="/reading-list" component={SavedBooks} />
       <Route component={NotFound} />
     </Switch>
   );
