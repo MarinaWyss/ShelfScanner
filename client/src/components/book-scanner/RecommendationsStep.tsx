@@ -231,7 +231,7 @@ export default function RecommendationsStep({ recommendations, isLoading, goodre
                 .map((book, index) => (
                 <div 
                   key={index} 
-                  className="bg-gradient-to-br from-white to-slate-50 border border-slate-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                  className="bg-gray-100 border border-slate-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
                 >
                   <div className="p-5 flex">
                     {book.coverUrl ? (
