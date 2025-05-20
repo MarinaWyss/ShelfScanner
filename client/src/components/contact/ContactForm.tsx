@@ -74,7 +74,7 @@ export default function ContactForm({ isOpen, onClose }: ContactFormProps) {
               id="name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full px-3 py-2 border border-neutral-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+              className="w-full px-3 py-2 border border-neutral-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-neutral-800"
               placeholder="Your name"
               required
             />
@@ -89,7 +89,7 @@ export default function ContactForm({ isOpen, onClose }: ContactFormProps) {
               id="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-3 py-2 border border-neutral-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+              className="w-full px-3 py-2 border border-neutral-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-neutral-800"
               placeholder="your.email@example.com"
               required
             />
@@ -104,7 +104,7 @@ export default function ContactForm({ isOpen, onClose }: ContactFormProps) {
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               rows={5}
-              className="w-full px-3 py-2 border border-neutral-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+              className="w-full px-3 py-2 border border-neutral-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500 text-neutral-800"
               placeholder="How can we help you?"
               required
             />
