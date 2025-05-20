@@ -1,13 +1,53 @@
 import OpenAI from "openai";
 import { log } from "./vite";
+import { rateLimiter } from "./rate-limiter";
+import { analyzeImage } from "./vision"; // Import Google Vision fallback
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+// Configure OpenAI client
+const openai = new OpenAI({ 
+  apiKey: process.env.OPENAI_API_KEY,
+  maxRetries: 2, // Limit retries to reduce costs
+  timeout: 15000 // 15 second timeout to prevent hanging
+});
 
+// This flag allows easier turning on/off of the OpenAI API
+const ENABLE_OPENAI = process.env.ENABLE_OPENAI !== "false";
+
+/**
+ * Check if the OpenAI API key is configured
+ * @returns boolean indicating if the API key is available
+ */
+function isOpenAIConfigured(): boolean {
+  const apiKey = process.env.OPENAI_API_KEY;
+  return !!apiKey && apiKey.length > 5 && apiKey !== "your-api-key-here"; // Basic validation
+}
+
+/**
+ * Main function to analyze a bookshelf image and identify book titles
+ * Implements rate limiting and cost controls with fallback options
+ */
 export async function analyzeBookshelfImage(base64Image: string): Promise<{ 
   bookTitles: string[], 
   isBookshelf: boolean 
 }> {
   try {
+    // Check if OpenAI is enabled and configured
+    if (!ENABLE_OPENAI) {
+      log("OpenAI API is disabled by configuration", "vision");
+      return await fallbackToGoogleVision(base64Image);
+    }
+    
+    if (!isOpenAIConfigured()) {
+      log("OpenAI API key is not properly configured", "vision");
+      return await fallbackToGoogleVision(base64Image);
+    }
+    
+    // Check rate limits before making the API call
+    if (!rateLimiter.isAllowed('openai')) {
+      log("Rate limit reached for OpenAI API. Using fallback.", "vision");
+      return await fallbackToGoogleVision(base64Image);
+    }
+    
     log("Processing image with OpenAI Vision API", "vision");
     
     const response = await openai.chat.completions.create({
@@ -37,6 +77,9 @@ export async function analyzeBookshelfImage(base64Image: string): Promise<{
       max_tokens: 800
     });
 
+    // Increment the counter for successful API calls
+    rateLimiter.increment('openai');
+
     // Parse the response
     const content = response.choices[0].message.content || '';
     let result;
@@ -45,11 +88,8 @@ export async function analyzeBookshelfImage(base64Image: string): Promise<{
       result = JSON.parse(content);
     } catch (error) {
       log(`Error parsing OpenAI response: ${error}`, "vision");
-      // Fallback with empty results
-      return {
-        bookTitles: [],
-        isBookshelf: false
-      };
+      // Fallback to Google Vision if JSON parsing fails
+      return await fallbackToGoogleVision(base64Image);
     }
     
     log(`OpenAI identified ${result.bookTitles?.length || 0} books`, "vision");
@@ -61,7 +101,55 @@ export async function analyzeBookshelfImage(base64Image: string): Promise<{
   } catch (error) {
     log(`Error analyzing image with OpenAI: ${error instanceof Error ? error.message : String(error)}`, "vision");
     
-    // Return empty results in case of error
+    // Try the fallback option if OpenAI fails
+    return await fallbackToGoogleVision(base64Image);
+  }
+}
+
+/**
+ * Fallback function using Google Vision API instead of OpenAI
+ * This provides a more cost-effective option when OpenAI is unavailable
+ */
+async function fallbackToGoogleVision(base64Image: string): Promise<{ 
+  bookTitles: string[], 
+  isBookshelf: boolean 
+}> {
+  try {
+    log("Falling back to Google Vision API for image analysis", "vision");
+    
+    // Check if the Google Vision fallback is rate-limited
+    if (!rateLimiter.isAllowed('google-vision')) {
+      log("Rate limit reached for Google Vision fallback API", "vision");
+      return { bookTitles: [], isBookshelf: false };
+    }
+    
+    const visionResult = await analyzeImage(base64Image);
+    rateLimiter.increment('google-vision');
+    
+    // Extract potential book titles from the Google Vision text
+    const text = visionResult.text || '';
+    
+    // Very basic extraction of potential book titles from the text
+    // This is a simple implementation - book title extraction from raw text
+    // would need more sophisticated NLP in a production environment
+    const lines = text.split('\n').filter((line: string) => line.trim().length > 0);
+    
+    // Filter lines that might be book titles (more than 2 words, less than 50 chars)
+    const potentialTitles = lines.filter((line: string) => {
+      const words = line.trim().split(/\s+/);
+      return words.length >= 2 && words.length <= 10 && line.length <= 50;
+    });
+    
+    log(`Google Vision extracted ${potentialTitles.length} potential titles`, "vision");
+    
+    return {
+      bookTitles: potentialTitles,
+      isBookshelf: visionResult.isBookshelf || false
+    };
+  } catch (error) {
+    log(`Error in Google Vision fallback: ${error instanceof Error ? error.message : String(error)}`, "vision");
+    
+    // Return empty results if all methods fail
     return {
       bookTitles: [],
       isBookshelf: false
