@@ -93,7 +93,7 @@ export default function RecommendationsStep({ recommendations, isLoading, goodre
         </div>
         <div className="ml-4">
           <a 
-            href="https://www.amazon.com/kindle-dbs/fd/ku?tag=shelfscannerapp-20"
+            href="https://www.amazon.com/kindle-dbs/fd/ku?tag=gratitudedriv-20"
             target="_blank"
             rel="noopener noreferrer"
             className="bg-amber-400 hover:bg-amber-500 text-black px-3 py-2 rounded text-sm font-medium"
@@ -213,7 +213,7 @@ export default function RecommendationsStep({ recommendations, isLoading, goodre
                         Add to List
                       </button>
                       <a 
-                        href={`https://www.amazon.com/s?k=${encodeURIComponent(book.title + ' ' + book.author)}&tag=shelfscannerapp-20`}
+                        href={`https://www.amazon.com/s?k=${encodeURIComponent(book.title + ' ' + book.author)}&tag=gratitudedriv-20`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="bg-amber-400 hover:bg-amber-500 text-black px-3 py-1 rounded text-sm font-medium flex items-center"
@@ -259,7 +259,7 @@ export default function RecommendationsStep({ recommendations, isLoading, goodre
                 </div>
                 <div className="ml-4">
                   <a 
-                    href="https://www.amazon.com/Audible-Free-Trial-Digital-Membership/dp/B00NB86OYE/?tag=shelfscannerapp-20"
+                    href="https://www.amazon.com/Audible-Free-Trial-Digital-Membership/dp/B00NB86OYE/?tag=gratitudedriv-20"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded text-sm font-medium"
@@ -324,7 +324,7 @@ export default function RecommendationsStep({ recommendations, isLoading, goodre
                       </p>
                       <div className="mt-3 flex justify-end">
                         <a 
-                          href={`https://www.amazon.com/s?k=${encodeURIComponent(book.title + ' ' + book.author)}&tag=shelfscannerapp-20`}
+                          href={`https://www.amazon.com/s?k=${encodeURIComponent(book.title + ' ' + book.author)}&tag=gratitudedriv-20`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="bg-amber-400 hover:bg-amber-500 text-black px-3 py-1 rounded text-sm font-medium flex items-center"
