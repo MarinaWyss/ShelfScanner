@@ -16,14 +16,14 @@ export default function StarRating({
   starSize = 4,
   isLoading = false
 }: StarRatingProps) {
-  // If no rating or invalid rating, show "Not rated"
-  if (!rating && rating !== 0 && !isLoading) {
-    return <span className="text-sm text-neutral-500">Not rated</span>;
-  }
-  
   // Handle loading state
   if (isLoading) {
     return <span className="text-sm text-neutral-500">Loading rating...</span>;
+  }
+  
+  // If no rating or empty rating, show "Not rated"
+  if (!rating && rating !== 0) {
+    return <span className="text-sm text-neutral-500">Not rated</span>;
   }
   
   // Convert rating to number if it's a string

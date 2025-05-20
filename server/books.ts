@@ -197,18 +197,21 @@ export async function searchBooksByTitle(title: string): Promise<any[]> {
       
       // Reuse our BookObject interface from above
       
-      // Fetch Amazon ratings for each book asynchronously
+      // Process books and use only Google Books ratings or verified database
       const booksWithRatings = await Promise.all(
         books.map(async (book: any) => {
-          // Try to get rating from Amazon
-          const amazonRating = await getAmazonBookRating(book.title, book.author, book.isbn);
-          
-          if (amazonRating) {
-            // If we got an Amazon rating, use it
-            book.rating = amazonRating;
-          } else {
-            // If no rating from Amazon, use our estimation function
-            book.rating = getEstimatedBookRating(book.title, book.author);
+          // If the book already has a rating from Google Books, keep it
+          if (!book.rating && book.title && book.author) {
+            // If not, try to get a verified rating from our database
+            const verifiedRating = getPopularBookRating(book.title, book.author);
+            if (verifiedRating) {
+              book.rating = verifiedRating;
+              console.log(`Using verified rating from database for "${book.title}": ${verifiedRating}`);
+            } else {
+              // If no verified rating available, leave it blank
+              console.log(`No verified rating available for "${book.title}" - leaving blank`);
+              book.rating = '';
+            }
           }
           
           return book;
@@ -404,23 +407,28 @@ export async function getRecommendations(
     
     // Format new books for display with Amazon ratings
     const formattedNewBooks = await Promise.all(scoredNewBooks.map(async book => {
-      // Try to get Amazon rating first
-      let googleRating = book.rating;
+      // We'll use verified ratings only
+      let finalRating = '';
       try {
-        // Check for verified ratings from our database
-        if (book.title && book.author) {
+        // First check if Google Books provided a rating (real source)
+        if (book.rating) {
+          finalRating = book.rating;
+          console.log(`Using Google Books rating for "${book.title}": ${finalRating}`);
+        } 
+        // If not, check our verified database
+        else if (book.title && book.author) {
           // Try to get a verified rating from our database
           const verifiedRating = getPopularBookRating(book.title, book.author);
           if (verifiedRating) {
-            googleRating = verifiedRating;
-            console.log(`Using verified rating from database for "${book.title}": ${amazonRating}`);
+            finalRating = verifiedRating;
+            console.log(`Using verified rating from database for "${book.title}": ${finalRating}`);
           } else {
-            // We will use the existing rating from book.rating or leave it blank
-            console.log(`No verified rating found for "${book.title}"`);
+            // No rating available - leave it blank
+            console.log(`No verified rating found for "${book.title}" - leaving blank`);
           }
         }
       } catch (error) {
-        console.error(`Error getting Amazon rating for "${book.title}":`, error);
+        console.error(`Error processing rating for "${book.title}":`, error);
       }
       
       return {
@@ -428,7 +436,7 @@ export async function getRecommendations(
         author: book.author || 'Unknown Author',
         coverUrl: book.coverUrl || '',
         summary: book.summary || 'No summary available',
-        rating: amazonRating || book.rating || '', // Only use verified ratings
+        rating: finalRating, // Only use verified ratings
         matchScore: Math.round(book.score), // Round to whole number for display
         isbn: book.isbn,
         alreadyRead: false,
@@ -436,22 +444,30 @@ export async function getRecommendations(
       };
     }));
     
-    // Format already read books for display with Amazon ratings
+    // Format already read books for display with verified ratings only
     const formattedReadBooks = await Promise.all(scoredReadBooks.map(async book => {
-      // Try to get a verified rating from our database
-      let verifiedRating = null;
+      // We'll use verified ratings only
+      let finalRating = '';
       try {
-        if (book.title && book.author) {
+        // First check if Google Books provided a rating (real source)
+        if (book.rating) {
+          finalRating = book.rating;
+          console.log(`Using Google Books rating for already read book "${book.title}": ${finalRating}`);
+        } 
+        // If not, check our verified database
+        else if (book.title && book.author) {
           // Try to get a verified rating from our database
-          verifiedRating = getPopularBookRating(book.title, book.author);
+          const verifiedRating = getPopularBookRating(book.title, book.author);
           if (verifiedRating) {
-            console.log(`Using verified rating for already read book "${book.title}": ${verifiedRating}`);
+            finalRating = verifiedRating;
+            console.log(`Using verified rating for already read book "${book.title}": ${finalRating}`);
           } else {
-            console.log(`No verified rating found for already read book "${book.title}"`);
+            // No rating available - leave it blank
+            console.log(`No verified rating found for already read book "${book.title}" - leaving blank`);
           }
         }
       } catch (error) {
-        console.error(`Error getting verified rating for "${book.title}":`, error);
+        console.error(`Error processing rating for "${book.title}":`, error);
       }
       
       return {
@@ -459,7 +475,7 @@ export async function getRecommendations(
         author: book.author || 'Unknown Author',
         coverUrl: book.coverUrl || '',
         summary: book.summary || 'No summary available',
-        rating: verifiedRating || book.rating || '', // Only use verified ratings
+        rating: finalRating, // Only use verified ratings
         matchScore: Math.round(book.score), // Round to whole number for display
         isbn: book.isbn,
         alreadyRead: true,
