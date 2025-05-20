@@ -7,10 +7,10 @@ export default function Home() {
     <div className="p-4 sm:p-6 lg:p-8">
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-foreground mb-1">
-          ShelfScanner: Find Your Next Great Read
+          ShelfScanner
         </h1>
         <p className="text-muted-foreground">
-          Take photos of books at stores or libraries to discover which ones match your reading preferences
+          
         </p>
       </div>
 
@@ -36,7 +36,7 @@ export default function Home() {
               </div>
               <h2 className="text-xl font-semibold text-foreground">Bookstore & Library Assistant</h2>
               <p className="mt-2 text-muted-foreground max-w-md mx-auto">
-                Take photos of entire bookshelves at stores or libraries and we'll identify which books best match your reading preferences.
+                Take a photo of an entire bookshelf at stores, the library, or a friend's house, and we'll help you figure out which ones you'll like!
               </p>
             </div>
             <div className="flex justify-center">
@@ -139,7 +139,7 @@ export default function Home() {
               </div>
               <h2 className="text-xl font-semibold text-foreground">Start Using ShelfScanner Today</h2>
               <p className="mt-2 text-muted-foreground max-w-md mx-auto">
-                Never miss a great book again. Our app helps you quickly find books that match your unique reading preferences at any bookstore or library.
+                Never miss a great book again. Our app helps you quickly find books that match your unique reading preferences even in a crowded bookshelf.
               </p>
             </div>
             <div className="flex justify-center">
