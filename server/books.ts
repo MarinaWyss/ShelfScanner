@@ -87,18 +87,24 @@ export async function searchBooksByTitle(title: string): Promise<any[]> {
         detectedFrom: string;
       }
       
-      // Fetch Amazon ratings for each book asynchronously
+      // Process all books to ensure they have ratings
       const booksWithRatings = await Promise.all(
         books.map(async (book: BookObject) => {
-          // Try to get rating from Amazon
-          const amazonRating = await getAmazonBookRating(book.title, book.author, book.isbn);
-          
-          if (amazonRating) {
-            // If we got an Amazon rating, use it
-            book.rating = amazonRating;
-          } else if (!book.rating) {
-            // If no rating from Google Books or Amazon, use our estimation function
-            book.rating = getEstimatedBookRating(book.title, book.author);
+          // If Google Books already provided a rating, use it as our primary source
+          if (book.rating) {
+            // We already have a Google Books rating
+            console.log(`Using Google Books rating for "${book.title}": ${book.rating}`);
+          } else {
+            // Try using our local database of verified ratings
+            const verifiedRating = getPopularBookRating(book.title, book.author);
+            if (verifiedRating) {
+              book.rating = verifiedRating;
+              console.log(`Using verified rating from database for "${book.title}": ${book.rating}`);
+            } else {
+              // If we still don't have a rating, use our estimation function
+              book.rating = getEstimatedBookRating(book.title, book.author);
+              console.log(`Using estimated rating for "${book.title}": ${book.rating}`);
+            }
           }
           
           return book;
