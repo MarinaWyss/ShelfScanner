@@ -7,7 +7,7 @@ import { searchBooksByTitle, getRecommendations } from "./books";
 import { getAmazonBookRating, getEstimatedBookRating } from "./amazon";
 import multer from "multer";
 import { z } from "zod";
-import { insertPreferenceSchema, insertBookSchema, insertRecommendationSchema } from "@shared/schema";
+import { insertPreferenceSchema, insertBookSchema, insertRecommendationSchema, insertSavedBookSchema } from "@shared/schema";
 
 // In-memory storage for multer
 const upload = multer({
@@ -429,6 +429,95 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Error getting recommendations:', error);
       return res.status(500).json({ 
         message: 'Error getting recommendations',
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+  
+  // Saved Books API Endpoints
+  
+  // Get saved books for a device
+  app.get('/api/saved-books', async (req: Request, res: Response) => {
+    try {
+      // Extract deviceId from cookie
+      const deviceId = req.cookies.deviceId || '';
+      console.log('GetSavedBooks - Device ID from cookie:', deviceId);
+      
+      // Validate deviceId
+      if (!deviceId) {
+        console.log('GetSavedBooks - No device ID provided');
+        return res.status(400).json({ message: 'Device ID is required' });
+      }
+      
+      // Get saved books
+      const savedBooks = await storage.getSavedBooksByDeviceId(deviceId);
+      console.log(`GetSavedBooks - Found ${savedBooks.length} books for device ${deviceId}`);
+      
+      // Return empty array instead of 404 for no books
+      return res.status(200).json(savedBooks);
+    } catch (error) {
+      console.error('Error getting saved books:', error);
+      return res.status(500).json({ 
+        message: 'Error getting saved books',
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+  
+  // Save a book
+  app.post('/api/saved-books', async (req: Request, res: Response) => {
+    try {
+      // Extract deviceId from cookie
+      const deviceId = req.cookies.deviceId || '';
+      
+      // Validate deviceId
+      if (!deviceId) {
+        return res.status(400).json({ message: 'Device ID is required' });
+      }
+      
+      // Prepare book data with device ID
+      const bookToSave = {
+        ...req.body,
+        deviceId
+      };
+      
+      // Validate book data
+      const validatedData = insertSavedBookSchema.parse(bookToSave);
+      
+      // Save book
+      const savedBook = await storage.createSavedBook(validatedData);
+      
+      return res.status(201).json(savedBook);
+    } catch (error) {
+      console.error('Error saving book:', error);
+      return res.status(400).json({ 
+        message: 'Error saving book',
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+  
+  // Delete a saved book
+  app.delete('/api/saved-books/:id', async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      
+      if (isNaN(id)) {
+        return res.status(400).json({ message: 'Invalid book ID' });
+      }
+      
+      // Delete the saved book
+      const deleted = await storage.deleteSavedBook(id);
+      
+      if (!deleted) {
+        return res.status(404).json({ message: 'Book not found' });
+      }
+      
+      return res.status(200).json({ message: 'Book deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting saved book:', error);
+      return res.status(500).json({ 
+        message: 'Error deleting saved book',
         error: error instanceof Error ? error.message : String(error)
       });
     }
