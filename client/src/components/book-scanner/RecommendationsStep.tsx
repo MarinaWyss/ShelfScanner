@@ -235,7 +235,7 @@ export default function RecommendationsStep({ recommendations, isLoading, goodre
                     <p className="text-sm text-neutral-600 line-clamp-3">{book.summary}</p>
                     <div className="mt-3 flex justify-between">
                       <button 
-                        className={`text-primary-600 hover:text-primary-700 text-sm font-medium flex items-center ${savingBookIds.includes(book.id || 0) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        className={`bg-white border border-gray-300 hover:bg-gray-50 text-black text-sm font-medium flex items-center px-3 py-1 rounded ${savingBookIds.includes(book.id || 0) ? 'opacity-50 cursor-not-allowed' : ''}`}
                         onClick={() => saveBookForLater(book)}
                         disabled={savingBookIds.includes(book.id || 0)}
                       >
@@ -252,10 +252,10 @@ export default function RecommendationsStep({ recommendations, isLoading, goodre
                             viewBox="0 0 24 24" 
                             stroke="currentColor"
                           >
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 3H7a2 2 0 0 0-2 2v16l7-3 7 3V5a2 2 0 0 0-2-2z" />
                           </svg>
                         )}
-                        Add to List
+                        Save for Later
                       </button>
                       <a 
                         href={`https://www.amazon.com/s?k=${encodeURIComponent(book.title + ' ' + book.author)}&tag=gratitudedriv-20`}
