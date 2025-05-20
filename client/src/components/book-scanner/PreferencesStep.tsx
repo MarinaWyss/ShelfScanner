@@ -119,11 +119,6 @@ export default function PreferencesStep({ preferences, onSubmit, isLoading }: Pr
         
         // Store the raw parsed data
         setGoodreadsData(parsedData);
-        
-        toast({
-          title: "Goodreads data imported",
-          description: `Successfully imported ${parsedData.length} books from your Goodreads library`,
-        });
       } catch (error) {
         toast({
           title: "Import failed",
