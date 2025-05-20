@@ -6,7 +6,8 @@ import { analyzeBookshelfImage } from "./openai-vision";
 import { searchBooksByTitle, getRecommendations } from "./books";
 import multer from "multer";
 import { z } from "zod";
-import { insertPreferenceSchema, insertBookSchema, insertRecommendationSchema } from "@shared/schema";
+import { insertPreferenceSchema, insertBookSchema, insertRecommendationSchema, insertSavedBookSchema } from "@shared/schema";
+import cookieParser from "cookie-parser";
 
 // In-memory storage for multer
 const upload = multer({
@@ -17,6 +18,27 @@ const upload = multer({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Helper function to get or create a device ID for persistent storage
+  function getOrCreateDeviceId(req: Request, res: Response): string {
+    // Try to get deviceId from cookies
+    let deviceId = req.cookies?.deviceId;
+    
+    // If no deviceId, create a new one
+    if (!deviceId) {
+      deviceId = `device_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
+      
+      // Set it as a cookie that lasts for 1 year
+      res.cookie('deviceId', deviceId, {
+        maxAge: 365 * 24 * 60 * 60 * 1000, // 1 year
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict'
+      });
+    }
+    
+    return deviceId;
+  }
+  
   // API routes
   const apiRouter = app.route('/api');
   
@@ -512,6 +534,64 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: 'Error getting recommendations',
         error: error instanceof Error ? error.message : String(error)
       });
+    }
+  });
+  
+  // API endpoint to save a book for later
+  app.post('/api/saved-books', async (req: Request, res: Response) => {
+    try {
+      const deviceId = getOrCreateDeviceId(req, res);
+      
+      // Validate request body
+      const bookData = insertSavedBookSchema.parse({
+        ...req.body,
+        deviceId: deviceId
+      });
+      
+      // Save the book
+      const savedBook = await storage.createSavedBook(bookData);
+      res.status(201).json(savedBook);
+    } catch (error) {
+      console.error("Error saving book:", error);
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ 
+          message: "Invalid book data", 
+          errors: error.errors 
+        });
+      }
+      res.status(500).json({ message: "An error occurred while saving the book" });
+    }
+  });
+  
+  // API endpoint to get saved books
+  app.get('/api/saved-books', async (req: Request, res: Response) => {
+    try {
+      const deviceId = getOrCreateDeviceId(req, res);
+      const savedBooks = await storage.getSavedBooksByDeviceId(deviceId);
+      res.json(savedBooks);
+    } catch (error) {
+      console.error("Error fetching saved books:", error);
+      res.status(500).json({ message: "An error occurred while fetching saved books" });
+    }
+  });
+  
+  // API endpoint to delete a saved book
+  app.delete('/api/saved-books/:id', async (req: Request, res: Response) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid book ID" });
+      }
+      
+      const success = await storage.deleteSavedBook(id);
+      if (success) {
+        res.status(204).send();
+      } else {
+        res.status(404).json({ message: "Book not found" });
+      }
+    } catch (error) {
+      console.error("Error deleting saved book:", error);
+      res.status(500).json({ message: "An error occurred while deleting the book" });
     }
   });
   
