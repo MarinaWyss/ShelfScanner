@@ -232,17 +232,20 @@ export default function RecommendationsStep({ recommendations, isLoading, goodre
                 .map((book, index) => (
                 <div 
                   key={index} 
-                  className="bg-white border border-neutral-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                  className="bg-gradient-to-br from-white to-slate-50 border border-slate-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
                 >
-                  <div className="p-4 flex">
+                  <div className="p-5 flex">
                     {book.coverUrl ? (
-                      <img 
-                        src={book.coverUrl} 
-                        alt={book.title} 
-                        className="w-24 h-36 object-cover rounded-md" 
-                      />
+                      <div className="relative">
+                        <img 
+                          src={book.coverUrl} 
+                          alt={book.title} 
+                          className="w-24 h-36 object-cover rounded-md shadow-sm" 
+                        />
+                        <div className="absolute inset-0 rounded-md shadow-inner"></div>
+                      </div>
                     ) : (
-                      <div className="w-24 h-36 bg-neutral-100 flex items-center justify-center rounded-md">
+                      <div className="w-24 h-36 bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center rounded-md shadow-sm">
                         <svg 
                           xmlns="http://www.w3.org/2000/svg" 
                           width="24" 
@@ -253,17 +256,17 @@ export default function RecommendationsStep({ recommendations, isLoading, goodre
                           strokeWidth="2" 
                           strokeLinecap="round" 
                           strokeLinejoin="round" 
-                          className="h-8 w-8 text-neutral-400"
+                          className="h-8 w-8 text-slate-400"
                         >
                           <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
                         </svg>
                       </div>
                     )}
-                    <div className="ml-4">
-                      <h4 className="font-semibold text-neutral-800 line-clamp-2">{book.title}</h4>
-                      <p className="text-neutral-500 text-sm">{book.author}</p>
+                    <div className="ml-5">
+                      <h4 className="font-semibold text-slate-800 line-clamp-2 text-lg">{book.title}</h4>
+                      <p className="text-slate-500 text-sm mt-1">{book.author}</p>
                       
-                      <div className="mt-2 flex items-center">
+                      <div className="mt-3 flex items-center">
                         {renderRating(book.rating)}
                         {book.matchScore !== undefined && (
                           <span className="ml-2 bg-green-100 text-green-800 text-xs font-medium px-2 py-0.5 rounded">
@@ -275,28 +278,28 @@ export default function RecommendationsStep({ recommendations, isLoading, goodre
                       </div>
                     </div>
                   </div>
-                  <div className="p-4 border-t border-neutral-200">
-                    <p className="text-sm text-neutral-600 line-clamp-3">{book.summary}</p>
-                    <div className="mt-3 flex justify-between">
+                  <div className="p-5 border-t border-slate-200">
+                    <p className="text-sm text-slate-600 line-clamp-3">{book.summary}</p>
+                    <div className="mt-4 flex justify-between gap-3">
                       <button 
                         className={`
                           ${savedBookIds.includes(book.id || 0) 
                             ? 'bg-indigo-100 border border-indigo-300 text-indigo-700 hover:bg-indigo-200' 
-                            : 'bg-white border border-gray-300 hover:bg-gray-50 text-black'} 
-                          text-sm font-medium flex items-center px-3 py-1 rounded ${savingBookIds.includes(book.id || 0) ? 'opacity-50 cursor-not-allowed' : ''}
+                            : 'bg-white border border-slate-300 hover:bg-slate-50 text-slate-800'} 
+                          text-sm font-medium flex items-center px-3 py-1.5 rounded-md ${savingBookIds.includes(book.id || 0) ? 'opacity-50 cursor-not-allowed' : ''}
                         `}
                         onClick={() => saveBookForLater(book)}
                         disabled={savingBookIds.includes(book.id || 0)}
                       >
                         {savingBookIds.includes(book.id || 0) ? (
-                          <svg className="animate-spin h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <svg className="animate-spin h-4 w-4 mr-1.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                           </svg>
                         ) : (
                           <svg 
                             xmlns="http://www.w3.org/2000/svg" 
-                            className="h-4 w-4 mr-1" 
+                            className="h-4 w-4 mr-1.5" 
                             fill={savedBookIds.includes(book.id || 0) ? "currentColor" : "none"}
                             viewBox="0 0 24 24" 
                             stroke="currentColor"
@@ -310,10 +313,10 @@ export default function RecommendationsStep({ recommendations, isLoading, goodre
                         href={`https://www.amazon.com/s?k=${encodeURIComponent(book.title + ' ' + book.author)}&tag=gratitudedriv-20`}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="bg-amber-400 hover:bg-amber-500 text-black px-3 py-1 rounded text-sm font-medium flex items-center"
+                        className="bg-amber-400 hover:bg-amber-500 text-black px-3 py-1.5 rounded-md text-sm font-medium flex items-center"
                       >
                         <svg 
-                          className="w-4 h-4 mr-1" 
+                          className="w-4 h-4 mr-1.5" 
                           viewBox="0 0 24 24" 
                           fill="currentColor"
                         >
