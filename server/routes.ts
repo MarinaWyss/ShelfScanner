@@ -385,20 +385,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const savedRecommendations = [];
       
       for (const recommendation of recommendationsData) {
-        // Find matching book
+        // Find matching book - or use the first book as a reference
         const matchingBook = books.find((b: any) => 
           b.title === recommendation.title || 
           (recommendation.isbn && b.isbn === recommendation.isbn)
-        );
+        ) || books[0];
+        
+        // Ensure we have a valid bookId
+        const bookId = matchingBook?.id || 1;
         
         // Validate recommendation data
         const validatedData = insertRecommendationSchema.parse({
           userId,
-          bookId: matchingBook?.id,
+          bookId, // Use the determined bookId
           title: recommendation.title,
           author: recommendation.author,
-          coverUrl: recommendation.coverUrl,
-          summary: recommendation.summary,
+          coverUrl: recommendation.coverUrl || null,
+          summary: recommendation.summary || null,
           rating: typeof recommendation.rating === 'string' ? recommendation.rating : (recommendation.rating?.toString() || "0")
         });
         
