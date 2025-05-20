@@ -64,24 +64,7 @@ export default function SavedBooks() {
     }
   };
 
-  // Function to render Amazon star ratings
-  const renderRating = (rating: string) => {
-    const numRating = parseFloat(rating);
-    const fullStars = Math.floor(numRating);
-    const hasHalfStar = numRating % 1 >= 0.5;
-    
-    return (
-      <div className="flex items-center">
-        <div className="flex text-yellow-400">
-          {[...Array(fullStars)].map((_, i) => (
-            <Star key={i} className="h-4 w-4 fill-current" />
-          ))}
-          {hasHalfStar && <StarHalf className="h-4 w-4 fill-current" />}
-        </div>
-        <span className="text-sm ml-1 text-slate-400">{numRating.toFixed(1)}</span>
-      </div>
-    );
-  };
+  // This function is not used anymore since we render stars directly in the JSX
 
   return (
     <div className="bg-black min-h-screen">
@@ -171,11 +154,11 @@ export default function SavedBooks() {
                           ))}
                           {parseFloat(book.rating) % 1 >= 0.5 && <StarHalf className="h-4 w-4 fill-current" />}
                           {[...Array(5 - Math.ceil(parseFloat(book.rating)))].map((_, i) => (
-                            <Star key={i} className="h-4 w-4 text-gray-700" />
+                            <Star key={`empty-${i}`} className="h-4 w-4 text-gray-700" />
                           ))}
                         </div>
                         <span className="text-sm ml-2 text-slate-400 whitespace-nowrap">
-                          {parseFloat(book.rating).toFixed(1)}
+                          {book.rating}
                         </span>
                       </div>
                       
