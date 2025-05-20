@@ -2,7 +2,8 @@ import {
   users, type User, type InsertUser,
   preferences, type Preference, type InsertPreference,
   books, type Book, type InsertBook,
-  recommendations, type Recommendation, type InsertRecommendation
+  recommendations, type Recommendation, type InsertRecommendation,
+  savedBooks, type SavedBook, type InsertSavedBook
 } from "@shared/schema";
 
 // Storage interface
@@ -24,6 +25,11 @@ export interface IStorage {
   // Recommendations methods
   getRecommendationsByUserId(userId: number): Promise<Recommendation[]>;
   createRecommendation(recommendation: InsertRecommendation): Promise<Recommendation>;
+  
+  // Saved Books methods
+  getSavedBooksByDeviceId(deviceId: string): Promise<SavedBook[]>;
+  createSavedBook(savedBook: InsertSavedBook): Promise<SavedBook>;
+  deleteSavedBook(id: number): Promise<boolean>;
 }
 
 // Memory storage implementation
@@ -32,20 +38,24 @@ export class MemStorage implements IStorage {
   private preferences: Map<number, Preference>;
   private books: Map<number, Book>;
   private recommendations: Map<number, Recommendation>;
+  private savedBooks: Map<number, SavedBook>;
   private userIdCounter: number;
   private preferenceIdCounter: number;
   private bookIdCounter: number;
   private recommendationIdCounter: number;
+  private savedBookIdCounter: number;
 
   constructor() {
     this.users = new Map();
     this.preferences = new Map();
     this.books = new Map();
     this.recommendations = new Map();
+    this.savedBooks = new Map();
     this.userIdCounter = 1;
     this.preferenceIdCounter = 1;
     this.bookIdCounter = 1;
     this.recommendationIdCounter = 1;
+    this.savedBookIdCounter = 1;
   }
 
   // User methods
@@ -151,6 +161,32 @@ export class MemStorage implements IStorage {
     };
     this.recommendations.set(id, recommendation);
     return recommendation;
+  }
+
+  // Saved Books methods
+  async getSavedBooksByDeviceId(deviceId: string): Promise<SavedBook[]> {
+    return Array.from(this.savedBooks.values()).filter(
+      (savedBook) => savedBook.deviceId === deviceId
+    );
+  }
+
+  async createSavedBook(insertSavedBook: InsertSavedBook): Promise<SavedBook> {
+    const id = this.savedBookIdCounter++;
+    const now = new Date();
+    const savedBook: SavedBook = {
+      ...insertSavedBook,
+      id,
+      coverUrl: insertSavedBook.coverUrl || null,
+      rating: insertSavedBook.rating || null,
+      summary: insertSavedBook.summary || null,
+      savedAt: now
+    };
+    this.savedBooks.set(id, savedBook);
+    return savedBook;
+  }
+
+  async deleteSavedBook(id: number): Promise<boolean> {
+    return this.savedBooks.delete(id);
   }
 }
 

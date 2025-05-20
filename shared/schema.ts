@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, jsonb } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, jsonb, timestamp } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -72,6 +72,27 @@ export const insertRecommendationSchema = createInsertSchema(recommendations).pi
   summary: true,
 });
 
+// Saved books schema
+export const savedBooks = pgTable("saved_books", {
+  id: serial("id").primaryKey(),
+  deviceId: text("device_id").notNull(),
+  title: text("title").notNull(),
+  author: text("author").notNull(),
+  coverUrl: text("cover_url"),
+  rating: text("rating"),
+  summary: text("summary"),
+  savedAt: timestamp("saved_at").defaultNow(),
+});
+
+export const insertSavedBookSchema = createInsertSchema(savedBooks).pick({
+  deviceId: true,
+  title: true,
+  author: true,
+  coverUrl: true,
+  rating: true,
+  summary: true,
+});
+
 // Type definitions
 export type User = typeof users.$inferSelect;
 export type InsertUser = z.infer<typeof insertUserSchema>;
@@ -84,3 +105,6 @@ export type InsertBook = z.infer<typeof insertBookSchema>;
 
 export type Recommendation = typeof recommendations.$inferSelect;
 export type InsertRecommendation = z.infer<typeof insertRecommendationSchema>;
+
+export type SavedBook = typeof savedBooks.$inferSelect;
+export type InsertSavedBook = z.infer<typeof insertSavedBookSchema>;
