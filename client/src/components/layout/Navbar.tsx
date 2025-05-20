@@ -38,12 +38,13 @@ export default function Navbar({ sidebarOpen, toggleSidebar, toggleChat }: Navba
                 xmlns="http://www.w3.org/2000/svg" 
                 className="h-8 w-8 text-primary" 
                 viewBox="0 0 24 24" 
-                fill="currentColor"
+                fill="none"
+                stroke="currentColor" 
+                strokeWidth="2" 
+                strokeLinecap="round" 
+                strokeLinejoin="round"
               >
-                <path d="M4 4h16a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z"></path>
-                <path d="M9 14l6-6" stroke="white" strokeWidth="2" strokeLinecap="round"></path>
-                <circle cx="9" cy="14" r="2" fill="white"></circle>
-                <circle cx="15" cy="8" r="2" fill="white"></circle>
+                <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path>
               </svg>
               <span className="text-xl font-semibold text-white">ShelfScanner</span>
             </div>
