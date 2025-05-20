@@ -96,6 +96,7 @@ export class MemStorage implements IStorage {
     const preference: Preference = { 
       ...insertPreference, 
       id,
+      deviceId: insertPreference.deviceId || null,
       authors: insertPreference.authors || null,
       goodreadsData: insertPreference.goodreadsData || null
     };
