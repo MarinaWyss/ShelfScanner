@@ -89,7 +89,7 @@ export default function SavedBooks() {
   // Using the centralized StarRating component instead of local implementation
 
   return (
-    <div className="bg-black min-h-screen">
+    <div className="bg-gray-800 min-h-screen">
       <div className="container mx-auto px-4 py-8">
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-2xl font-bold text-white">Reading List</h1>
