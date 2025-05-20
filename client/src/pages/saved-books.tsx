@@ -33,6 +33,7 @@ export default function SavedBooks() {
         }
         
         const books = await response.json();
+        console.log("Retrieved saved books:", books);
         setSavedBooks(books);
       } catch (err) {
         console.error("Error fetching saved books:", err);
@@ -147,25 +148,34 @@ export default function SavedBooks() {
                     <p className="text-slate-400 text-sm mt-1">{book.author}</p>
                     
                     <div className="mt-3">
-                      <div className="flex flex-col">
-                        <div className="flex items-center mb-1">
-                          <span className="text-sm text-slate-400">Rating value: {book.rating} (Type: {typeof book.rating})</span>
+                      <div className="flex items-center">
+                        <div className="flex text-yellow-400">
+                          {(() => {
+                            // Parse the rating string to a number
+                            const ratingValue = parseFloat(book.rating);
+                            
+                            // Create an array for the 5 stars
+                            return Array.from({ length: 5 }).map((_, index) => {
+                              const starValue = index + 1;
+                              
+                              // Full star
+                              if (starValue <= ratingValue) {
+                                return <Star key={`star-${index}`} className="h-4 w-4 fill-current" />;
+                              }
+                              // Half star
+                              else if (starValue - 0.5 <= ratingValue) {
+                                return <StarHalf key={`star-${index}`} className="h-4 w-4 fill-current" />;
+                              }
+                              // Empty star
+                              else {
+                                return <Star key={`star-${index}`} className="h-4 w-4 text-gray-700" />;
+                              }
+                            });
+                          })()}
                         </div>
-                        
-                        <div className="flex gap-2 items-center">
-                          <div className="flex">
-                            {/* Manual hardcoded stars for the 4.7 rating */}
-                            <Star className="h-5 w-5 text-yellow-400 fill-current" />
-                            <Star className="h-5 w-5 text-yellow-400 fill-current" />
-                            <Star className="h-5 w-5 text-yellow-400 fill-current" />
-                            <Star className="h-5 w-5 text-yellow-400 fill-current" />
-                            <StarHalf className="h-5 w-5 text-yellow-400 fill-current" />
-                          </div>
-                          
-                          <span className="text-sm text-slate-400 whitespace-nowrap">
-                            {book.rating}
-                          </span>
-                        </div>
+                        <span className="text-sm ml-2 text-slate-400 whitespace-nowrap">
+                          {book.rating}
+                        </span>
                       </div>
                       
                       <div className="mt-2 flex items-center">
