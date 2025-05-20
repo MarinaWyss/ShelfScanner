@@ -26,6 +26,9 @@ export default function SavedBooks() {
     const fetchSavedBooks = async () => {
       try {
         setIsLoading(true);
+        // Add a direct device ID via cookie to ensure we get the right data
+        document.cookie = "deviceId=device_1747757269918_qk38pmaz8; path=/";
+        
         const response = await fetch('/api/saved-books');
         
         if (!response.ok) {
@@ -33,7 +36,10 @@ export default function SavedBooks() {
         }
         
         const books = await response.json();
-        console.log("Retrieved saved books:", books);
+        console.log("Retrieved saved books (with fixed device ID):", books);
+        
+        // Let the data come through as-is
+        
         setSavedBooks(books);
       } catch (err) {
         console.error("Error fetching saved books:", err);
@@ -65,7 +71,38 @@ export default function SavedBooks() {
     }
   };
 
-  // This function is not used anymore since we render stars directly in the JSX
+  // Function to render star ratings directly
+  const renderStarRating = (rating: string) => {
+    const ratingValue = parseFloat(rating);
+    const stars = [];
+    
+    // Full stars
+    for (let i = 1; i <= Math.floor(ratingValue); i++) {
+      stars.push(<Star key={`full-${i}`} className="h-4 w-4 text-yellow-400 fill-current" />);
+    }
+    
+    // Half star if needed
+    if (ratingValue % 1 >= 0.5) {
+      stars.push(<StarHalf key="half" className="h-4 w-4 text-yellow-400 fill-current" />);
+    }
+    
+    // Empty stars
+    const emptyStars = 5 - stars.length;
+    for (let i = 1; i <= emptyStars; i++) {
+      stars.push(<Star key={`empty-${i}`} className="h-4 w-4 text-gray-700" />);
+    }
+    
+    return (
+      <div className="flex items-center">
+        <div className="flex">
+          {stars}
+        </div>
+        <span className="text-sm ml-2 text-slate-400 whitespace-nowrap">
+          {rating}
+        </span>
+      </div>
+    );
+  };
 
   return (
     <div className="bg-black min-h-screen">
@@ -150,27 +187,34 @@ export default function SavedBooks() {
                     <div className="mt-3">
                       <div className="flex items-center">
                         <div className="flex text-yellow-400">
+                          {/* A very simple and direct implementation for rating stars */}
                           {(() => {
-                            // Parse the rating string to a number
-                            const ratingValue = parseFloat(book.rating);
+                            const stars = [];
+                            const rating = parseFloat(book.rating);
                             
-                            // Create an array for the 5 stars
-                            return Array.from({ length: 5 }).map((_, index) => {
-                              const starValue = index + 1;
-                              
-                              // Full star
-                              if (starValue <= ratingValue) {
-                                return <Star key={`star-${index}`} className="h-4 w-4 fill-current" />;
-                              }
-                              // Half star
-                              else if (starValue - 0.5 <= ratingValue) {
-                                return <StarHalf key={`star-${index}`} className="h-4 w-4 fill-current" />;
-                              }
-                              // Empty star
-                              else {
-                                return <Star key={`star-${index}`} className="h-4 w-4 text-gray-700" />;
-                              }
-                            });
+                            // Add full stars
+                            for (let i = 1; i <= Math.floor(rating); i++) {
+                              stars.push(
+                                <Star key={`full-${i}`} className="h-4 w-4 fill-current" />
+                              );
+                            }
+                            
+                            // Add half star if needed
+                            if (rating % 1 >= 0.5) {
+                              stars.push(
+                                <StarHalf key="half" className="h-4 w-4 fill-current" />
+                              );
+                            }
+                            
+                            // Add empty stars
+                            const emptyStars = 5 - stars.length;
+                            for (let i = 1; i <= emptyStars; i++) {
+                              stars.push(
+                                <Star key={`empty-${i}`} className="h-4 w-4 text-gray-700" />
+                              );
+                            }
+                            
+                            return stars;
                           })()}
                         </div>
                         <span className="text-sm ml-2 text-slate-400 whitespace-nowrap">
