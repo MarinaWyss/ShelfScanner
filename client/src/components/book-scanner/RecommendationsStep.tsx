@@ -10,6 +10,10 @@ interface Recommendation {
   rating: string;
   summary: string;
   matchScore?: number;
+  alreadyRead?: boolean;
+  isBookRecommendation?: boolean;
+  isBookYouveRead?: boolean;
+  originalReadTitle?: string;
 }
 
 interface RecommendationsStepProps {
@@ -93,66 +97,145 @@ export default function RecommendationsStep({ recommendations, isLoading }: Reco
       )}
       
       {!isLoading && recommendations.length > 0 && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {recommendations.map((book, index) => (
-            <div 
-              key={index} 
-              className="bg-white border border-neutral-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
-            >
-              <div className="p-4 flex">
-                {book.coverUrl ? (
-                  <img 
-                    src={book.coverUrl} 
-                    alt={book.title} 
-                    className="w-24 h-36 object-cover rounded-md" 
-                  />
-                ) : (
-                  <div className="w-24 h-36 bg-neutral-100 flex items-center justify-center rounded-md">
-                    <svg 
-                      xmlns="http://www.w3.org/2000/svg" 
-                      width="24" 
-                      height="24" 
-                      viewBox="0 0 24 24" 
-                      fill="none" 
-                      stroke="currentColor" 
-                      strokeWidth="2" 
-                      strokeLinecap="round" 
-                      strokeLinejoin="round" 
-                      className="h-8 w-8 text-neutral-400"
-                    >
-                      <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
-                    </svg>
-                  </div>
-                )}
-                <div className="ml-4">
-                  <h4 className="font-semibold text-neutral-800 line-clamp-2">{book.title}</h4>
-                  <p className="text-neutral-500 text-sm">{book.author}</p>
-                  
-                  <div className="mt-2 flex items-center">
-                    {renderRating(book.rating)}
-                    {book.matchScore !== undefined && (
-                      <span className="ml-2 bg-green-100 text-green-800 text-xs font-medium px-2 py-0.5 rounded">
-                        {book.matchScore > 8 ? "Perfect match!" : 
-                         book.matchScore > 5 ? "Great match" : 
-                         book.matchScore > 3 ? "Good match" : "Possible match"}
-                      </span>
+        <div className="space-y-8">
+          {/* New recommendations section */}
+          <div>
+            <h3 className="text-lg font-semibold mb-4 text-primary-700">Recommended for You</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {recommendations
+                .filter(book => !book.alreadyRead)
+                .map((book, index) => (
+                <div 
+                  key={index} 
+                  className="bg-white border border-neutral-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                >
+                  <div className="p-4 flex">
+                    {book.coverUrl ? (
+                      <img 
+                        src={book.coverUrl} 
+                        alt={book.title} 
+                        className="w-24 h-36 object-cover rounded-md" 
+                      />
+                    ) : (
+                      <div className="w-24 h-36 bg-neutral-100 flex items-center justify-center rounded-md">
+                        <svg 
+                          xmlns="http://www.w3.org/2000/svg" 
+                          width="24" 
+                          height="24" 
+                          viewBox="0 0 24 24" 
+                          fill="none" 
+                          stroke="currentColor" 
+                          strokeWidth="2" 
+                          strokeLinecap="round" 
+                          strokeLinejoin="round" 
+                          className="h-8 w-8 text-neutral-400"
+                        >
+                          <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
+                        </svg>
+                      </div>
                     )}
+                    <div className="ml-4">
+                      <h4 className="font-semibold text-neutral-800 line-clamp-2">{book.title}</h4>
+                      <p className="text-neutral-500 text-sm">{book.author}</p>
+                      
+                      <div className="mt-2 flex items-center">
+                        {renderRating(book.rating)}
+                        {book.matchScore !== undefined && (
+                          <span className="ml-2 bg-green-100 text-green-800 text-xs font-medium px-2 py-0.5 rounded">
+                            {book.matchScore > 8 ? "Perfect match!" : 
+                             book.matchScore > 5 ? "Great match" : 
+                             book.matchScore > 3 ? "Good match" : "Possible match"}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="p-4 border-t border-neutral-200">
+                    <p className="text-sm text-neutral-600 line-clamp-3">{book.summary}</p>
+                    <div className="mt-3 flex justify-between">
+                      <button className="text-primary-600 hover:text-primary-700 text-sm font-medium">
+                        Add to List
+                      </button>
+                      <button className="text-neutral-600 hover:text-neutral-800 text-sm">
+                        View Details
+                      </button>
+                    </div>
                   </div>
                 </div>
-              </div>
-              <div className="p-4 border-t border-neutral-200">
-                <p className="text-sm text-neutral-600 line-clamp-3">{book.summary}</p>
-                <div className="mt-3 flex justify-between">
-                  <button className="text-primary-600 hover:text-primary-700 text-sm font-medium">
-                    Add to List
-                  </button>
-                  <button className="text-neutral-600 hover:text-neutral-800 text-sm">
-                    View Details
-                  </button>
-                </div>
+              ))}
+            </div>
+          </div>
+          
+          {/* Books you've already read section */}
+          {recommendations.some(book => book.alreadyRead) && (
+            <div className="mt-10">
+              <h3 className="text-lg font-semibold mb-4 text-purple-700">Books You've Already Read</h3>
+              <p className="text-slate-400 mb-4">
+                We found these books in your photo that match your reading history from Goodreads.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {recommendations
+                  .filter(book => book.alreadyRead)
+                  .map((book, index) => (
+                  <div 
+                    key={`read-${index}`} 
+                    className="bg-white border border-purple-100 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                  >
+                    <div className="p-4 flex">
+                      {book.coverUrl ? (
+                        <img 
+                          src={book.coverUrl} 
+                          alt={book.title} 
+                          className="w-24 h-36 object-cover rounded-md" 
+                        />
+                      ) : (
+                        <div className="w-24 h-36 bg-neutral-100 flex items-center justify-center rounded-md">
+                          <svg 
+                            xmlns="http://www.w3.org/2000/svg" 
+                            width="24" 
+                            height="24" 
+                            viewBox="0 0 24 24" 
+                            fill="none" 
+                            stroke="currentColor" 
+                            strokeWidth="2" 
+                            strokeLinecap="round" 
+                            strokeLinejoin="round" 
+                            className="h-8 w-8 text-neutral-400"
+                          >
+                            <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
+                          </svg>
+                        </div>
+                      )}
+                      <div className="ml-4">
+                        <h4 className="font-semibold text-neutral-800 line-clamp-2">{book.title}</h4>
+                        <p className="text-neutral-500 text-sm">{book.author}</p>
+                        
+                        <div className="mt-2 flex items-center">
+                          {renderRating(book.rating)}
+                          <span className="ml-2 bg-purple-100 text-purple-800 text-xs font-medium px-2 py-0.5 rounded">
+                            Already Read
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="p-4 border-t border-neutral-200">
+                      <p className="text-sm text-neutral-600 mb-2">
+                        You read this as: <span className="font-medium">{book.originalReadTitle || book.title}</span>
+                      </p>
+                      <div className="mt-3 flex justify-between">
+                        <button className="text-purple-600 hover:text-purple-700 text-sm font-medium">
+                          View on Goodreads
+                        </button>
+                        <button className="text-neutral-600 hover:text-neutral-800 text-sm">
+                          View Details
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
-          ))}
+          )}
         </div>
       )}
     </div>

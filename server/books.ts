@@ -95,6 +95,15 @@ export async function searchBooksByTitle(title: string): Promise<any[]> {
   }
 }
 
+// Helper function to normalize book titles for comparison
+const normalizeBookTitle = (title: string): string => {
+  return title
+    .toLowerCase()
+    .replace(/[^\w\s]/g, '') // Remove punctuation
+    .replace(/\s+/g, ' ')    // Normalize whitespace
+    .trim();
+};
+
 export async function getRecommendations(
   books: any[],
   preferences: any
@@ -110,7 +119,7 @@ export async function getRecommendations(
     const preferredGenres = preferences.genres || [];
     
     // Create a map of books the user has already read (if Goodreads data exists)
-    // We'll use a more robust matching approach using normalized titles
+    // We'll use a robust matching approach using normalized titles
     const alreadyReadBooks: { normalizedTitle: string, originalTitle: string }[] = [];
     if (preferences.goodreadsData && Array.isArray(preferences.goodreadsData)) {
       preferences.goodreadsData.forEach((entry: any) => {
@@ -125,23 +134,15 @@ export async function getRecommendations(
       console.log(`Found ${alreadyReadBooks.length} books the user has already read in Goodreads data`);
     }
     
-    // Helper function to normalize book titles for comparison
-    function normalizeBookTitle(title: string): string {
-      return title
-        .toLowerCase()
-        .replace(/[^\w\s]/g, '') // Remove punctuation
-        .replace(/\s+/g, ' ')    // Normalize whitespace
-        .trim();
-    }
+    // Separate books into two categories: new books and already read books
+    let newBooks: any[] = [];
+    let alreadyReadBooks2: any[] = [];
     
-    // Filter out books the user has already read
-    let availableBooks = books;
     if (alreadyReadBooks.length > 0) {
-      availableBooks = books.filter(book => {
+      books.forEach(book => {
         const normalizedBookTitle = normalizeBookTitle(book.title);
         
         // Check if this book title matches (or is contained in) any of the user's read books
-        // This handles cases where the book title might be slightly different or abbreviated
         const matchingTitle = alreadyReadBooks.find(readBook => {
           return normalizedBookTitle.includes(readBook.normalizedTitle) || 
                  readBook.normalizedTitle.includes(normalizedBookTitle);
@@ -149,25 +150,27 @@ export async function getRecommendations(
         
         // If we found a match, this book has been read already
         if (matchingTitle) {
-          console.log(`Filtered out "${book.title}" as user has already read "${matchingTitle.originalTitle}"`);
-          return false;
+          console.log(`Identified "${book.title}" as user has already read "${matchingTitle.originalTitle}"`);
+          // Mark this book as already read and add to already read list
+          alreadyReadBooks2.push({
+            ...book,
+            alreadyRead: true,
+            originalReadTitle: matchingTitle.originalTitle
+          });
+        } else {
+          // This is a new book, add to new books list
+          newBooks.push(book);
         }
-        
-        // No match found, keep this book
-        return true;
       });
       
-      console.log(`Filtered ${books.length - availableBooks.length} books the user has already read`);
+      console.log(`Separated ${alreadyReadBooks2.length} books the user has already read from ${newBooks.length} new books`);
+    } else {
+      // No Goodreads data available, all books are new
+      newBooks = books;
     }
     
-    // If filtering removed all books, use original list (better some recommendations than none)
-    if (availableBooks.length === 0) {
-      console.log("All books were filtered out - using original list");
-      availableBooks = books;
-    }
-    
-    // Score each book based on user preferences
-    const scoredBooks = availableBooks.map(book => {
+    // Function to score books based on preferences
+    const scoreBook = (book: any) => {
       // Start with a base score based on rating (if available)
       let score = book.rating ? parseFloat(book.rating) : 0;
       
@@ -256,14 +259,20 @@ export async function getRecommendations(
         ...book,
         score
       };
-    });
+    };
     
-    // Sort books by score, highest first
-    scoredBooks.sort((a, b) => b.score - a.score);
-    console.log("Final scored books:", scoredBooks.map(b => `${b.title}: ${b.score}`));
+    // Score new books
+    const scoredNewBooks = newBooks.map(scoreBook);
     
-    // Return the original books, just sorted by preference score
-    return scoredBooks.map(book => ({
+    // Score already read books (if any)
+    const scoredReadBooks = alreadyReadBooks2.map(scoreBook);
+    
+    // Sort each list by score
+    scoredNewBooks.sort((a, b) => b.score - a.score);
+    scoredReadBooks.sort((a, b) => b.score - a.score);
+    
+    // Format new books for display
+    const formattedNewBooks = scoredNewBooks.map(book => ({
       title: book.title || 'Unknown Title',
       author: book.author || 'Unknown Author',
       coverUrl: book.coverUrl || '',
@@ -271,9 +280,32 @@ export async function getRecommendations(
       rating: book.rating || 0,
       matchScore: Math.round(book.score), // Round to whole number for display
       isbn: book.isbn,
-      // Include the source that detected this book (for debugging)
-      detectedFrom: book.detectedFrom
+      alreadyRead: false,
+      isBookRecommendation: true  // This is a new book recommendation
     }));
+    
+    // Format already read books for display
+    const formattedReadBooks = scoredReadBooks.map(book => ({
+      title: book.title || 'Unknown Title',
+      author: book.author || 'Unknown Author',
+      coverUrl: book.coverUrl || '',
+      summary: book.summary || 'No summary available',
+      rating: book.rating || 0,
+      matchScore: Math.round(book.score), // Round to whole number for display
+      isbn: book.isbn,
+      alreadyRead: true,
+      originalReadTitle: book.originalReadTitle,
+      isBookYouveRead: true  // This book has been read already
+    }));
+    
+    // Log the final sorted books
+    console.log("Final scored NEW books:", scoredNewBooks.map(b => `${b.title}: ${b.score}`));
+    if (scoredReadBooks.length > 0) {
+      console.log("Books you've already READ:", scoredReadBooks.map(b => `${b.title}: ${b.score}`));
+    }
+    
+    // Return new books first, then already read books
+    return [...formattedNewBooks, ...formattedReadBooks];
   } catch (error) {
     log(`Error getting recommendations: ${error instanceof Error ? error.message : String(error)}`, 'books');
     return [];
