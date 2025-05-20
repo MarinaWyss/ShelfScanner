@@ -4,10 +4,10 @@ import { storage } from "./storage";
 import { analyzeImage } from "./vision";
 import { analyzeBookshelfImage } from "./openai-vision";
 import { searchBooksByTitle, getRecommendations } from "./books";
+import { getAmazonBookRating, getEstimatedBookRating } from "./amazon";
 import multer from "multer";
 import { z } from "zod";
-import { insertPreferenceSchema, insertBookSchema, insertRecommendationSchema, insertSavedBookSchema } from "@shared/schema";
-import cookieParser from "cookie-parser";
+import { insertPreferenceSchema, insertBookSchema, insertRecommendationSchema } from "@shared/schema";
 
 // In-memory storage for multer
 const upload = multer({
@@ -18,27 +18,6 @@ const upload = multer({
 });
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Helper function to get or create a device ID for persistent storage
-  function getOrCreateDeviceId(req: Request, res: Response): string {
-    // Try to get deviceId from cookies
-    let deviceId = req.cookies?.deviceId;
-    
-    // If no deviceId, create a new one
-    if (!deviceId) {
-      deviceId = `device_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;
-      
-      // Set it as a cookie that lasts for 1 year
-      res.cookie('deviceId', deviceId, {
-        maxAge: 365 * 24 * 60 * 60 * 1000, // 1 year
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict'
-      });
-    }
-    
-    return deviceId;
-  }
-  
   // API routes
   const apiRouter = app.route('/api');
   
@@ -263,26 +242,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Save user preferences
   app.post('/api/preferences', async (req: Request, res: Response) => {
     try {
-      // Get or create device ID for the user
-      const deviceId = getOrCreateDeviceId(req, res);
-      const userId = 1; // Default user ID (kept for compatibility)
+      const userId = 1; // Default user ID
       
       // Validate request body
       const validatedData = insertPreferenceSchema.parse({
         ...req.body,
-        userId,
-        deviceId // Store the device ID with preferences
+        userId
       });
       
-      // Check if preferences already exist for this device
-      const existingPreferences = await storage.getPreferencesByDeviceId(deviceId);
+      // Check if preferences already exist for this user
+      const existingPreferences = await storage.getPreferencesByUserId(userId);
       
       let preferences;
       if (existingPreferences) {
-        // Update existing preferences, preserving Goodreads data if not provided in the new request
-        if (!validatedData.goodreadsData && existingPreferences.goodreadsData) {
-          validatedData.goodreadsData = existingPreferences.goodreadsData;
-        }
+        // Update existing preferences
         preferences = await storage.updatePreference(existingPreferences.id, validatedData);
       } else {
         // Create new preferences
@@ -302,17 +275,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get user preferences
   app.get('/api/preferences', async (req: Request, res: Response) => {
     try {
-      // Get device ID from the request
-      const deviceId = getOrCreateDeviceId(req, res);
+      const userId = 1; // Default user ID
       
-      // First try to get preferences by device ID
-      let preferences = await storage.getPreferencesByDeviceId(deviceId);
-      
-      // If not found, fall back to user ID for backward compatibility
-      if (!preferences) {
-        const userId = 1; // Default user ID
-        preferences = await storage.getPreferencesByUserId(userId);
-      }
+      const preferences = await storage.getPreferencesByUserId(userId);
       
       if (!preferences) {
         return res.status(404).json({ message: 'Preferences not found' });
@@ -390,114 +355,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Get books from request or from storage
-      let books = req.body.books || await storage.getBooksByUserId(userId);
-      
-      // Ensure books is an array (handle single book object)
-      if (!Array.isArray(books)) {
-        books = [books];
-      }
-      
-      console.log(`Books received in recommendations: ${books.length}`, 
-        books.map((b: any) => b.title));
+      const books = req.body.books || await storage.getBooksByUserId(userId);
       
       if (!books || books.length === 0) {
         return res.status(400).json({ message: 'No books provided or found for this user' });
       }
       
-      // Add book categories using hardcoded data for the test bookshelf
-      books = books.map((book: any) => {
-        if (!book.categories) {
-          book.categories = [];
-        }
-        
-        // Normalize the title and author for comparison
-        const title = (book.title || '').toLowerCase().trim();
-        const author = (book.author || '').toLowerCase().trim();
-        
-        // Clear match method to ensure no duplicates
-        book.categories = [];
-        
-        // Match specific books in your bookshelf
-        if (title.includes('stranger in a strange land') || author.includes('heinlein')) {
-          book.categories.push('Science Fiction');
-          book.rating = "4.5";
-        }
-        
-        if (title.includes('leviathan wakes') || author.includes('corey') || title.includes('corey') || 
-            title.includes('expanse') || title.includes('leviathan')) {
-          book.categories.push('Science Fiction');
-          book.rating = "4.7";
-        }
-        
-        if ((title.includes('rift') && author.includes('williams')) || 
-            (title.includes('rift') && title.includes('walter'))) {
-          book.categories.push('Science Fiction');
-          book.rating = "4.2";
-        }
-        
-        if (title.includes('cognitive behavioral') || title.includes('therapy') || 
-            title.includes('cognitive')) {
-          book.categories.push('Self-Help');
-          book.categories.push('Non-Fiction');
-          book.rating = "4.6";
-        }
-        
-        if (title.includes('overdiagnosed') || title.includes('diagnosed') || 
-            title.includes('health') || author.includes('welch')) {
-          book.categories.push('Non-Fiction');
-          book.rating = "4.4";
-        }
-        
-        if (title.includes('awe') || title.includes('transform') || 
-            title.includes('wonder') || author.includes('keltner')) {
-          book.categories.push('Self-Help');
-          book.categories.push('Non-Fiction');
-          book.rating = "4.3";
-        }
-        
-        if (title.includes('mythos') || title.includes('myths') || 
-            title.includes('greek') || author.includes('fry')) {
-          book.categories.push('Non-Fiction');
-          book.rating = "4.7";
-        }
-        
-        if (title.includes('the promise') || author.includes('steel') || 
-            author.includes('danielle')) {
-          book.categories.push('Fiction');
-          book.categories.push('Romance');
-          book.rating = "4.1";
-        }
-        
-        if (title.includes('north and south') || author.includes('gaskell')) {
-          book.categories.push('Fiction');
-          book.categories.push('Classic');
-          book.rating = "4.4";
-        }
-        
-        // If no categories were found, assign a default one based on title
-        if (book.categories.length === 0) {
-          if (title.includes('fiction') || title.includes('novel')) {
-            book.categories.push('Fiction');
-          } else {
-            book.categories.push('Unknown');
-          }
-          
-          // Set a default rating if none exists
-          if (!book.rating) {
-            book.rating = "4.0";
-          }
-        }
-        
-        return book;
-      });
-      
-      // First, clear any existing recommendations for this user
-      await storage.clearRecommendationsByUserId(userId);
-      
-      // Generate recommendations ONLY from the identified books (no external API requests)
+      // Generate recommendations
       const recommendationsData = await getRecommendations(books, preferences);
       
-      // Save new recommendations
+      // Save recommendations
       const savedRecommendations = [];
       
       for (const recommendation of recommendationsData) {
@@ -508,14 +375,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
         
         // Validate recommendation data
-        // The bookId field is required, so we'll use the book's ID if available or default to 1
         const validatedData = insertRecommendationSchema.parse({
           userId,
-          bookId: matchingBook?.id || 1, // Default to 1 if no matching book ID is found
+          bookId: matchingBook?.id,
           title: recommendation.title,
           author: recommendation.author,
-          coverUrl: recommendation.coverUrl || '',
-          summary: recommendation.summary || 'No summary available',
+          coverUrl: recommendation.coverUrl,
+          summary: recommendation.summary,
           rating: recommendation.rating?.toString() || "0"
         });
         
@@ -548,64 +414,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: 'Error getting recommendations',
         error: error instanceof Error ? error.message : String(error)
       });
-    }
-  });
-  
-  // API endpoint to save a book for later
-  app.post('/api/saved-books', async (req: Request, res: Response) => {
-    try {
-      const deviceId = getOrCreateDeviceId(req, res);
-      
-      // Validate request body
-      const bookData = insertSavedBookSchema.parse({
-        ...req.body,
-        deviceId: deviceId
-      });
-      
-      // Save the book
-      const savedBook = await storage.createSavedBook(bookData);
-      res.status(201).json(savedBook);
-    } catch (error) {
-      console.error("Error saving book:", error);
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ 
-          message: "Invalid book data", 
-          errors: error.errors 
-        });
-      }
-      res.status(500).json({ message: "An error occurred while saving the book" });
-    }
-  });
-  
-  // API endpoint to get saved books
-  app.get('/api/saved-books', async (req: Request, res: Response) => {
-    try {
-      const deviceId = getOrCreateDeviceId(req, res);
-      const savedBooks = await storage.getSavedBooksByDeviceId(deviceId);
-      res.json(savedBooks);
-    } catch (error) {
-      console.error("Error fetching saved books:", error);
-      res.status(500).json({ message: "An error occurred while fetching saved books" });
-    }
-  });
-  
-  // API endpoint to delete a saved book
-  app.delete('/api/saved-books/:id', async (req: Request, res: Response) => {
-    try {
-      const id = parseInt(req.params.id);
-      if (isNaN(id)) {
-        return res.status(400).json({ message: "Invalid book ID" });
-      }
-      
-      const success = await storage.deleteSavedBook(id);
-      if (success) {
-        res.status(204).send();
-      } else {
-        res.status(404).json({ message: "Book not found" });
-      }
-    } catch (error) {
-      console.error("Error deleting saved book:", error);
-      res.status(500).json({ message: "An error occurred while deleting the book" });
     }
   });
   
