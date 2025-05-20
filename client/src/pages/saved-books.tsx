@@ -26,8 +26,14 @@ export default function SavedBooks() {
     const fetchSavedBooks = async () => {
       try {
         setIsLoading(true);
-        const response = await apiRequest<SavedBook[]>('/api/saved-books');
-        setSavedBooks(response);
+        const response = await fetch('/api/saved-books');
+        
+        if (!response.ok) {
+          throw new Error(`Failed to fetch books: ${response.status}`);
+        }
+        
+        const books = await response.json();
+        setSavedBooks(books);
       } catch (err) {
         console.error("Error fetching saved books:", err);
         setError("Failed to load your saved books. Please try again later.");
@@ -42,9 +48,14 @@ export default function SavedBooks() {
   // Function to remove a book from saved list
   const removeBook = async (id: number) => {
     try {
-      await apiRequest(`/api/saved-books/${id}`, {
+      const response = await fetch(`/api/saved-books/${id}`, {
         method: 'DELETE',
       });
+      
+      if (!response.ok) {
+        throw new Error(`Failed to delete book: ${response.status}`);
+      }
+      
       // Update UI by removing the deleted book
       setSavedBooks((prevBooks) => prevBooks.filter((book) => book.id !== id));
     } catch (err) {

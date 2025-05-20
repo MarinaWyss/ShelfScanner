@@ -1,6 +1,9 @@
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Star, StarHalf } from "lucide-react";
+import { useState } from "react";
+import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 
 interface Recommendation {
   id?: number;
@@ -23,6 +26,47 @@ interface RecommendationsStepProps {
 }
 
 export default function RecommendationsStep({ recommendations, isLoading, goodreadsData }: RecommendationsStepProps) {
+  const [savingBookIds, setSavingBookIds] = useState<number[]>([]);
+  const { toast } = useToast();
+
+  // Function to save a book to the reading list
+  const saveBookForLater = async (book: Recommendation) => {
+    try {
+      // Add book ID to loading state
+      setSavingBookIds(prev => [...prev, book.id || 0]);
+      
+      // Send request to save book
+      await apiRequest(
+        'POST',
+        '/api/saved-books',
+        {
+          title: book.title,
+          author: book.author,
+          coverUrl: book.coverUrl,
+          rating: book.rating,
+          summary: book.summary || 'No summary available'
+        }
+      );
+      
+      // Show success message
+      toast({
+        title: "Book saved",
+        description: `${book.title} has been added to your reading list`,
+        variant: "default",
+      });
+    } catch (error) {
+      console.error("Error saving book:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save book. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      // Remove book ID from loading state
+      setSavingBookIds(prev => prev.filter(id => id !== (book.id || 0)));
+    }
+  };
+
   // Function to check if a book has already been read based on Goodreads data
   const isBookAlreadyRead = (book: Recommendation): boolean => {
     if (!goodreadsData || !Array.isArray(goodreadsData) || goodreadsData.length === 0) {
@@ -190,7 +234,27 @@ export default function RecommendationsStep({ recommendations, isLoading, goodre
                   <div className="p-4 border-t border-neutral-200">
                     <p className="text-sm text-neutral-600 line-clamp-3">{book.summary}</p>
                     <div className="mt-3 flex justify-between">
-                      <button className="text-primary-600 hover:text-primary-700 text-sm font-medium">
+                      <button 
+                        className={`text-primary-600 hover:text-primary-700 text-sm font-medium flex items-center ${savingBookIds.includes(book.id || 0) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        onClick={() => saveBookForLater(book)}
+                        disabled={savingBookIds.includes(book.id || 0)}
+                      >
+                        {savingBookIds.includes(book.id || 0) ? (
+                          <svg className="animate-spin h-4 w-4 mr-1" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                        ) : (
+                          <svg 
+                            xmlns="http://www.w3.org/2000/svg" 
+                            className="h-4 w-4 mr-1" 
+                            fill="none" 
+                            viewBox="0 0 24 24" 
+                            stroke="currentColor"
+                          >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                          </svg>
+                        )}
                         Add to List
                       </button>
                       <a 

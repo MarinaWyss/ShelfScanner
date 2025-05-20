@@ -7,6 +7,7 @@ import { useState } from "react";
 import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
 import Books from "@/pages/books";
+import SavedBooks from "@/pages/saved-books";
 import Navbar from "@/components/layout/Navbar";
 import ContactForm from "@/components/contact/ContactForm";
 
@@ -15,6 +16,7 @@ function Router() {
     <Switch>
       <Route path="/" component={Home} />
       <Route path="/books" component={Books} />
+      <Route path="/reading-list" component={import('./pages/saved-books').default} />
       <Route component={NotFound} />
     </Switch>
   );
