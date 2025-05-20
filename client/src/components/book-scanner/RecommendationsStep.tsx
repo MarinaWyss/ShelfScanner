@@ -78,29 +78,10 @@ export default function RecommendationsStep({ recommendations, isLoading, goodre
         Here are the books that best match your taste.
       </p>
 
-      {/* Top banner ad */}
-      <div className="mb-6 bg-amber-50 border border-amber-200 rounded-lg p-4 flex items-center shadow-sm">
-        <div className="mr-4 flex-shrink-0">
-          <svg className="w-10 h-10 text-amber-500" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M22.555,13.662c-1.4.114-2.7.281-4.127.414s-2.86.293-4.32.293c-2.309,0-4.618-.146-6.918-.556l-.055-.01a.64.64,0,0,0-.37.061.7.7,0,0,0-.3.308.715.715,0,0,0,.339.894,25.793,25.793,0,0,0,8.506,2.791c.361.051.723.1,1.085.135l.021,0a.707.707,0,0,0,.784-.575.718.718,0,0,0-.564-.844,20.562,20.562,0,0,1-5.674-1.931.786.786,0,0,1,.338-1.5,30.413,30.413,0,0,1,3.951.415c2.411.331,4.823.683,7.281.858l.037,0a.7.7,0,0,0,.755-.6A.715.715,0,0,0,22.555,13.662Z" />
-            <path d="M8.962,16.17a.7.7,0,0,0-1,.005C6.538,17.6,5.52,18.788,5.051,20.7a.716.716,0,0,0,.463.9.7.7,0,0,0,.9-.459C6.9,19.417,7.779,18.385,9.04,17.212l.084-.078A.714.714,0,0,0,8.962,16.17Z" />
-            <path d="M15.956,16.6a.717.717,0,0,0-1.011.1c-1.6,1.99-3.025,3.834-4.668,5.229a.708.708,0,0,0-.139.989.7.7,0,0,0,.992.145c1.752-1.494,3.255-3.428,4.922-5.495A.715.715,0,0,0,15.956,16.6Z" />
-          </svg>
-        </div>
-        <div className="flex-1">
-          <h4 className="font-semibold text-amber-800">Amazon Kindle Unlimited</h4>
-          <p className="text-sm text-amber-700">Unlimited reading access to over 1 million titles with a free trial</p>
-        </div>
-        <div className="ml-4">
-          <a 
-            href="https://www.amazon.com/kindle-dbs/fd/ku?tag=gratitudedriv-20"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="bg-amber-400 hover:bg-amber-500 text-black px-3 py-2 rounded text-sm font-medium"
-          >
-            Try Free
-          </a>
-        </div>
+      {/* Ad placeholder - to be replaced with actual ad network code */}
+      <div className="mb-6 bg-neutral-100 border border-neutral-200 rounded-lg p-4 text-center">
+        <p className="text-neutral-500 text-sm mb-2">Advertisement Space</p>
+        <div className="text-xs text-neutral-400">Connect to Google AdSense or Amazon Associates</div>
       </div>
       
       {isLoading && (
@@ -246,27 +227,10 @@ export default function RecommendationsStep({ recommendations, isLoading, goodre
           {/* Books you've already read section */}
           {recommendations.some(book => isBookAlreadyRead(book)) && (
             <div className="mt-10">
-              {/* Mid-page ad banner */}
-              <div className="mb-8 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 flex items-center shadow-sm">
-                <div className="mr-4 flex-shrink-0">
-                  <svg className="w-12 h-12 text-blue-500" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M22.47,5.2C22,4.96,21.51,4.76,21,4.59v12.03C19.86,16.21,18.69,16,17.5,16c-1.9,0-3.78,0.54-5.5,1.58V5.48 C10.38,4.55,8.51,4,6.5,4C4.71,4,3.02,4.44,1.53,5.2C1.2,5.36,1,5.71,1,6.08v12.08c0,0.58,0.47,0.99,1,0.99 c0.16,0,0.32-0.04,0.48-0.12C3.69,18.4,5.05,18,6.5,18c2.07,0,3.98,0.82,5.5,2c1.52-1.18,3.43-2,5.5-2c1.45,0,2.81,0.4,4.02,1.04 c0.16,0.08,0.32,0.12,0.48,0.12c0.52,0,1-0.41,1-0.99V6.08C23,5.71,22.8,5.36,22.47,5.2z M10,16.62C8.86,16.21,7.69,16,6.5,16 c-1.19,0-2.36,0.21-3.5,0.62V6.71C4.11,6.24,5.28,6,6.5,6C7.7,6,8.89,6.25,10,6.72V16.62z M19,0.5l-5,5V15l5-4.5V0.5z"></path>
-                  </svg>
-                </div>
-                <div className="flex-1">
-                  <h4 className="font-semibold text-blue-800">Audible Free Trial</h4>
-                  <p className="text-sm text-blue-700">Try Audible Plus and get access to thousands of audiobooks and exclusive originals</p>
-                </div>
-                <div className="ml-4">
-                  <a 
-                    href="https://www.amazon.com/Audible-Free-Trial-Digital-Membership/dp/B00NB86OYE/?tag=gratitudedriv-20"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded text-sm font-medium"
-                  >
-                    Try Free
-                  </a>
-                </div>
+              {/* Ad placeholder - to be replaced with actual ad network code */}
+              <div className="mb-8 bg-neutral-100 border border-neutral-200 rounded-lg p-4 text-center">
+                <p className="text-neutral-500 text-sm mb-2">Advertisement Space</p>
+                <div className="text-xs text-neutral-400">Connect to Google AdSense or Amazon Associates</div>
               </div>
             
               <h3 className="text-lg font-semibold mb-4 text-purple-700">Books You've Already Read</h3>
