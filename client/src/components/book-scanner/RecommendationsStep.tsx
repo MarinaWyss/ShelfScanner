@@ -4,6 +4,7 @@ import { Star, StarHalf } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import StarRating from "@/components/ui/star-rating";
 
 interface Recommendation {
   id?: number;
@@ -139,22 +140,20 @@ export default function RecommendationsStep({ recommendations, isLoading, goodre
     });
   };
   
-  // Function to render star ratings
+  // Function to render star ratings using our shared StarRating component
   const renderRating = (rating: string) => {
-    const numRating = parseFloat(rating);
-    const fullStars = Math.floor(numRating);
-    const hasHalfStar = numRating % 1 >= 0.5;
+    // Handle potential empty or invalid ratings
+    if (!rating || isNaN(parseFloat(rating))) {
+      return <span className="text-sm text-neutral-500">No rating available</span>;
+    }
     
     return (
-      <div className="flex items-center">
-        <div className="flex text-yellow-400">
-          {[...Array(fullStars)].map((_, i) => (
-            <Star key={i} className="h-4 w-4 fill-current" />
-          ))}
-          {hasHalfStar && <StarHalf className="h-4 w-4 fill-current" />}
-        </div>
-        <span className="text-sm ml-1 text-neutral-600">{numRating.toFixed(1)}</span>
-      </div>
+      <StarRating 
+        rating={rating} 
+        starSize={4} 
+        showNumeric={true} 
+        className="text-neutral-600" 
+      />
     );
   };
 

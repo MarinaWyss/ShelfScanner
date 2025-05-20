@@ -355,11 +355,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Get books from request or from storage
-      const books = req.body.books || await storage.getBooksByUserId(userId);
+      let books = req.body.books || await storage.getBooksByUserId(userId);
       
       if (!books || books.length === 0) {
         return res.status(400).json({ message: 'No books provided or found for this user' });
       }
+      
+      // Enhance books with real Amazon ratings if they don't already have ratings
+      books = await Promise.all(books.map(async (book: any) => {
+        if (!book.rating || book.rating === "0") {
+          // Try to get rating from Amazon
+          const amazonRating = await getAmazonBookRating(book.title, book.author, book.isbn);
+          
+          if (amazonRating) {
+            // If we got an Amazon rating, use it
+            book.rating = amazonRating;
+          } else {
+            // If no rating from Amazon, use our estimation function
+            book.rating = getEstimatedBookRating(book.title, book.author);
+          }
+        }
+        return book;
+      }));
       
       // Generate recommendations
       const recommendationsData = await getRecommendations(books, preferences);
@@ -382,7 +399,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           author: recommendation.author,
           coverUrl: recommendation.coverUrl,
           summary: recommendation.summary,
-          rating: recommendation.rating?.toString() || "0"
+          rating: typeof recommendation.rating === 'string' ? recommendation.rating : (recommendation.rating?.toString() || "0")
         });
         
         // Save recommendation
