@@ -529,6 +529,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // API Usage Statistics Endpoints
   
+  // Test endpoint to simulate hitting rate limits
+  app.post('/api/test-rate-limit/:api', async (req: Request, res: Response) => {
+    try {
+      const { api } = req.params;
+      const { simulate = false } = req.body;
+      
+      if (!api) {
+        return res.status(400).json({ message: 'API name is required' });
+      }
+      
+      // Check if we're allowed to make a request
+      if (!rateLimiter.isAllowed(api)) {
+        return res.status(429).json({
+          message: `Rate limit reached for ${api}`,
+          stats: getApiUsageStats()
+        });
+      }
+      
+      // Increment the counter for the specified API
+      rateLimiter.increment(api);
+      
+      return res.status(200).json({
+        message: `Successfully called ${api} API`,
+        stats: getApiUsageStats() 
+      });
+    } catch (error) {
+      console.error('Error in test rate limit endpoint:', error);
+      return res.status(500).json({
+        message: 'Error testing rate limit',
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+  
   // Get current API usage statistics
   app.get('/api/stats', async (req: Request, res: Response) => {
     try {
