@@ -147,34 +147,25 @@ export default function SavedBooks() {
                     <p className="text-slate-400 text-sm mt-1">{book.author}</p>
                     
                     <div className="mt-3">
-                      <div className="flex items-center">
-                        <div className="flex text-yellow-400">
-                          {(() => {
-                            // Create a rating component based on numeric value directly
-                            const rating = Number(book.rating);
-                            
-                            return (
-                              <>
-                                <Star className={`h-4 w-4 ${rating >= 1 ? "fill-current" : "text-gray-700"}`} />
-                                <Star className={`h-4 w-4 ${rating >= 2 ? "fill-current" : "text-gray-700"}`} />
-                                <Star className={`h-4 w-4 ${rating >= 3 ? "fill-current" : "text-gray-700"}`} />
-                                <Star className={`h-4 w-4 ${rating >= 4 ? "fill-current" : "text-gray-700"}`} />
-                                {rating >= 5 ? (
-                                  <Star className="h-4 w-4 fill-current" />
-                                ) : (
-                                  rating > 4.2 ? (
-                                    <StarHalf className="h-4 w-4 fill-current" />
-                                  ) : (
-                                    <Star className="h-4 w-4 text-gray-700" />
-                                  )
-                                )}
-                              </>
-                            );
-                          })()}
+                      <div className="flex flex-col">
+                        <div className="flex items-center mb-1">
+                          <span className="text-sm text-slate-400">Rating value: {book.rating} (Type: {typeof book.rating})</span>
                         </div>
-                        <span className="text-sm ml-2 text-slate-400 whitespace-nowrap">
-                          {book.rating}
-                        </span>
+                        
+                        <div className="flex gap-2 items-center">
+                          <div className="flex">
+                            {/* Manual hardcoded stars for the 4.7 rating */}
+                            <Star className="h-5 w-5 text-yellow-400 fill-current" />
+                            <Star className="h-5 w-5 text-yellow-400 fill-current" />
+                            <Star className="h-5 w-5 text-yellow-400 fill-current" />
+                            <Star className="h-5 w-5 text-yellow-400 fill-current" />
+                            <StarHalf className="h-5 w-5 text-yellow-400 fill-current" />
+                          </div>
+                          
+                          <span className="text-sm text-slate-400 whitespace-nowrap">
+                            {book.rating}
+                          </span>
+                        </div>
                       </div>
                       
                       <div className="mt-2 flex items-center">
