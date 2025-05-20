@@ -185,42 +185,7 @@ export default function SavedBooks() {
                     <p className="text-slate-400 text-sm mt-1">{book.author}</p>
                     
                     <div className="mt-3">
-                      <div className="flex items-center">
-                        <div className="flex text-yellow-400">
-                          {/* A very simple and direct implementation for rating stars */}
-                          {(() => {
-                            const stars = [];
-                            const rating = parseFloat(book.rating);
-                            
-                            // Add full stars
-                            for (let i = 1; i <= Math.floor(rating); i++) {
-                              stars.push(
-                                <Star key={`full-${i}`} className="h-4 w-4 fill-current" />
-                              );
-                            }
-                            
-                            // Add half star if needed
-                            if (rating % 1 >= 0.5) {
-                              stars.push(
-                                <StarHalf key="half" className="h-4 w-4 fill-current" />
-                              );
-                            }
-                            
-                            // Add empty stars
-                            const emptyStars = 5 - stars.length;
-                            for (let i = 1; i <= emptyStars; i++) {
-                              stars.push(
-                                <Star key={`empty-${i}`} className="h-4 w-4 text-gray-700" />
-                              );
-                            }
-                            
-                            return stars;
-                          })()}
-                        </div>
-                        <span className="text-sm ml-2 text-slate-400 whitespace-nowrap">
-                          {book.rating}
-                        </span>
-                      </div>
+                      {renderStarRating(book.rating)}
                       
                       <div className="mt-2 flex items-center">
                         <span className="text-xs text-slate-500">
