@@ -110,3 +110,33 @@ export type InsertRecommendation = z.infer<typeof insertRecommendationSchema>;
 
 export type SavedBook = typeof savedBooks.$inferSelect;
 export type InsertSavedBook = z.infer<typeof insertSavedBookSchema>;
+
+// Book cache schema for storing book metadata to reduce external API calls
+export const bookCache = pgTable("book_cache", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(),
+  author: text("author").notNull(),
+  isbn: varchar("isbn", { length: 30 }),
+  coverUrl: text("cover_url"),
+  rating: varchar("rating", { length: 10 }),
+  summary: text("summary"),
+  source: varchar("source", { length: 20 }).notNull(), // 'google', 'amazon', 'openai'
+  metadata: jsonb("metadata"),
+  cachedAt: timestamp("cached_at").defaultNow(),
+  expiresAt: timestamp("expires_at"), // Cache expiration time
+});
+
+export const insertBookCacheSchema = createInsertSchema(bookCache).pick({
+  title: true,
+  author: true,
+  isbn: true,
+  coverUrl: true,
+  rating: true,
+  summary: true,
+  source: true,
+  metadata: true,
+  expiresAt: true,
+});
+
+export type BookCache = typeof bookCache.$inferSelect;
+export type InsertBookCache = z.infer<typeof insertBookCacheSchema>;
