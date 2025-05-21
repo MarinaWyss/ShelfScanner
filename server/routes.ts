@@ -568,53 +568,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get recommendations from storage
       let recommendations = await storage.getRecommendationsByUserId(userId);
       
-      // Always enhance all recommendations with OpenAI-generated content
+      // Enhance recommendations with OpenAI-generated content when needed
       recommendations = await Promise.all(recommendations.map(async (recommendation) => {
-        // Always get OpenAI summary for all books without exception
-        try {
-          // Get the enhanced summary from OpenAI through the cache service
-          const enhancedSummary = await bookCacheService.getEnhancedSummary(
-            recommendation.title, 
-            recommendation.author
-          );
-          
-          if (enhancedSummary) {
-            // Update the recommendation object
-            recommendation.summary = enhancedSummary;
+        // Get OpenAI summary if missing
+        if (!recommendation.summary) {
+          try {
+            // Get the enhanced summary from OpenAI through the cache service
+            const enhancedSummary = await bookCacheService.getEnhancedSummary(
+              recommendation.title, 
+              recommendation.author
+            );
             
-            // Also update in the database for future requests
             if (enhancedSummary) {
+              // Update the recommendation object
+              recommendation.summary = enhancedSummary;
+              
+              // Also update in the database for future requests
               await storage.updateRecommendation(recommendation.id, {
                 summary: enhancedSummary
               });
+              
+              console.log(`Enhanced recommendation summary for "${recommendation.title}" with OpenAI`);
             }
-            
-            console.log(`Enhanced recommendation summary for "${recommendation.title}" with OpenAI`);
+          } catch (error) {
+            console.error(`Error enhancing recommendation summary for "${recommendation.title}":`, error);
           }
-        } catch (error) {
-          console.error(`Error enhancing recommendation summary for "${recommendation.title}":`, error);
         }
         
-        // Always get an enhanced rating from OpenAI for all books
-        try {
-          const enhancedRating = await bookCacheService.getEnhancedRating(
-            recommendation.title, 
-            recommendation.author
-          );
-          
-          if (enhancedRating) {
-            // Update the recommendation object
-            recommendation.rating = enhancedRating;
+        // Get enhanced rating if missing
+        if (!recommendation.rating) {
+          try {
+            const enhancedRating = await bookCacheService.getEnhancedRating(
+              recommendation.title, 
+              recommendation.author
+            );
             
-            // Also update in the database for future requests
-            await storage.updateRecommendation(recommendation.id, {
-              rating: enhancedRating
-            });
-            
-            console.log(`Enhanced recommendation rating for "${recommendation.title}" with OpenAI: ${enhancedRating}`);
+            if (enhancedRating) {
+              // Update the recommendation object
+              recommendation.rating = enhancedRating;
+              
+              // Also update in the database for future requests
+              await storage.updateRecommendation(recommendation.id, {
+                rating: enhancedRating
+              });
+              
+              console.log(`Enhanced recommendation rating for "${recommendation.title}" with OpenAI: ${enhancedRating}`);
+            }
+          } catch (error) {
+            console.error(`Error enhancing recommendation rating for "${recommendation.title}":`, error);
           }
-        } catch (error) {
-          console.error(`Error enhancing recommendation rating for "${recommendation.title}":`, error);
         }
         
         return recommendation;

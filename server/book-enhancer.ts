@@ -74,10 +74,10 @@ export class BookEnhancer {
             }
           }
           
-          // Always get enhanced summary from OpenAI
-          {
+          // Only get enhanced summary if we don't already have a good one from OpenAI
+          if (!enhancedBook.summary) {
             try {
-              const summary = await bookCacheService.getEnhancedSummary(book.title, book.author, enhancedBook.summary);
+              const summary = await bookCacheService.getEnhancedSummary(book.title, book.author);
               if (summary) {
                 enhancedBook.summary = summary;
                 enhancedBook.enhanced = true;
