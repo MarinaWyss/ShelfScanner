@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
-import { Trash2 } from "lucide-react";
+import { Trash2, ChevronDown, ChevronUp } from "lucide-react";
 import StarRating from "@/components/ui/star-rating";
 import GoogleAdSense from "@/components/ads/GoogleAdSense";
 
@@ -22,6 +22,7 @@ export default function SavedBooks() {
   const [savedBooks, setSavedBooks] = useState<SavedBook[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [expandedBooks, setExpandedBooks] = useState<number[]>([]);
 
   // Fetch saved books when component mounts
   useEffect(() => {
@@ -85,6 +86,15 @@ export default function SavedBooks() {
       console.error("Error removing book:", err);
       setError("Failed to remove book. Please try again.");
     }
+  };
+
+  // Toggle the expanded state of a book description
+  const toggleExpand = (id: number) => {
+    setExpandedBooks(prev => 
+      prev.includes(id) 
+        ? prev.filter(bookId => bookId !== id) 
+        : [...prev, id]
+    );
   };
 
   // Using the centralized StarRating component instead of local implementation
@@ -195,7 +205,29 @@ export default function SavedBooks() {
                   </div>
                 </div>
                 <div className="p-5 border-t border-slate-200">
-                  <p className="text-sm text-black line-clamp-3">{book.summary}</p>
+                  <div className="text-sm text-black">
+                    <p className={expandedBooks.includes(book.id) ? '' : 'line-clamp-3'}>
+                      {book.summary}
+                    </p>
+                    {book.summary && book.summary.length > 240 && (
+                      <button 
+                        onClick={() => toggleExpand(book.id)}
+                        className="mt-2 text-indigo-600 hover:text-indigo-800 text-sm flex items-center font-medium"
+                      >
+                        {expandedBooks.includes(book.id) ? (
+                          <>
+                            <ChevronUp className="h-4 w-4 mr-1" /> 
+                            Read Less
+                          </>
+                        ) : (
+                          <>
+                            <ChevronDown className="h-4 w-4 mr-1" /> 
+                            Read More
+                          </>
+                        )}
+                      </button>
+                    )}
+                  </div>
                   <div className="mt-4 flex justify-between gap-3">
                     <a 
                       href={`https://www.amazon.com/s?k=${encodeURIComponent(book.title + ' ' + book.author)}&tag=gratitudedriv-20`}
