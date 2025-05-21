@@ -184,7 +184,7 @@ export class BookEnhancer {
           
           // Get enhanced rating if missing
           if (!book.rating) {
-            const rating = await bookCacheService.getEnhancedRating(book.title, book.author, book.isbn);
+            const rating = await bookCacheService.getEnhancedRating(book.title, book.author);
             if (rating) {
               book.rating = rating;
               updated = true;
@@ -193,7 +193,8 @@ export class BookEnhancer {
           
           // Get enhanced summary if missing or too short
           if (!book.summary || book.summary.length < 100) {
-            const summary = await bookCacheService.getEnhancedSummary(book.title, book.author, book.summary);
+            const summaryText = book.summary || undefined;
+            const summary = await bookCacheService.getEnhancedSummary(book.title, book.author, summaryText);
             if (summary) {
               book.summary = summary;
               updated = true;

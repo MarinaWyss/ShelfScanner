@@ -626,6 +626,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+  
+  // Endpoint to enhance saved books with OpenAI-generated summaries and ratings
+  app.post('/api/enhance-saved-books', async (req: Request, res: Response) => {
+    try {
+      // Extract deviceId from cookie or request body
+      const deviceId = req.cookies.deviceId || req.body.deviceId;
+      
+      if (!deviceId) {
+        return res.status(400).json({ message: 'Device ID is required' });
+      }
+      
+      console.log(`Enhancing saved books for device ${deviceId}`);
+      
+      // Call the book enhancer to improve book data using OpenAI
+      const enhancedCount = await bookEnhancer.enhanceSavedBooks(deviceId);
+      
+      // Retrieve the enhanced books
+      const savedBooks = await storage.getSavedBooksByDeviceId(deviceId);
+      
+      return res.status(200).json({ 
+        message: `Enhanced ${enhancedCount} books with AI-generated summaries and ratings`,
+        books: savedBooks
+      });
+    } catch (error) {
+      console.error('Error enhancing saved books:', error);
+      return res.status(500).json({ 
+        message: 'Error enhancing saved books',
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+  
+  // Endpoint to enhance a single book with OpenAI data
+  app.post('/api/enhance-book', async (req: Request, res: Response) => {
+    try {
+      const { title, author, isbn } = req.body;
+      
+      if (!title || !author) {
+        return res.status(400).json({ message: 'Book title and author are required' });
+      }
+      
+      console.log(`Enhancing book: "${title}" by ${author}`);
+      
+      // Use the book enhancer to get improved data
+      const enhancedBook = await bookEnhancer.enhanceBook({
+        title,
+        author,
+        isbn
+      });
+      
+      return res.status(200).json(enhancedBook);
+    } catch (error) {
+      console.error('Error enhancing book:', error);
+      return res.status(500).json({ 
+        message: 'Error enhancing book data',
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
 
   // Create HTTP server
   const server = createServer(app);
