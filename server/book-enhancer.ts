@@ -38,21 +38,21 @@ export class BookEnhancer {
           // Check if this book exists in cache with enhanced content
           const cachedBook = await storage.findBookInCache(book.title, book.author);
           
-          // If we have a cached version with good data, use it
-          if (cachedBook) {
-            if (cachedBook.summary && (!book.summary || book.summary.length < cachedBook.summary.length)) {
+          // If we have a cached version with OpenAI data, use it
+          if (cachedBook && cachedBook.source === 'openai') {
+            if (cachedBook.summary) {
               enhancedBook.summary = cachedBook.summary;
               enhancedBook.enhanced = true;
             }
             
-            if (cachedBook.rating && !book.rating) {
+            if (cachedBook.rating) {
               enhancedBook.rating = cachedBook.rating;
               enhancedBook.enhanced = true;
             }
             
-            log(`Enhanced book "${book.title}" with cached data`, 'enhancer');
+            log(`Enhanced book "${book.title}" with cached OpenAI data`, 'enhancer');
             
-            // If we have complete data, return early
+            // If we have complete OpenAI data, return early
             if (enhancedBook.summary && enhancedBook.rating) {
               return enhancedBook;
             }
@@ -74,8 +74,8 @@ export class BookEnhancer {
             }
           }
           
-          // Get enhanced summary if missing or too short
-          if (!enhancedBook.summary || enhancedBook.summary.length < 100) {
+          // Always get enhanced summary from OpenAI
+          {
             try {
               const summary = await bookCacheService.getEnhancedSummary(book.title, book.author, enhancedBook.summary);
               if (summary) {
