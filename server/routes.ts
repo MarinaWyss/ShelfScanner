@@ -7,6 +7,7 @@ import { searchBooksByTitle, getRecommendations } from "./books";
 import { searchEnhancedBooks } from "./enhanced-book-api";
 import { getAmazonBookRating, getEstimatedBookRating } from "./amazon";
 import { bookCacheService } from "./book-cache-service";
+import { bookEnhancer } from "./book-enhancer";
 import multer from "multer";
 import { z } from "zod";
 import { insertPreferenceSchema, insertBookSchema, insertRecommendationSchema, insertSavedBookSchema } from "@shared/schema";

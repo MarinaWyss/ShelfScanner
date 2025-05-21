@@ -45,8 +45,8 @@ export async function searchEnhancedBooks(title: string): Promise<BookInfo[]> {
         coverUrl: cachedBook.coverUrl || undefined,
         summary: cachedBook.summary || undefined,
         rating: cachedBook.rating || undefined,
-        publisher: cachedBook.metadata?.publisher,
-        categories: cachedBook.metadata?.categories
+        publisher: cachedBook.metadata ? (cachedBook.metadata as any).publisher : undefined,
+        categories: cachedBook.metadata ? (cachedBook.metadata as any).categories : undefined
       };
       
       // If we have minimal data, try to enhance it
