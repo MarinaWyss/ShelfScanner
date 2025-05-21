@@ -115,11 +115,32 @@ export default function GoogleAdSense({
     ...style
   };
 
+  // In development mode, we'll show a placeholder instead of real ads
+  // This helps with testing the UI layout without needing to load actual ads
+  if (import.meta.env.MODE === 'development') {
+    return (
+      <div 
+        className={`ad-container ${className} bg-slate-100 border border-slate-200 flex items-center justify-center`} 
+        style={{
+          minHeight: adSize === '728x90' ? '90px' : adSize === '300x250' ? '250px' : '100px',
+          ...containerStyle
+        }}
+      >
+        <div className="text-center p-2">
+          <p className="text-slate-500 text-sm">Advertisement</p>
+          <p className="text-xs text-slate-400">({adSize || adFormat} ad will appear here)</p>
+          <p className="text-xs text-slate-400 mt-1">Publisher ID: {publisherId || 'loading...'}</p>
+        </div>
+      </div>
+    );
+  }
+
+  // In production, return the actual AdSense component
   return (
     <div className={`ad-container ${className}`} ref={adRef}>
       {error ? (
         <div className="ad-error bg-gray-100 border border-gray-300 rounded text-xs text-center p-3 h-full flex items-center justify-center">
-          <p className="text-gray-500">{process.env.NODE_ENV === 'development' ? `Ad error: ${error}` : 'Advertisement'}</p>
+          <p className="text-gray-500">Advertisement</p>
         </div>
       ) : (
         <ins
