@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { LoaderPinwheel } from "lucide-react";
+import GoogleAdSense from "@/components/ads/GoogleAdSense";
 
 interface Book {
   id?: number;
@@ -336,6 +337,18 @@ export default function UploadStep({ onBooksDetected, detectedBooks }: UploadSte
           </div>
         </div>
       )}
+      
+      {/* Google AdSense Banner at the bottom of the page */}
+      <div className="mt-10 mb-4">
+        <div className="text-center text-xs text-slate-500 mb-2">Advertisement</div>
+        <GoogleAdSense 
+          adSlot="1234567890"
+          adSize="728x90"
+          adFormat="horizontal"
+          style={{ height: '90px', width: '100%', maxWidth: '728px' }}
+          className="mx-auto bg-slate-900 border border-slate-800 rounded-md overflow-hidden"
+        />
+      </div>
     </div>
   );
 }
