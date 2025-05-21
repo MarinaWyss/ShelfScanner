@@ -1,6 +1,6 @@
 import { db } from './db';
 import { bookCache, type InsertBookCache, type BookCache } from '@shared/schema';
-import { eq, and, or, sql, desc, asc, lte, gte } from 'drizzle-orm';
+import { eq, and, or, sql, desc, asc, lte, gte, isNotNull, not, isNull } from 'drizzle-orm';
 import { getAmazonBookRating, getEstimatedBookRating } from './amazon';
 import { log } from './vite';
 import OpenAI from "openai";
@@ -440,7 +440,7 @@ export class BookCacheService {
           and(
             isNotNull(bookCache.rating),
             or(
-              notEq(bookCache.source, 'openai'),
+              not(eq(bookCache.source, 'openai')),
               isNull(bookCache.source)
             )
           )

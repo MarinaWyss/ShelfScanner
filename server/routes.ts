@@ -26,6 +26,14 @@ const upload = multer({
 import { registerEnvRoutes } from './env-routes';
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Clean up non-OpenAI ratings to ensure consistent OpenAI-generated content
+  try {
+    const cleanedCount = await bookCacheService.cleanupNonOpenAIRatings();
+    console.log(`Cleaned up ${cleanedCount} non-OpenAI ratings from cache during startup`);
+  } catch (error) {
+    console.error('Error cleaning up non-OpenAI ratings:', error);
+  }
+
   // Make environment variables available to the frontend
   app.get('/api/env', (req, res) => {
     res.json({
