@@ -450,25 +450,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'No books provided or found for this user' });
       }
       
-      // Enhance books with real Amazon ratings if they don't already have ratings
+      // Enhance books with OpenAI-generated ratings and summaries
       books = await Promise.all(books.map(async (book: any) => {
-        if (!book.rating || book.rating === "0") {
-          // Try to get rating from Amazon
-          const amazonRating = await getAmazonBookRating(book.title, book.author, book.isbn);
+        // Always try to get rating from OpenAI first
+        try {
+          // Use the book cache service to get an enhanced rating
+          const openAIRating = await bookCacheService.getEnhancedRating(book.title, book.author, book.isbn);
+          if (openAIRating) {
+            book.rating = openAIRating;
+            console.log(`Using OpenAI rating for "${book.title}": ${openAIRating}`);
+          }
+        } catch (error) {
+          console.error(`Error getting OpenAI rating for "${book.title}":`, error);
           
+          // Fallback to Amazon rating if OpenAI fails
+          const amazonRating = await getAmazonBookRating(book.title, book.author, book.isbn);
           if (amazonRating) {
-            // If we got an Amazon rating, use it
             book.rating = amazonRating;
           } else {
-            // If no rating from Amazon, use our estimation function
+            // Last resort - use estimation
             book.rating = getEstimatedBookRating(book.title, book.author);
           }
         }
+        
+        // Also enhance the book summary with OpenAI if it's missing or too short
+        if (!book.summary || book.summary.length < 100) {
+          try {
+            const summary = await bookCacheService.getEnhancedSummary(book.title, book.author);
+            if (summary) {
+              book.summary = summary;
+              console.log(`Enhanced summary for "${book.title}" with OpenAI`);
+            }
+          } catch (error) {
+            console.error(`Error getting OpenAI summary for "${book.title}":`, error);
+          }
+        }
+        
         return book;
       }));
       
       // Generate recommendations
       const recommendationsData = await getRecommendations(books, preferences);
+      
+      // Enhance recommendations with OpenAI content
+      for (const recommendation of recommendationsData) {
+        // Only enhance if summary is missing or too short
+        if (!recommendation.summary || recommendation.summary.length < 100) {
+          try {
+            const summary = await bookCacheService.getEnhancedSummary(recommendation.title, recommendation.author);
+            if (summary) {
+              recommendation.summary = summary;
+              console.log(`Enhanced recommendation summary for "${recommendation.title}" with OpenAI`);
+            }
+          } catch (error) {
+            console.error(`Error getting OpenAI summary for recommendation "${recommendation.title}":`, error);
+          }
+        }
+        
+        // If rating is missing or zero, get one from OpenAI
+        if (!recommendation.rating || recommendation.rating === "0") {
+          try {
+            const rating = await bookCacheService.getEnhancedRating(recommendation.title, recommendation.author);
+            if (rating) {
+              recommendation.rating = rating;
+              console.log(`Enhanced recommendation rating for "${recommendation.title}" with OpenAI: ${rating}`);
+            }
+          } catch (error) {
+            console.error(`Error getting OpenAI rating for recommendation "${recommendation.title}":`, error);
+          }
+        }
+      }
       
       // Save recommendations
       const savedRecommendations = [];
