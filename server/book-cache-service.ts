@@ -165,7 +165,7 @@ export class BookCacheService {
             coverUrl: bookData.coverUrl || existing.coverUrl,
             rating: bookData.rating || existing.rating,
             summary: bookData.summary || existing.summary,
-            source: source,
+            source: bookData.source || existing.source,
             metadata: bookData.metadata || existing.metadata,
             expiresAt: expiresAt
           })
@@ -184,7 +184,7 @@ export class BookCacheService {
         coverUrl: bookData.coverUrl || null,
         rating: bookData.rating || null,
         summary: bookData.summary || null,
-        source: source,
+        source: bookData.source || 'google',
         metadata: bookData.metadata || null,
         expiresAt: expiresAt
       };
@@ -400,8 +400,9 @@ export class BookCacheService {
         title,
         author,
         isbn,
-        rating
-      }, 'openai');
+        rating,
+        source: 'openai'
+      });
       
       log(`Generated rating for "${title}": ${rating}`, 'cache');
       return rating;

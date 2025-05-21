@@ -4,7 +4,9 @@ import { storage } from "./storage";
 import { analyzeImage } from "./vision";
 import { analyzeBookshelfImage } from "./openai-vision";
 import { searchBooksByTitle, getRecommendations } from "./books";
+import { searchEnhancedBooks } from "./enhanced-book-api";
 import { getAmazonBookRating, getEstimatedBookRating } from "./amazon";
+import { bookCacheService } from "./book-cache-service";
 import multer from "multer";
 import { z } from "zod";
 import { insertPreferenceSchema, insertBookSchema, insertRecommendationSchema, insertSavedBookSchema } from "@shared/schema";
@@ -29,6 +31,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   // Register environment routes
   registerEnvRoutes(app);
+  
+  // Enhanced book search endpoint with OpenAI-powered data
+  app.get('/api/enhanced-books', async (req: Request, res: Response) => {
+    try {
+      const { title } = req.query;
+      
+      if (!title || typeof title !== 'string') {
+        return res.status(400).json({ message: "Title parameter is required" });
+      }
+      
+      // Use our new enhanced book search with OpenAI-powered data
+      const books = await searchEnhancedBooks(title);
+      res.json(books);
+    } catch (error) {
+      console.error("Error searching for enhanced books:", error);
+      res.status(500).json({ message: "Error retrieving book information" });
+    }
+  });
+  
+  // Book details endpoint with OpenAI-generated ratings and summaries
+  app.get('/api/book-details/:title/:author', async (req: Request, res: Response) => {
+    try {
+      const { title, author } = req.params;
+      
+      if (!title || !author) {
+        return res.status(400).json({ message: "Both title and author are required" });
+      }
+      
+      // Check cache first
+      let cachedBook = await storage.findBookInCache(decodeURIComponent(title), decodeURIComponent(author));
+      
+      if (cachedBook) {
+        return res.json({
+          title: cachedBook.title,
+          author: cachedBook.author,
+          isbn: cachedBook.isbn,
+          coverUrl: cachedBook.coverUrl,
+          rating: cachedBook.rating,
+          summary: cachedBook.summary,
+          metadata: cachedBook.metadata,
+          source: cachedBook.source,
+          fromCache: true
+        });
+      }
+      
+      // If not in cache, generate data with OpenAI
+      let bookData: any = {
+        title: decodeURIComponent(title),
+        author: decodeURIComponent(author)
+      };
+      
+      // Get enhanced rating
+      const rating = await bookCacheService.getEnhancedRating(bookData.title, bookData.author);
+      if (rating) {
+        bookData.rating = rating;
+      }
+      
+      // Get enhanced summary
+      const summary = await bookCacheService.getEnhancedSummary(bookData.title, bookData.author);
+      if (summary) {
+        bookData.summary = summary;
+      }
+      
+      // Return the enhanced book data
+      res.json({
+        ...bookData,
+        fromCache: false
+      });
+    } catch (error) {
+      console.error("Error getting book details:", error);
+      res.status(500).json({ message: "Error retrieving book details" });
+    }
+  });
   // API routes
   const apiRouter = app.route('/api');
   
