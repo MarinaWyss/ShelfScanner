@@ -13,7 +13,7 @@ export class RateLimiter {
   constructor() {
     // Set default rate limits
     this.setLimit('openai', 10, 60); // Default: 10 requests per minute for OpenAI
-    this.setDailyLimit('openai', 50); // Default: 50 requests per day for OpenAI
+    this.setDailyLimit('openai', 1000); // Increased to 1000 requests per day for OpenAI
     
     this.setLimit('google-books', 100, 60); // 100 requests per minute for Google Books
     this.setDailyLimit('google-books', 1000); // 1000 requests per day for Google Books
