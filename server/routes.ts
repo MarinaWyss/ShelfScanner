@@ -568,54 +568,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get recommendations from storage
       let recommendations = await storage.getRecommendationsByUserId(userId);
       
-      // Enhance recommendations with OpenAI-generated content
+      // Always enhance all recommendations with OpenAI-generated content
       recommendations = await Promise.all(recommendations.map(async (recommendation) => {
-        // If summary is missing or too short, get an enhanced one
-        if (!recommendation.summary || recommendation.summary.length < 100) {
-          try {
-            const enhancedSummary = await bookCacheService.getEnhancedSummary(
-              recommendation.title, 
-              recommendation.author
-            );
+        // Always get OpenAI summary for all books without exception
+        try {
+          // Get the enhanced summary from OpenAI through the cache service
+          const enhancedSummary = await bookCacheService.getEnhancedSummary(
+            recommendation.title, 
+            recommendation.author
+          );
+          
+          if (enhancedSummary) {
+            // Update the recommendation object
+            recommendation.summary = enhancedSummary;
             
+            // Also update in the database for future requests
             if (enhancedSummary) {
-              // Update the recommendation object
-              recommendation.summary = enhancedSummary;
-              
-              // Also update in the database for future requests
               await storage.updateRecommendation(recommendation.id, {
                 summary: enhancedSummary
               });
-              
-              console.log(`Enhanced recommendation summary for "${recommendation.title}" with OpenAI`);
             }
-          } catch (error) {
-            console.error(`Error enhancing recommendation summary for "${recommendation.title}":`, error);
+            
+            console.log(`Enhanced recommendation summary for "${recommendation.title}" with OpenAI`);
           }
+        } catch (error) {
+          console.error(`Error enhancing recommendation summary for "${recommendation.title}":`, error);
         }
         
-        // If rating is missing or zero, get an enhanced one
-        if (!recommendation.rating || recommendation.rating === "0") {
-          try {
-            const enhancedRating = await bookCacheService.getEnhancedRating(
-              recommendation.title, 
-              recommendation.author
-            );
+        // Always get an enhanced rating from OpenAI for all books
+        try {
+          const enhancedRating = await bookCacheService.getEnhancedRating(
+            recommendation.title, 
+            recommendation.author
+          );
+          
+          if (enhancedRating) {
+            // Update the recommendation object
+            recommendation.rating = enhancedRating;
             
-            if (enhancedRating) {
-              // Update the recommendation object
-              recommendation.rating = enhancedRating;
-              
-              // Also update in the database for future requests
-              await storage.updateRecommendation(recommendation.id, {
-                rating: enhancedRating
-              });
-              
-              console.log(`Enhanced recommendation rating for "${recommendation.title}" with OpenAI: ${enhancedRating}`);
-            }
-          } catch (error) {
-            console.error(`Error enhancing recommendation rating for "${recommendation.title}":`, error);
+            // Also update in the database for future requests
+            await storage.updateRecommendation(recommendation.id, {
+              rating: enhancedRating
+            });
+            
+            console.log(`Enhanced recommendation rating for "${recommendation.title}" with OpenAI: ${enhancedRating}`);
           }
+        } catch (error) {
+          console.error(`Error enhancing recommendation rating for "${recommendation.title}":`, error);
         }
         
         return recommendation;
