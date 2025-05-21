@@ -36,7 +36,7 @@ export async function searchEnhancedBooks(title: string): Promise<BookInfo[]> {
     const cachedBook = await storage.findBookInCache(title, '');
     
     if (cachedBook) {
-      log(`Found "${title}" in cache, using cached data`, 'books');
+      log(`Found "${title}" in cache, but refreshing description with OpenAI`, 'books');
       
       const bookInfo: BookInfo = {
         title: cachedBook.title,
@@ -49,12 +49,8 @@ export async function searchEnhancedBooks(title: string): Promise<BookInfo[]> {
         categories: cachedBook.metadata ? (cachedBook.metadata as any).categories : undefined
       };
       
-      // If we have minimal data, try to enhance it
-      if (!bookInfo.summary || !bookInfo.rating) {
-        return await enhanceBookData([bookInfo]);
-      }
-      
-      return [bookInfo];
+      // Always enhance the book with fresh OpenAI descriptions
+      return await enhanceBookData([bookInfo]);
     }
     
     // If not in cache, search Google Books API
