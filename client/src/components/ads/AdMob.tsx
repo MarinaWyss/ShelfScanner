@@ -451,10 +451,8 @@ export function useRewardedAd({
 // This is a placeholder that will be replaced with actual initialization code
 // when migrating to React Native
 export function initializeAdMob() {
-  console.log('[AdMob Placeholder] Initializing AdMob...');
-  console.log('[AdMob Placeholder] Note: Full implementation will be available after React Native migration');
-  console.log('[AdMob Placeholder] Android Banner ID:', getAdUnitId('banner', 'android'));
-  console.log('[AdMob Placeholder] iOS Banner ID:', getAdUnitId('banner', 'ios'));
+  // Disabled AdMob initialization since we're using AdSense for web
+  return;
 }
 
 export default {
