@@ -93,10 +93,24 @@ export default function RecommendationsStep({ recommendations, isLoading, goodre
       // Add to saved books state
       setSavedBookIds(prev => [...prev, book.id || 0]);
       
-      // Show success message
+      // Show success message with link to reading list
       toast({
         title: "Book saved",
-        description: `${book.title} has been added to your reading list`,
+        description: (
+          <div>
+            {`${book.title} has been added to your reading list. `}
+            <a 
+              href="/reading-list" 
+              className="font-medium text-primary hover:underline"
+              onClick={(e) => {
+                e.preventDefault();
+                window.location.href = "/reading-list";
+              }}
+            >
+              View reading list
+            </a>
+          </div>
+        ),
         variant: "default",
       });
     } catch (error) {
