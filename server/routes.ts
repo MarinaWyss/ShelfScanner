@@ -748,6 +748,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+  
+  // Admin endpoint to update the book cache for testing
+  app.post('/api/admin/test-cache', async (req: Request, res: Response) => {
+    try {
+      const { preserveDescriptions = true, titleFilter } = req.body;
+      
+      const count = await bookCacheService.clearCacheForTesting({
+        preserveDescriptions,
+        titleFilter
+      });
+      
+      return res.status(200).json({ 
+        message: `Successfully updated ${count} cache entries for testing (preserving descriptions: ${preserveDescriptions})`,
+        success: true,
+        count
+      });
+    } catch (error) {
+      return res.status(500).json({ 
+        message: 'Error updating cache for testing', 
+        error: error instanceof Error ? error.message : String(error),
+        success: false
+      });
+    }
+  });
 
   // Create HTTP server
   const server = createServer(app);

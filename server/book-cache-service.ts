@@ -426,6 +426,78 @@ export class BookCacheService {
       log(`Error during cache maintenance: ${error instanceof Error ? error.message : String(error)}`, 'cache');
     }
   }
+  
+  /**
+   * Clear cache for testing purposes, but preserves descriptions to avoid regenerating them
+   * @param options Options for selective cache clearing
+   * @returns Number of entries affected
+   */
+  async clearCacheForTesting(options: {
+    preserveDescriptions?: boolean;
+    titleFilter?: string;
+  } = {}): Promise<number> {
+    try {
+      const { preserveDescriptions = true, titleFilter } = options;
+      
+      // If we need to preserve descriptions or filter by title, we need a more selective approach
+      if (preserveDescriptions || titleFilter) {
+        // First, get the entries that match our criteria
+        let query = db.select().from(bookCache);
+        
+        if (titleFilter) {
+          query = query.where(sql`LOWER(${bookCache.title}) LIKE ${`%${titleFilter.toLowerCase()}%`}`);
+        }
+        
+        const entries = await query;
+        const count = entries.length;
+        
+        if (count === 0) {
+          log(`No cache entries found matching the criteria`, 'cache');
+          return 0;
+        }
+        
+        // For testing purposes, we'll just reset the expiresAt date to trigger a refresh
+        // but keep the descriptions to avoid unnecessary OpenAI calls
+        const now = new Date();
+        // Set expiry to 1 minute ago to trigger a refresh on next access
+        const expiry = new Date(now.getTime() - 60000);
+        
+        let updateCount = 0;
+        for (const entry of entries) {
+          let updateData: any = {
+            expiresAt: expiry
+          };
+          
+          // If we don't need to preserve descriptions, also clear those fields
+          if (!preserveDescriptions) {
+            updateData = {
+              ...updateData,
+              summary: null
+            };
+          }
+          
+          await db.update(bookCache)
+            .set(updateData)
+            .where(eq(bookCache.id, entry.id));
+            
+          updateCount++;
+        }
+        
+        log(`Updated ${updateCount} cache entries for testing (preserving descriptions: ${preserveDescriptions})`, 'cache');
+        return updateCount;
+      } else {
+        // If we don't need any special handling, just clear everything
+        const result = await db.delete(bookCache).returning();
+        const count = result.length;
+        
+        log(`Cleared ${count} entries from book cache`, 'cache');
+        return count;
+      }
+    } catch (error) {
+      log(`Error clearing cache for testing: ${error instanceof Error ? error.message : String(error)}`, 'cache');
+      return 0;
+    }
+  }
 }
 
 // Create a singleton instance
