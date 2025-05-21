@@ -146,9 +146,18 @@ export default function SavedBooks() {
                   {book.coverUrl ? (
                     <div className="relative">
                       <img 
-                        src={book.coverUrl} 
+                        src={book.coverUrl?.replace('http://', 'https://') || ''} 
                         alt={book.title} 
-                        className="w-24 h-36 object-cover rounded-md shadow-sm" 
+                        className="w-24 h-36 object-cover rounded-md shadow-sm"
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          // If image still fails to load after HTTPS conversion
+                          if (target.src !== '') {
+                            // Attempt with a different size parameter
+                            const newUrl = target.src.replace('zoom=1', 'zoom=5');
+                            target.src = newUrl;
+                          }
+                        }}
                       />
                       <div className="absolute inset-0 rounded-md shadow-inner"></div>
                     </div>

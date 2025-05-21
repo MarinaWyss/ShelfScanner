@@ -257,8 +257,18 @@ export default function RecommendationsStep({ recommendations, isLoading, goodre
                         <div className="relative">
                           <img 
                             src={book.coverUrl} 
-                            alt={book.title} 
-                            className="w-24 h-36 md:w-32 md:h-48 object-cover rounded-md shadow-sm" 
+                            alt={book.title}
+                            className="w-24 h-36 md:w-32 md:h-48 object-cover rounded-md shadow-sm"
+                            onError={(e) => {
+                              // If image fails to load, replace with a secure proxy URL or fallback
+                              const target = e.target as HTMLImageElement;
+                              // Try using a CORS proxy if the original URL fails
+                              if (target.src === book.coverUrl) {
+                                // Create a fallback URL that uses HTTPS
+                                const fallbackUrl = book.coverUrl.replace('http://', 'https://');
+                                target.src = fallbackUrl;
+                              }
+                            }}
                           />
                           <div className="absolute inset-0 rounded-md shadow-inner"></div>
                         </div>
