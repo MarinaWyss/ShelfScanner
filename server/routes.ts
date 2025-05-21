@@ -18,7 +18,12 @@ const upload = multer({
   },
 });
 
+import { registerEnvRoutes } from './env-routes';
+import { rateLimiter } from './rate-limiter';
+
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Register environment routes
+  registerEnvRoutes(app);
   // API routes
   const apiRouter = app.route('/api');
   

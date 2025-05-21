@@ -1,8 +1,15 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useIsMobile } from '../../hooks/use-mobile';
 
+// App IDs - these will be fetched from the server API
+const defaultAppIds = {
+  android: 'ca-app-pub-0000000000000000~0000000000',
+  ios: 'ca-app-pub-0000000000000000~0000000000'
+};
+
 // Define your ad unit IDs here
-// Replace these with your actual AdMob IDs when going to production
+// Using test IDs for development and placeholders for production
+// Production ad units will need to be created in your AdMob account
 const adUnitIds = {
   // Test IDs for development - these are Google's official test IDs
   test: {
@@ -19,19 +26,20 @@ const adUnitIds = {
       ios: 'ca-app-pub-3940256099942544/1712485313'
     }
   },
-  // Production IDs - you'll need to replace these with your actual AdMob IDs
+  // Production IDs - placeholders until specific ad units are created
+  // These will need to be updated with actual ad unit IDs once created in AdMob
   prod: {
     banner: {
-      android: 'ca-app-pub-xxxxxxxxxxxxxxxx/yyyyyyyyyy',
-      ios: 'ca-app-pub-xxxxxxxxxxxxxxxx/yyyyyyyyyy'
+      android: 'banner-ad-unit-id-for-android', // Replace when creating ad units
+      ios: 'banner-ad-unit-id-for-ios' // Replace when creating ad units
     },
     interstitial: {
-      android: 'ca-app-pub-xxxxxxxxxxxxxxxx/yyyyyyyyyy',
-      ios: 'ca-app-pub-xxxxxxxxxxxxxxxx/yyyyyyyyyy'
+      android: 'interstitial-ad-unit-id-for-android', // Replace when creating ad units
+      ios: 'interstitial-ad-unit-id-for-ios' // Replace when creating ad units
     },
     rewarded: {
-      android: 'ca-app-pub-xxxxxxxxxxxxxxxx/yyyyyyyyyy',
-      ios: 'ca-app-pub-xxxxxxxxxxxxxxxx/yyyyyyyyyy'
+      android: 'rewarded-ad-unit-id-for-android', // Replace when creating ad units
+      ios: 'rewarded-ad-unit-id-for-ios' // Replace when creating ad units
     }
   }
 };
