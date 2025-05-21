@@ -157,30 +157,7 @@ export default function Navbar({ sidebarOpen, toggleSidebar, toggleContact }: Na
                         <span>Reading List</span>
                     </Link>
                   </li>
-                  <li>
-                    <Link href="/openai-demo" className={`flex items-center gap-3 w-full px-3 py-2 rounded-md font-medium transition-colors duration-150 ${
-                        location === '/openai-demo' 
-                          ? 'bg-slate-700 text-primary' 
-                          : 'text-slate-300 hover:bg-slate-700 hover:text-white'
-                      }`}>
-                        <svg 
-                          xmlns="http://www.w3.org/2000/svg" 
-                          width="24" 
-                          height="24" 
-                          viewBox="0 0 24 24" 
-                          fill="none" 
-                          stroke="currentColor" 
-                          strokeWidth="2" 
-                          strokeLinecap="round" 
-                          strokeLinejoin="round" 
-                          className="h-5 w-5"
-                        >
-                          <circle cx="12" cy="12" r="10" />
-                          <polygon points="10 8 16 12 10 16 10 8" />
-                        </svg>
-                        <span>OpenAI Demo</span>
-                    </Link>
-                  </li>
+
                 </ul>
               </div>
             </div>
