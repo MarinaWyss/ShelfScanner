@@ -8,7 +8,7 @@ import { getAmazonBookRating, getEstimatedBookRating } from "./amazon";
 import multer from "multer";
 import { z } from "zod";
 import { insertPreferenceSchema, insertBookSchema, insertRecommendationSchema, insertSavedBookSchema } from "@shared/schema";
-import { getApiUsageStats, setApiRateLimit, setApiDailyLimit } from "./api-stats";
+import { getApiUsageStats } from "./api-stats";
 
 // In-memory storage for multer
 const upload = multer({
@@ -538,43 +538,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // API Usage Statistics Endpoints
-  
-  // Test endpoint to simulate hitting rate limits
-  app.post('/api/test-rate-limit/:api', async (req: Request, res: Response) => {
-    try {
-      const { api } = req.params;
-      const { simulate = false } = req.body;
-      
-      if (!api) {
-        return res.status(400).json({ message: 'API name is required' });
-      }
-      
-      // Check if we're allowed to make a request
-      if (!rateLimiter.isAllowed(api)) {
-        return res.status(429).json({
-          message: `Rate limit reached for ${api}`,
-          stats: getApiUsageStats()
-        });
-      }
-      
-      // Increment the counter for the specified API
-      rateLimiter.increment(api);
-      
-      return res.status(200).json({
-        message: `Successfully called ${api} API`,
-        stats: getApiUsageStats() 
-      });
-    } catch (error) {
-      console.error('Error in test rate limit endpoint:', error);
-      return res.status(500).json({
-        message: 'Error testing rate limit',
-        error: error instanceof Error ? error.message : String(error)
-      });
-    }
-  });
-  
-  // Get current API usage statistics
+  // Keep the /api/stats endpoint as it might be used internally for monitoring
   app.get('/api/stats', async (req: Request, res: Response) => {
     try {
       const stats = getApiUsageStats();
@@ -583,62 +547,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Error getting API statistics:', error);
       return res.status(500).json({ 
         message: 'Error getting API statistics',
-        error: error instanceof Error ? error.message : String(error)
-      });
-    }
-  });
-  
-  // Update API rate limits
-  app.post('/api/stats/rate-limit', async (req: Request, res: Response) => {
-    try {
-      const { apiName, limit, windowSeconds } = req.body;
-      
-      if (!apiName || typeof limit !== 'number') {
-        return res.status(400).json({ message: 'API name and limit are required' });
-      }
-      
-      const success = setApiRateLimit(apiName, limit, windowSeconds || 60);
-      
-      if (success) {
-        return res.status(200).json({ 
-          message: `Rate limit for ${apiName} updated successfully`,
-          stats: getApiUsageStats()
-        });
-      } else {
-        return res.status(500).json({ message: 'Failed to update rate limit' });
-      }
-    } catch (error) {
-      console.error('Error updating rate limit:', error);
-      return res.status(500).json({ 
-        message: 'Error updating rate limit',
-        error: error instanceof Error ? error.message : String(error)
-      });
-    }
-  });
-  
-  // Update API daily limits
-  app.post('/api/stats/daily-limit', async (req: Request, res: Response) => {
-    try {
-      const { apiName, limit } = req.body;
-      
-      if (!apiName || typeof limit !== 'number') {
-        return res.status(400).json({ message: 'API name and limit are required' });
-      }
-      
-      const success = setApiDailyLimit(apiName, limit);
-      
-      if (success) {
-        return res.status(200).json({ 
-          message: `Daily limit for ${apiName} updated successfully`,
-          stats: getApiUsageStats()
-        });
-      } else {
-        return res.status(500).json({ message: 'Failed to update daily limit' });
-      }
-    } catch (error) {
-      console.error('Error updating daily limit:', error);
-      return res.status(500).json({ 
-        message: 'Error updating daily limit',
         error: error instanceof Error ? error.message : String(error)
       });
     }
