@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import StarRating from "@/components/ui/star-rating";
+import { AdMobBanner } from "@/components/ads/AdMob";
 
 interface Recommendation {
   id?: number;
@@ -165,10 +166,14 @@ export default function RecommendationsStep({ recommendations, isLoading, goodre
         Here are the books that best match your taste.
       </p>
 
-      {/* Ad placeholder - to be replaced with actual ad network code */}
-      <div className="mb-6 bg-neutral-100 border border-neutral-200 rounded-lg p-4 text-center">
-        <p className="text-neutral-500 text-sm mb-2">Advertisement Space</p>
-        <div className="text-xs text-neutral-400">Connect to Google AdSense or Amazon Associates</div>
+      {/* Google AdMob Banner */}
+      <div className="mb-6">
+        <AdMobBanner 
+          size="BANNER" 
+          platform="android" 
+          position="top" 
+          className="mx-auto"
+        />
       </div>
       
       {isLoading && (
@@ -326,10 +331,14 @@ export default function RecommendationsStep({ recommendations, isLoading, goodre
           {/* Books you've already read section */}
           {recommendations.some(book => isBookAlreadyRead(book)) && (
             <div className="mt-10">
-              {/* Ad placeholder - to be replaced with actual ad network code */}
-              <div className="mb-8 bg-neutral-100 border border-neutral-200 rounded-lg p-4 text-center">
-                <p className="text-neutral-500 text-sm mb-2">Advertisement Space</p>
-                <div className="text-xs text-neutral-400">Connect to Google AdSense or Amazon Associates</div>
+              {/* Google AdMob Banner - Second Ad Placement */}
+              <div className="mb-8">
+                <AdMobBanner 
+                  size="MEDIUM_RECTANGLE" 
+                  platform="ios" 
+                  position="bottom" 
+                  className="mx-auto"
+                />
               </div>
             
               <h3 className="text-lg font-semibold mb-4 text-purple-700">Books You've Already Read</h3>
