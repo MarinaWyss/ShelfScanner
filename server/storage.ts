@@ -34,6 +34,7 @@ export interface IStorage {
   // Saved Books methods
   getSavedBooksByDeviceId(deviceId: string): Promise<SavedBook[]>;
   createSavedBook(savedBook: InsertSavedBook): Promise<SavedBook>;
+  updateSavedBook(id: number, updates: Partial<InsertSavedBook>): Promise<SavedBook | undefined>;
   deleteSavedBook(id: number): Promise<boolean>;
   
   // Book Cache methods
@@ -129,6 +130,25 @@ export class DatabaseStorage implements IStorage {
       .values(insertSavedBook)
       .returning();
     return savedBook;
+  }
+
+  async updateSavedBook(id: number, updates: Partial<InsertSavedBook>): Promise<SavedBook | undefined> {
+    try {
+      const [updatedBook] = await db
+        .update(savedBooks)
+        .set(updates)
+        .where(eq(savedBooks.id, id))
+        .returning();
+      
+      if (updatedBook) {
+        log(`Updated saved book: "${updatedBook.title}" by ${updatedBook.author}`, 'storage');
+      }
+      
+      return updatedBook || undefined;
+    } catch (error) {
+      log(`Error updating saved book: ${error instanceof Error ? error.message : String(error)}`, 'storage');
+      return undefined;
+    }
   }
 
   async deleteSavedBook(id: number): Promise<boolean> {

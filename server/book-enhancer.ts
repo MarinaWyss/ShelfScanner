@@ -224,8 +224,13 @@ export class BookEnhancer {
    */
   private async updateSavedBook(book: any): Promise<void> {
     try {
-      // For this implementation, we're updating the book directly
-      // In a real system, you'd update via storage or database
+      // Actually update the saved book in the database
+      if (book.id) {
+        await storage.updateSavedBook(book.id, {
+          rating: book.rating,
+          summary: book.summary
+        });
+      }
       
       // Cache this book for future reference too
       await bookCacheService.cacheBook({
