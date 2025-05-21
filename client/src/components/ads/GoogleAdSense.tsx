@@ -51,20 +51,29 @@ export default function GoogleAdSense({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    let isMounted = true;
+    
     // Function to load the AdSense script if it's not already loaded
-    const loadAdSenseScript = () => {
+    const loadAdSenseScript = async () => {
+      // First fetch the publisher ID if not already fetched
+      const pubId = await fetchPublisherId();
+      
+      if (!isMounted) return;
+      
       const existingScript = document.getElementById('google-adsense-script');
       if (!existingScript) {
         const script = document.createElement('script');
         script.id = 'google-adsense-script';
         script.async = true;
-        script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${publisherId}`;
+        script.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${pubId}`;
         script.crossOrigin = 'anonymous';
         script.onload = () => {
-          console.log('Google AdSense script loaded');
+          if (!isMounted) return;
+          console.log('Google AdSense script loaded successfully');
           initializeAd();
         };
         script.onerror = (err) => {
+          if (!isMounted) return;
           console.error('Error loading Google AdSense script:', err);
           setError('Failed to load AdSense script');
         };
@@ -82,8 +91,10 @@ export default function GoogleAdSense({
           // Push the ad to AdSense
           (window.adsbygoogle = window.adsbygoogle || []).push({});
           setAdLoaded(true);
+          console.log('AdSense ad initialized');
         }
       } catch (err) {
+        if (!isMounted) return;
         console.error('Error initializing AdSense ad:', err);
         setError('Failed to initialize ad');
       }
@@ -94,7 +105,7 @@ export default function GoogleAdSense({
 
     // Cleanup function for component unmounting
     return () => {
-      // Any cleanup if needed
+      isMounted = false;
     };
   }, [adSlot]);
 
