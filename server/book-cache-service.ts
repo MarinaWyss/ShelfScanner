@@ -210,7 +210,7 @@ export class BookCacheService {
   }
 
   /**
-   * Get enhanced book summary using OpenAI
+   * Get enhanced book summary using OpenAI, leveraging its knowledge of literature
    * @param title Book title
    * @param author Book author
    * @param existingSummary Existing summary to enhance (optional)
@@ -241,30 +241,23 @@ export class BookCacheService {
         return cachedBook.summary;
       }
       
-      // Generate a new summary
+      // Generate a new summary using OpenAI's knowledge
       log(`Generating enhanced summary for "${title}" by ${author}`, 'cache');
-      
-      let promptText = `Generate a concise, engaging summary for the book "${title}" by ${author}.`;
-      
-      if (existingSummary) {
-        promptText += ` Here's an existing summary to improve upon: "${existingSummary}"`;
-      }
-      
-      promptText += ` Format the summary to be around 2-3 paragraphs and highlight key themes and the book's significance. Write in an engaging style that would appeal to readers interested in this genre.`;
       
       const response = await openai.chat.completions.create({
         model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
         messages: [
           {
             role: "system",
-            content: "You are a literary expert who creates compelling, accurate book summaries. Focus on providing valuable insights into the book's themes, style, and significance. Keep summaries concise and engaging."
+            content: "You are a literary expert with extensive knowledge of books across all genres. Your task is to provide accurate, engaging, and insightful book summaries based on your knowledge. Do not fabricate plot details if you're uncertain about the book's content - instead, focus on what you know with confidence. Summaries should be 2-3 paragraphs, highlighting themes, style, and significance."
           },
           {
             role: "user",
-            content: promptText
+            content: `Please provide a compelling summary for the book "${title}" by ${author}". Use only your existing knowledge about this book - do not conduct web searches. If you have limited knowledge about this specific book, focus on what you do know about it or similar works by this author. The summary should be 2-3 paragraphs, highlighting key themes, writing style, and cultural/literary significance where relevant.`
           }
         ],
-        max_tokens: 450
+        max_tokens: 500,
+        temperature: 0.7 // Slightly higher temperature for more engaging summaries
       });
       
       // Increment OpenAI API counter
@@ -273,11 +266,15 @@ export class BookCacheService {
       const summary = response.choices[0].message.content?.trim() || null;
       
       if (summary) {
-        // Cache the summary
+        // Cache the summary with a longer expiration since book content doesn't change
+        const expiresAt = new Date();
+        expiresAt.setDate(expiresAt.getDate() + 120); // 120 days cache for summaries
+        
         await this.cacheBook({
           title,
           author,
-          summary
+          summary,
+          expiresAt
         }, 'openai');
         
         log(`Successfully generated and cached summary for "${title}"`, 'cache');
@@ -291,9 +288,9 @@ export class BookCacheService {
   }
   
   /**
-   * Get enhanced book rating
-   * Will try to use cached rating first, then Amazon API (if configured),
-   * then local database of known ratings, and finally estimated rating.
+   * Get enhanced book rating using OpenAI
+   * Will try to use cached rating first, then use OpenAI to generate a rating
+   * based on its knowledge of books and literature.
    * 
    * @param title Book title
    * @param author Book author
@@ -325,26 +322,76 @@ export class BookCacheService {
             author,
             isbn,
             rating: isbnBook.rating
-          }, 'amazon');
+          }, 'openai');
           
           return isbnBook.rating;
         }
       }
       
-      // Use Amazon API via helper function (handles fallbacks internally)
-      const rating = await getAmazonBookRating(title, author, isbn);
-      
-      // Cache the result
-      if (rating) {
-        await this.cacheBook({
-          title,
-          author,
-          isbn,
-          rating
-        }, 'amazon');
+      // Check if OpenAI is configured
+      if (!process.env.OPENAI_API_KEY) {
+        log('OpenAI API key not configured for rating generation, using estimate', 'cache');
+        const estimatedRating = getEstimatedBookRating(title, author);
+        return estimatedRating;
       }
       
-      return rating || getEstimatedBookRating(title, author);
+      // Check rate limits
+      if (!rateLimiter.isAllowed('openai')) {
+        log('Rate limit reached for OpenAI, using estimate for rating', 'cache');
+        const estimatedRating = getEstimatedBookRating(title, author);
+        return estimatedRating;
+      }
+      
+      // Use OpenAI to generate a rating based on its knowledge
+      log(`Generating rating for "${title}" by ${author} using OpenAI`, 'cache');
+      
+      const response = await openai.chat.completions.create({
+        model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+        messages: [
+          {
+            role: "system",
+            content: "You are a literary expert with extensive knowledge of books and their reception. Your task is to provide an accurate rating for a book based on critical consensus and general reader reception. Base your rating only on your knowledge of this book's reception - do not conduct web searches."
+          },
+          {
+            role: "user",
+            content: `Please rate the book "${title}" by ${author} on a scale of 1.0 to 5.0 stars (with one decimal place). Use your knowledge to provide the most accurate rating based on critical reception and reader feedback. Only respond with a single number between 1.0 and 5.0 (with one decimal place). If you don't have sufficient knowledge about this book, provide your best estimate of what its rating would be based on similar works by this author or in this genre.`
+          }
+        ],
+        max_tokens: 10,
+        temperature: 0.3 // Lower temperature for more consistent ratings
+      });
+      
+      // Increment OpenAI API counter
+      rateLimiter.increment('openai');
+      
+      const ratingText = response.choices[0].message.content?.trim() || '';
+      
+      // Extract the numeric rating (looking for patterns like "4.5" or "4.5 stars")
+      const ratingMatch = ratingText.match(/(\d+\.\d+)/);
+      let rating = ratingMatch ? ratingMatch[1] : '';
+      
+      // Validate that rating is in the correct range
+      if (rating) {
+        const ratingNumber = parseFloat(rating);
+        if (ratingNumber < 1.0 || ratingNumber > 5.0) {
+          // Invalid range, use a fallback
+          rating = getEstimatedBookRating(title, author);
+        }
+      } else {
+        // No valid rating extracted, use a fallback
+        rating = getEstimatedBookRating(title, author);
+      }
+      
+      // Cache the result
+      await this.cacheBook({
+        title,
+        author,
+        isbn,
+        rating
+      }, 'openai');
+      
+      log(`Generated rating for "${title}": ${rating}`, 'cache');
+      return rating;
     } catch (error) {
       log(`Error getting enhanced rating: ${error instanceof Error ? error.message : String(error)}`, 'cache');
       return getEstimatedBookRating(title, author);
