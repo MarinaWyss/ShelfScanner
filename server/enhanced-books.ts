@@ -262,22 +262,21 @@ export async function searchBooksByTitle(title: string): Promise<any[]> {
             }
           }
           
-          // Step 3: Get enhanced summary if needed
-          if (!book.summary || book.summary.length < 100) {
-            try {
-              const enhancedSummary = await bookCacheService.getEnhancedSummary(
-                book.title, 
-                book.author,
-                book.summary
-              );
-              
-              if (enhancedSummary) {
-                book.summary = enhancedSummary;
-                log(`Enhanced summary for "${book.title}"`, 'books');
-              }
-            } catch (error) {
-              log(`Failed to enhance summary for "${book.title}": ${error instanceof Error ? error.message : String(error)}`, 'books');
+          // Step 3: Always get enhanced summary from OpenAI for better descriptions
+          try {
+            // Always attempt to get an OpenAI enhanced summary for better quality descriptions
+            const enhancedSummary = await bookCacheService.getEnhancedSummary(
+              book.title, 
+              book.author,
+              book.summary
+            );
+            
+            if (enhancedSummary) {
+              book.summary = enhancedSummary;
+              log(`Enhanced summary for "${book.title}"`, 'books');
             }
+          } catch (error) {
+            log(`Failed to enhance summary for "${book.title}": ${error instanceof Error ? error.message : String(error)}`, 'books');
           }
           
           // Step 4: Cache this book for future use to reduce API calls
@@ -385,11 +384,12 @@ export async function searchBooksByTitle(title: string): Promise<any[]> {
             }
           }
           
-          // Step 3: Get enhanced summary
+          // Step 3: Get enhanced summary with improved 3-4 sentence format
           try {
             const enhancedSummary = await bookCacheService.getEnhancedSummary(
               book.title, 
-              book.author
+              book.author,
+              book.summary
             );
             
             if (enhancedSummary) {
