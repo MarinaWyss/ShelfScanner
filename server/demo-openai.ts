@@ -55,15 +55,15 @@ export async function getOpenAIBookSummary(title: string, author: string): Promi
       messages: [
         {
           role: "system",
-          content: "You are a literary expert providing concise book summaries. Keep responses to 1-2 short sentences only."
+          content: "You are a literary expert providing engaging book summaries. Craft a concise 3-4 sentence summary that captures the essence of the book, its main themes, and what makes it notable. Focus on being informative yet brief."
         },
         {
           role: "user",
-          content: `Summarize the book "${title}" by ${author}" in 1-2 sentences.`
+          content: `Summarize the book "${title}" by ${author}" in 3-4 sentences. Be engaging and highlight what makes this book special.`
         }
       ],
-      max_tokens: 100,
-      temperature: 0.5
+      max_tokens: 150,
+      temperature: 0.6
     });
     
     const summary = response.choices[0].message.content?.trim() || '';
