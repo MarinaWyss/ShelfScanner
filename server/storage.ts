@@ -120,6 +120,25 @@ export class DatabaseStorage implements IStorage {
     return recommendation;
   }
 
+  async updateRecommendation(id: number, updates: Partial<InsertRecommendation>): Promise<Recommendation | undefined> {
+    try {
+      const [updatedRecommendation] = await db
+        .update(recommendations)
+        .set(updates)
+        .where(eq(recommendations.id, id))
+        .returning();
+      
+      if (updatedRecommendation) {
+        log(`Updated recommendation: "${updatedRecommendation.title}" with enhanced data`, 'storage');
+      }
+      
+      return updatedRecommendation || undefined;
+    } catch (error) {
+      log(`Error updating recommendation: ${error instanceof Error ? error.message : String(error)}`, 'storage');
+      return undefined;
+    }
+  }
+
   // Saved Books methods
   async getSavedBooksByDeviceId(deviceId: string): Promise<SavedBook[]> {
     return db.select().from(savedBooks).where(eq(savedBooks.deviceId, deviceId));
