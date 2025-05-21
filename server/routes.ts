@@ -19,7 +19,6 @@ const upload = multer({
 });
 
 import { registerEnvRoutes } from './env-routes';
-import { rateLimiter } from './rate-limiter';
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Make environment variables available to the frontend

@@ -10,7 +10,6 @@ import Books from "@/pages/books";
 import SavedBooks from "@/pages/saved-books";
 import Navbar from "@/components/layout/Navbar";
 import ContactForm from "@/components/contact/ContactForm";
-import RatingTest from "@/components/rating-test";
 
 function Router() {
   return (
@@ -18,7 +17,6 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/books" component={Books} />
       <Route path="/reading-list" component={SavedBooks} />
-      <Route path="/rating-test" component={RatingTest} />
       <Route component={NotFound} />
     </Switch>
   );
