@@ -560,12 +560,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Get user recommendations
+  // Get user recommendations with enhanced OpenAI content
   app.get('/api/recommendations', async (req: Request, res: Response) => {
     try {
       const userId = 1; // Default user ID
       
-      const recommendations = await storage.getRecommendationsByUserId(userId);
+      // Get recommendations from storage
+      let recommendations = await storage.getRecommendationsByUserId(userId);
+      
+      // Enhance recommendations with OpenAI-generated content
+      recommendations = await Promise.all(recommendations.map(async (recommendation) => {
+        // If summary is missing or too short, get an enhanced one
+        if (!recommendation.summary || recommendation.summary.length < 100) {
+          try {
+            const enhancedSummary = await bookCacheService.getEnhancedSummary(
+              recommendation.title, 
+              recommendation.author
+            );
+            
+            if (enhancedSummary) {
+              // Update the recommendation object
+              recommendation.summary = enhancedSummary;
+              
+              // Also update in the database for future requests
+              await storage.updateRecommendation(recommendation.id, {
+                summary: enhancedSummary
+              });
+              
+              console.log(`Enhanced recommendation summary for "${recommendation.title}" with OpenAI`);
+            }
+          } catch (error) {
+            console.error(`Error enhancing recommendation summary for "${recommendation.title}":`, error);
+          }
+        }
+        
+        // If rating is missing or zero, get an enhanced one
+        if (!recommendation.rating || recommendation.rating === "0") {
+          try {
+            const enhancedRating = await bookCacheService.getEnhancedRating(
+              recommendation.title, 
+              recommendation.author
+            );
+            
+            if (enhancedRating) {
+              // Update the recommendation object
+              recommendation.rating = enhancedRating;
+              
+              // Also update in the database for future requests
+              await storage.updateRecommendation(recommendation.id, {
+                rating: enhancedRating
+              });
+              
+              console.log(`Enhanced recommendation rating for "${recommendation.title}" with OpenAI: ${enhancedRating}`);
+            }
+          } catch (error) {
+            console.error(`Error enhancing recommendation rating for "${recommendation.title}":`, error);
+          }
+        }
+        
+        return recommendation;
+      }));
       
       return res.status(200).json(recommendations);
     } catch (error) {

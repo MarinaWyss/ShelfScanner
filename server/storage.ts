@@ -30,6 +30,7 @@ export interface IStorage {
   // Recommendations methods
   getRecommendationsByUserId(userId: number): Promise<Recommendation[]>;
   createRecommendation(recommendation: InsertRecommendation): Promise<Recommendation>;
+  updateRecommendation(id: number, updates: Partial<InsertRecommendation>): Promise<Recommendation | undefined>;
   
   // Saved Books methods
   getSavedBooksByDeviceId(deviceId: string): Promise<SavedBook[]>;
