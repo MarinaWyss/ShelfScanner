@@ -467,6 +467,29 @@ export default function RecommendationsStep({ recommendations, isLoading, goodre
                         <p className="text-sm text-neutral-600 mb-2">
                           You read this as: <span className="font-medium">{book.originalReadTitle || book.title}</span>
                         </p>
+                        <div className="text-sm text-neutral-600">
+                          <p className={expandedBooks.includes(book.id || (index + 2000)) ? '' : 'line-clamp-3'}>
+                            {book.summary}
+                          </p>
+                          {book.summary && book.summary.length > 240 && (
+                            <button 
+                              onClick={() => toggleExpand(book.id || (index + 2000))}
+                              className="mt-2 text-indigo-600 hover:text-indigo-800 text-sm flex items-center font-medium"
+                            >
+                              {expandedBooks.includes(book.id || (index + 2000)) ? (
+                                <>
+                                  <ChevronUp className="h-4 w-4 mr-1" /> 
+                                  Read Less
+                                </>
+                              ) : (
+                                <>
+                                  <ChevronDown className="h-4 w-4 mr-1" /> 
+                                  Read More
+                                </>
+                              )}
+                            </button>
+                          )}
+                        </div>
                         <div className="mt-3 flex justify-between gap-3">
                           <button 
                             className={`

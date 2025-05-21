@@ -315,18 +315,18 @@ export class BookCacheService {
     isbn?: string
   ): Promise<string> {
     try {
-      // Check for cached rating first
+      // Check for cached rating first - but only use if it's from OpenAI
       const cachedBook = await this.findInCache(title, author);
-      if (cachedBook?.rating) {
-        log(`Using cached rating for "${title}": ${cachedBook.rating}`, 'cache');
+      if (cachedBook?.rating && cachedBook.source === 'openai') {
+        log(`Using cached OpenAI rating for "${title}": ${cachedBook.rating}`, 'cache');
         return cachedBook.rating;
       }
       
-      // If we have an ISBN, try looking up by that
+      // If we have an ISBN, try looking up by that - but only use if it's from OpenAI
       if (isbn) {
         const isbnBook = await this.findByISBN(isbn);
-        if (isbnBook?.rating) {
-          log(`Using cached ISBN rating for "${title}": ${isbnBook.rating}`, 'cache');
+        if (isbnBook?.rating && isbnBook.source === 'openai') {
+          log(`Using cached OpenAI ISBN rating for "${title}": ${isbnBook.rating}`, 'cache');
           
           // Also cache under title/author for future lookups
           await this.cacheBook({
@@ -424,6 +424,50 @@ export class BookCacheService {
       // Additional maintenance tasks can be added here
     } catch (error) {
       log(`Error during cache maintenance: ${error instanceof Error ? error.message : String(error)}`, 'cache');
+    }
+  }
+  
+  /**
+   * Removes non-OpenAI ratings from the cache
+   * This ensures we only use OpenAI-generated ratings for consistency
+   * @returns Number of entries updated
+   */
+  async cleanupNonOpenAIRatings(): Promise<number> {
+    try {
+      // Find entries with ratings that don't have OpenAI as the source
+      const entries = await db.select().from(bookCache)
+        .where(
+          and(
+            isNotNull(bookCache.rating),
+            or(
+              notEq(bookCache.source, 'openai'),
+              isNull(bookCache.source)
+            )
+          )
+        );
+      
+      if (entries.length === 0) {
+        log('No non-OpenAI ratings found in cache', 'cache');
+        return 0;
+      }
+      
+      let updateCount = 0;
+      for (const entry of entries) {
+        // Reset the rating but keep other data
+        await db.update(bookCache)
+          .set({
+            rating: null
+          })
+          .where(eq(bookCache.id, entry.id));
+          
+        updateCount++;
+      }
+      
+      log(`Cleared ratings from ${updateCount} non-OpenAI cache entries`, 'cache');
+      return updateCount;
+    } catch (error) {
+      log(`Error clearing non-OpenAI ratings: ${error instanceof Error ? error.message : String(error)}`, 'cache');
+      return 0;
     }
   }
   

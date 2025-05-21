@@ -38,19 +38,21 @@ export class BookEnhancer {
           // Check if this book exists in cache with enhanced content
           const cachedBook = await storage.findBookInCache(book.title, book.author);
           
-          // If we have a cached version with OpenAI data, use it
-          if (cachedBook && cachedBook.source === 'openai') {
-            if (cachedBook.summary) {
+          // Check for OpenAI-generated data in cache
+          if (cachedBook) {
+            // Only use the summary if it comes from OpenAI
+            if (cachedBook.summary && cachedBook.source === 'openai') {
               enhancedBook.summary = cachedBook.summary;
               enhancedBook.enhanced = true;
+              log(`Using cached OpenAI summary for "${book.title}"`, 'enhancer');
             }
             
-            if (cachedBook.rating) {
+            // Only use the rating if it comes from OpenAI
+            if (cachedBook.rating && cachedBook.source === 'openai') {
               enhancedBook.rating = cachedBook.rating;
               enhancedBook.enhanced = true;
+              log(`Using cached OpenAI rating for "${book.title}": ${cachedBook.rating}`, 'enhancer');
             }
-            
-            log(`Enhanced book "${book.title}" with cached OpenAI data`, 'enhancer');
             
             // If we have complete OpenAI data, return early
             if (enhancedBook.summary && enhancedBook.rating) {
