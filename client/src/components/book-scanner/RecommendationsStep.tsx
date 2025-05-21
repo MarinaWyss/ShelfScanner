@@ -160,14 +160,8 @@ export default function RecommendationsStep({ recommendations, isLoading, goodre
 
   return (
     <div>
-      <h3 className="text-lg font-semibold mb-4">Book Matches Based on Your Preferences</h3>
-      <p className="text-slate-400 mb-4">
-        We've analyzed the books in your photo and matched them against your reading preferences.
-        Here are the books that best match your taste.
-      </p>
-
-      {/* Google AdMob Banner */}
-      <div className="mb-6">
+      {/* Google AdMob Banner at the Top */}
+      <div className="mb-4">
         <AdMobBanner 
           size="BANNER" 
           platform="android" 
@@ -175,6 +169,12 @@ export default function RecommendationsStep({ recommendations, isLoading, goodre
           className="mx-auto"
         />
       </div>
+      
+      <h3 className="text-lg font-semibold mb-4">Book Matches Based on Your Preferences</h3>
+      <p className="text-slate-400 mb-4">
+        We've analyzed the books in your photo and matched them against your reading preferences.
+        Here are the books that best match your taste.
+      </p>
       
       {isLoading && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -326,6 +326,16 @@ export default function RecommendationsStep({ recommendations, isLoading, goodre
                 </div>
               ))}
             </div>
+          </div>
+          
+          {/* Ad Banner at the bottom of recommendations */}
+          <div className="mt-8 mb-8">
+            <AdMobBanner 
+              size="LEADERBOARD" 
+              platform="android" 
+              position="bottom" 
+              className="mx-auto"
+            />
           </div>
           
           {/* Books you've already read section */}

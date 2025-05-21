@@ -218,49 +218,15 @@ export default function SavedBooks() {
         )}
         
         {/* AdMob Banners at the bottom of the page */}
+        {/* AdMob Banner Ad under the reading list */}
         {!isLoading && savedBooks.length > 0 && (
-          <div className="mt-12 space-y-8">
-            <h3 className="text-xl font-semibold text-white">Recommended for You</h3>
-            <div className="bg-slate-900 rounded-xl p-6 border border-slate-800">
-              <p className="text-slate-400 mb-6">Based on your reading list, you might enjoy these books:</p>
-              
-              {/* AdMob Banner Ad */}
-              <div className="mb-4">
-                <AdMobBanner 
-                  size="MEDIUM_RECTANGLE" 
-                  platform="android" 
-                  position="bottom" 
-                  className="mx-auto"
-                />
-              </div>
-              
-              {/* Show Interstitial Ad Button */}
-              <div className="mt-6 text-center">
-                <Button
-                  onClick={() => isInterstitialLoaded && showInterstitialAd()}
-                  disabled={!isInterstitialLoaded}
-                  className="bg-purple-700 hover:bg-purple-600 text-white"
-                >
-                  See Special Offers
-                </Button>
-                <p className="text-xs text-slate-500 mt-2">
-                  Click to see special deals on books from our partners
-                </p>
-              </div>
-            </div>
-            
-            {/* Second AdMob Banner - different size and platform */}
-            <div className="mt-6">
-              <h3 className="text-xl font-semibold text-white mb-4">Featured Titles</h3>
-              <div className="bg-slate-900 rounded-xl p-4 border border-slate-800">
-                <AdMobBanner 
-                  size="LEADERBOARD" 
-                  platform="ios" 
-                  position="top" 
-                  className="mx-auto"
-                />
-              </div>
-            </div>
+          <div className="mt-8">
+            <AdMobBanner 
+              size="BANNER" 
+              platform="android" 
+              position="bottom" 
+              className="mx-auto"
+            />
           </div>
         )}
       </div>
