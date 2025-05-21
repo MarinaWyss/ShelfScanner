@@ -1,10 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useIsMobile } from '../../hooks/use-mobile';
 
-// App IDs - these will be fetched from the server API
-const defaultAppIds = {
-  android: 'ca-app-pub-0000000000000000~0000000000',
-  ios: 'ca-app-pub-0000000000000000~0000000000'
+// App IDs from your Google AdMob account
+// These will be used when migrating to React Native
+const appIds = {
+  // Your actual App IDs (stored as environment secrets)
+  android: 'ca-app-pub-XXXXXXXXXXXXXXXX~YYYYYYYYYY', // Replace with your actual Android App ID
+  ios: 'ca-app-pub-XXXXXXXXXXXXXXXX~YYYYYYYYYY', // Replace with your actual iOS App ID
 };
 
 // Define your ad unit IDs here
