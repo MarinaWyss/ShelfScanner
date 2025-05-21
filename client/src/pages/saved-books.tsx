@@ -6,7 +6,7 @@ import { Link } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
 import { Trash2 } from "lucide-react";
 import StarRating from "@/components/ui/star-rating";
-import { AdMobBanner, useInterstitialAd } from "@/components/ads/AdMob";
+import GoogleAdSense from "@/components/ads/GoogleAdSense";
 
 interface SavedBook {
   id: number;

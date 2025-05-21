@@ -5,7 +5,7 @@ import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import StarRating from "@/components/ui/star-rating";
-import { AdMobBanner } from "@/components/ads/AdMob";
+import GoogleAdSense from "@/components/ads/GoogleAdSense";
 
 interface Recommendation {
   id?: number;
@@ -160,12 +160,12 @@ export default function RecommendationsStep({ recommendations, isLoading, goodre
 
   return (
     <div>
-      {/* Google AdMob Banner at the Top */}
+      {/* Google AdSense Banner at the Top */}
       <div className="mb-4">
-        <AdMobBanner 
-          size="BANNER" 
-          platform="android" 
-          position="top" 
+        <GoogleAdSense 
+          adSize="728x90"
+          adFormat="horizontal"
+          style={{ height: '90px', width: '100%', maxWidth: '728px' }}
           className="mx-auto"
         />
       </div>
@@ -328,12 +328,12 @@ export default function RecommendationsStep({ recommendations, isLoading, goodre
             </div>
           </div>
           
-          {/* Ad Banner at the bottom of recommendations */}
+          {/* Google AdSense Banner at the bottom of recommendations */}
           <div className="mt-8 mb-8">
-            <AdMobBanner 
-              size="BANNER" 
-              platform="android" 
-              position="bottom" 
+            <GoogleAdSense 
+              adSize="728x90"
+              adFormat="horizontal"
+              style={{ height: '90px', width: '100%', maxWidth: '728px' }}
               className="mx-auto"
             />
           </div>
@@ -341,12 +341,12 @@ export default function RecommendationsStep({ recommendations, isLoading, goodre
           {/* Books you've already read section */}
           {recommendations.some(book => isBookAlreadyRead(book)) && (
             <div className="mt-10">
-              {/* Google AdMob Banner - Second Ad Placement */}
+              {/* Google AdSense Banner - Second Ad Placement */}
               <div className="mb-8">
-                <AdMobBanner 
-                  size="MEDIUM_RECTANGLE" 
-                  platform="ios" 
-                  position="bottom" 
+                <GoogleAdSense 
+                  adSize="300x250"
+                  adFormat="rectangle"
+                  style={{ height: '250px', width: '300px' }}
                   className="mx-auto"
                 />
               </div>
