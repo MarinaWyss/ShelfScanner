@@ -466,6 +466,7 @@ export default function PreferencesStep({ preferences, onSubmit, isLoading }: Pr
 
             <div className="mt-2 text-xs text-muted-foreground">
               <p><a href="https://www.goodreads.com/review/import" className="text-primary underline" target="_blank" rel="noopener noreferrer">Export your Goodreads library</a> by going to "Import and Export" in your account settings</p>
+              <p className="mt-1 text-yellow-400">Note: The Goodreads mobile app does not allow data export. Unfortunately data export must happen on desktop.</p>
             </div>
           </div>
         </Card>
