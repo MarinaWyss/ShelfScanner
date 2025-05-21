@@ -8,6 +8,8 @@ import { searchEnhancedBooks } from "./enhanced-book-api";
 import { getAmazonBookRating, getEstimatedBookRating } from "./amazon";
 import { bookCacheService } from "./book-cache-service";
 import { bookEnhancer } from "./book-enhancer";
+import { getOpenAIBookDetails } from "./openai-books";
+import { getOpenAIBookRating, getOpenAIBookSummary } from "./demo-openai";
 import multer from "multer";
 import { z } from "zod";
 import { insertPreferenceSchema, insertBookSchema, insertRecommendationSchema, insertSavedBookSchema } from "@shared/schema";
@@ -681,6 +683,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.error('Error enhancing book:', error);
       return res.status(500).json({ 
         message: 'Error enhancing book data',
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
+  // Simple demo endpoint that clearly shows OpenAI generated ratings and summaries
+  app.get('/api/demo/openai-book', async (req: Request, res: Response) => {
+    try {
+      const { title, author } = req.query;
+      
+      if (!title || !author || typeof title !== 'string' || typeof author !== 'string') {
+        return res.status(400).json({ message: 'Title and author are required as query parameters' });
+      }
+      
+      console.log(`DEMO: Getting OpenAI rating and summary for "${title}" by ${author}`);
+      
+      // Get direct OpenAI rating
+      const rating = await getOpenAIBookRating(title, author);
+      
+      // Get direct OpenAI summary
+      const summary = await getOpenAIBookSummary(title, author);
+      
+      return res.status(200).json({
+        title,
+        author,
+        rating,
+        summary,
+        source: 'openai-direct',
+        timestamp: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Error in OpenAI book demo:', error);
+      return res.status(500).json({ 
+        message: 'Error getting OpenAI book data',
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+  
+  // Endpoint to get book information directly from OpenAI
+  app.get('/api/openai-book', async (req: Request, res: Response) => {
+    try {
+      const { title, author } = req.query;
+      
+      if (!title || !author || typeof title !== 'string' || typeof author !== 'string') {
+        return res.status(400).json({ message: 'Title and author are required as query parameters' });
+      }
+      
+      console.log(`Getting OpenAI book details for "${title}" by ${author}`);
+      
+      // Get book details using OpenAI exclusively
+      const bookDetails = await getOpenAIBookDetails(title, author);
+      
+      return res.status(200).json({
+        ...bookDetails,
+        requestedAt: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Error getting OpenAI book details:', error);
+      return res.status(500).json({ 
+        message: 'Error getting book details from OpenAI',
         error: error instanceof Error ? error.message : String(error)
       });
     }
