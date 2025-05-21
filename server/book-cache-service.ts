@@ -260,15 +260,15 @@ export class BookCacheService {
         messages: [
           {
             role: "system",
-            content: "You are a literary expert with extensive knowledge of books across all genres. Your task is to provide accurate, engaging, and insightful book summaries based on your knowledge. Do not fabricate plot details if you're uncertain about the book's content - instead, focus on what you know with confidence. Summaries should be 2-3 paragraphs, highlighting themes, style, and significance."
+            content: "You are a literary expert with extensive knowledge of books across all genres. Your task is to provide accurate, engaging, and concise book summaries based on your knowledge. Do not fabricate plot details if you're uncertain about the book's content. Keep summaries brief and focused on key information."
           },
           {
             role: "user",
-            content: `Please provide a compelling summary for the book "${title}" by ${author}". Use only your existing knowledge about this book - do not conduct web searches. If you have limited knowledge about this specific book, focus on what you do know about it or similar works by this author. The summary should be 2-3 paragraphs, highlighting key themes, writing style, and cultural/literary significance where relevant.`
+            content: `Please provide a concise summary for the book "${title}" by ${author}". Use only your existing knowledge about this book - do not conduct web searches. Keep your response to a maximum of 2-3 sentences highlighting the book's main premise or concept. Be brief but informative.`
           }
         ],
-        max_tokens: 500,
-        temperature: 0.7 // Slightly higher temperature for more engaging summaries
+        max_tokens: 200,
+        temperature: 0.5 // Lower temperature for more consistent summaries
       });
       
       // Increment OpenAI API counter
