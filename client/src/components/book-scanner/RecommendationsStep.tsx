@@ -331,7 +331,7 @@ export default function RecommendationsStep({ recommendations, isLoading, goodre
           {/* Ad Banner at the bottom of recommendations */}
           <div className="mt-8 mb-8">
             <AdMobBanner 
-              size="LEADERBOARD" 
+              size="BANNER" 
               platform="android" 
               position="bottom" 
               className="mx-auto"

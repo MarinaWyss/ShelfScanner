@@ -217,9 +217,8 @@ export default function SavedBooks() {
           </div>
         )}
         
-        {/* AdMob Banners at the bottom of the page */}
-        {/* AdMob Banner Ad under the reading list */}
-        {!isLoading && savedBooks.length > 0 && (
+        {/* AdMob Banner Ad under the reading list - always display */}
+        {!isLoading && (
           <div className="mt-8">
             <AdMobBanner 
               size="BANNER" 
