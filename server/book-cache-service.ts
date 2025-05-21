@@ -129,19 +129,30 @@ export class BookCacheService {
     rating?: string;
     summary?: string;
     metadata?: any;
-  }, source: 'google' | 'amazon' | 'openai' = 'google'): Promise<BookCache> {
+    source?: 'google' | 'amazon' | 'openai';
+    expiresAt?: Date;
+  }): Promise<BookCache> {
+    const source = bookData.source || 'google';
     try {
-      // Set expiration based on source
-      const now = new Date();
-      let expirationMs = DEFAULT_EXPIRATION;
+      // Set expiration based on source if not explicitly provided
+      let expiresAt: Date;
       
-      switch (source) {
-        case 'google': expirationMs = CACHE_DURATION.GOOGLE; break;
-        case 'amazon': expirationMs = CACHE_DURATION.AMAZON; break;
-        case 'openai': expirationMs = CACHE_DURATION.OPENAI; break;
+      if (bookData.expiresAt) {
+        // Use provided expiration date
+        expiresAt = bookData.expiresAt;
+      } else {
+        // Calculate expiration based on source
+        const now = new Date();
+        let expirationMs = DEFAULT_EXPIRATION;
+        
+        switch (source) {
+          case 'google': expirationMs = CACHE_DURATION.GOOGLE; break;
+          case 'amazon': expirationMs = CACHE_DURATION.AMAZON; break;
+          case 'openai': expirationMs = CACHE_DURATION.OPENAI; break;
+        }
+        
+        expiresAt = new Date(now.getTime() + expirationMs);
       }
-      
-      const expiresAt = new Date(now.getTime() + expirationMs);
 
       // Check if this book already exists in cache
       const existing = await this.findInCache(bookData.title, bookData.author);
@@ -274,8 +285,9 @@ export class BookCacheService {
           title,
           author,
           summary,
-          expiresAt
-        }, 'openai');
+          expiresAt,
+          source: 'openai'
+        });
         
         log(`Successfully generated and cached summary for "${title}"`, 'cache');
       }
@@ -321,8 +333,9 @@ export class BookCacheService {
             title,
             author,
             isbn,
-            rating: isbnBook.rating
-          }, 'openai');
+            rating: isbnBook.rating,
+            source: 'openai'
+          });
           
           return isbnBook.rating;
         }
