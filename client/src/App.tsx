@@ -8,6 +8,7 @@ import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
 import Books from "@/pages/books";
 import SavedBooks from "@/pages/saved-books";
+import OpenAIDemo from "@/pages/OpenAIDemo";
 import Navbar from "@/components/layout/Navbar";
 import ContactForm from "@/components/contact/ContactForm";
 
@@ -17,6 +18,7 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/books" component={Books} />
       <Route path="/reading-list" component={SavedBooks} />
+      <Route path="/openai-demo" component={OpenAIDemo} />
       <Route component={NotFound} />
     </Switch>
   );
