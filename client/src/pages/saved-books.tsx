@@ -22,13 +22,6 @@ export default function SavedBooks() {
   const [savedBooks, setSavedBooks] = useState<SavedBook[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
-  // Initialize interstitial ad
-  const { isLoaded: isInterstitialLoaded, showAd: showInterstitialAd } = useInterstitialAd({
-    platform: 'android',
-    onAdDismissed: () => console.log('Interstitial ad dismissed'),
-    onAdLoaded: () => console.log('Interstitial ad loaded')
-  });
 
   // Fetch saved books when component mounts
   useEffect(() => {
@@ -217,13 +210,13 @@ export default function SavedBooks() {
           </div>
         )}
         
-        {/* AdMob Banner Ad under the reading list - always display */}
+        {/* Google AdSense Banner under the reading list - always display */}
         {!isLoading && (
           <div className="mt-8">
-            <AdMobBanner 
-              size="BANNER" 
-              platform="android" 
-              position="bottom" 
+            <GoogleAdSense 
+              adSize="728x90"
+              adFormat="horizontal"
+              style={{ height: '90px', width: '100%', maxWidth: '728px' }}
               className="mx-auto"
             />
           </div>

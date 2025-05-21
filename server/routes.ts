@@ -22,6 +22,12 @@ import { registerEnvRoutes } from './env-routes';
 import { rateLimiter } from './rate-limiter';
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Make environment variables available to the frontend
+  app.get('/api/env', (req, res) => {
+    res.json({
+      ADSENSE_PUBLISHER_ID: process.env.ADSENSE_PUBLISHER_ID || '',
+    });
+  });
   // Register environment routes
   registerEnvRoutes(app);
   // API routes

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import axios from 'axios';
 
 interface GoogleAdSenseProps {
   adSlot?: string;
@@ -15,9 +16,27 @@ declare global {
   }
 }
 
-// Get the publisher ID from environment variables
-// Using import.meta.env for Vite's environment variables
-const publisherId = import.meta.env.ADSENSE_PUBLISHER_ID || 'ca-pub-1234567890123456';
+// Will store the publisher ID once fetched
+let publisherId = '';
+
+// Function to fetch the AdSense publisher ID
+async function fetchPublisherId() {
+  if (publisherId) return publisherId;
+  
+  try {
+    const response = await axios.get('/api/config/ads');
+    if (response.data && response.data.adsense && response.data.adsense.publisherId) {
+      publisherId = response.data.adsense.publisherId;
+      console.log('AdSense publisher ID fetched successfully');
+    } else {
+      console.error('Failed to fetch AdSense publisher ID - data format incorrect');
+    }
+  } catch (error) {
+    console.error('Error fetching AdSense publisher ID:', error);
+  }
+  
+  return publisherId || 'ca-pub-1234567890123456';
+}
 
 export default function GoogleAdSense({ 
   adSlot = '1234567890', 
