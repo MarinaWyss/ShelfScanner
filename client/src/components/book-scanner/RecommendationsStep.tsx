@@ -5,6 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import StarRating from "@/components/ui/star-rating";
 import GoogleAdSense from "@/components/ads/GoogleAdSense";
+import { ChevronDown, ChevronUp } from "lucide-react";
 
 interface Recommendation {
   id?: number;
@@ -29,7 +30,17 @@ interface RecommendationsStepProps {
 export default function RecommendationsStep({ recommendations, isLoading, goodreadsData }: RecommendationsStepProps) {
   const [savingBookIds, setSavingBookIds] = useState<number[]>([]);
   const [savedBookIds, setSavedBookIds] = useState<number[]>([]);
+  const [expandedBooks, setExpandedBooks] = useState<number[]>([]);
   const { toast } = useToast();
+  
+  // Toggle expanded state of a book description
+  const toggleExpand = (id: number) => {
+    setExpandedBooks(prev => 
+      prev.includes(id) 
+        ? prev.filter(bookId => bookId !== id) 
+        : [...prev, id]
+    );
+  };
 
   // Fetch saved books when component mounts to know which books are already saved
   useEffect(() => {
@@ -310,7 +321,29 @@ export default function RecommendationsStep({ recommendations, isLoading, goodre
                       <div className="p-5 pb-3">
                         <h4 className="font-semibold text-black text-xl mb-1">{book.title}</h4>
                         <p className="text-black text-sm mb-3">by {book.author}</p>
-                        <p className="text-sm text-black">{book.summary}</p>
+                        <div className="text-sm text-black">
+                          <p className={expandedBooks.includes(book.id || index) ? '' : 'line-clamp-3'}>
+                            {book.summary}
+                          </p>
+                          {book.summary && book.summary.length > 240 && (
+                            <button 
+                              onClick={() => toggleExpand(book.id || index)}
+                              className="mt-2 text-indigo-600 hover:text-indigo-800 text-sm flex items-center font-medium"
+                            >
+                              {expandedBooks.includes(book.id || index) ? (
+                                <>
+                                  <ChevronUp className="h-4 w-4 mr-1" /> 
+                                  Read Less
+                                </>
+                              ) : (
+                                <>
+                                  <ChevronDown className="h-4 w-4 mr-1" /> 
+                                  Read More
+                                </>
+                              )}
+                            </button>
+                          )}
+                        </div>
                       </div>
                       
                       <div className="mt-auto p-5 pt-3 border-t border-slate-200">
