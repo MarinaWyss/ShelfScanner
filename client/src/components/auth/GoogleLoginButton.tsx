@@ -70,7 +70,7 @@ export default function GoogleLoginButton({
           <path d="M1 1h22v22H1z" fill="none" />
         </svg>
       )}
-      {isLoading ? 'Loading...' : 'Continue with Google'}
+      {isLoading ? 'Loading...' : 'Login with Google'}
     </Button>
   );
 }
