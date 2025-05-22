@@ -38,7 +38,7 @@ interface RecommendationResponse {
   bookTitle: string;
   bookAuthor: string;
   matchScore: number;
-  matchReason: string;
+  // Removed matchReason as we don't display it
 }
 
 /**
@@ -46,7 +46,7 @@ interface RecommendationResponse {
  */
 interface EnhancedBookInfo extends BookInfo {
   matchScore?: number;
-  matchReason?: string;
+  // Removed matchReason as we don't display it
 }
 
 /**
@@ -140,7 +140,6 @@ Analyze these books and provide personalized recommendations from this list only
 For each recommended book, provide:
 1. The exact book title and author name as shown in the detected books list
 2. A match score from 0-100 (where higher scores indicate stronger recommendations)
-3. A concise, specific explanation (2-3 sentences) of why this book would appeal to this user based on their preferences and reading history
 
 IMPORTANT: Return your recommendations in this exact JSON format with no text before or after:
 {
@@ -148,8 +147,7 @@ IMPORTANT: Return your recommendations in this exact JSON format with no text be
     {
       "bookTitle": "Book Title",
       "bookAuthor": "Author Name",
-      "matchScore": 85,
-      "matchReason": "This book connects to the user's interest in philosophical non-fiction with its exploration of existential themes. The user has rated similar contemplative works by Seneca highly, suggesting they would appreciate this book's reflective approach to life's big questions."
+      "matchScore": 85
     }
   ]
 }`
@@ -210,11 +208,10 @@ IMPORTANT: Return your recommendations in this exact JSON format with no text be
           continue;
         }
         
-        // Add the match score and reason to the original book
+        // Add the match score to the original book (removed matchReason)
         enhancedBooks.push({
           ...originalBook,
-          matchScore: rec.matchScore,
-          matchReason: rec.matchReason
+          matchScore: rec.matchScore
         });
       }
       
@@ -264,11 +261,10 @@ function processRecommendations(
       return null;
     }
     
-    // Return the original book with the match score and reason
+    // Return the original book with just the match score
     return {
       ...originalBook,
-      matchScore: recommendation.matchScore,
-      matchReason: recommendation.matchReason
+      matchScore: recommendation.matchScore
     };
   }).filter(book => book !== null) as BookInfo[];
 }
