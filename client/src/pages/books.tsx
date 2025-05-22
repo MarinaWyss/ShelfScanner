@@ -206,18 +206,18 @@ export default function Books() {
               <div className="relative">
                 <div className="h-1 bg-gray-100 rounded-full w-full"></div>
                 <div 
-                  className="absolute inset-y-0 left-0 bg-blue-600 rounded-full"
+                  className="absolute inset-y-0 left-0 bg-violet-600 rounded-full"
                   style={{ width: `${(currentStep / 3) * 100}%` }}
                 ></div>
               </div>
               <div className="flex justify-between mt-2">
-                <span className={`text-sm ${currentStep >= 1 ? 'text-blue-600 font-medium' : 'text-gray-400'}`}>
+                <span className={`text-sm ${currentStep >= 1 ? 'text-violet-600 font-medium' : 'text-gray-400'}`}>
                   Preferences
                 </span>
-                <span className={`text-sm ${currentStep >= 2 ? 'text-blue-600 font-medium' : 'text-gray-400'}`}>
+                <span className={`text-sm ${currentStep >= 2 ? 'text-violet-600 font-medium' : 'text-gray-400'}`}>
                   Book Upload
                 </span>
-                <span className={`text-sm ${currentStep >= 3 ? 'text-blue-600 font-medium' : 'text-gray-400'}`}>
+                <span className={`text-sm ${currentStep >= 3 ? 'text-violet-600 font-medium' : 'text-gray-400'}`}>
                   Recommendations
                 </span>
               </div>

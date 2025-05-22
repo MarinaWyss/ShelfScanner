@@ -531,7 +531,7 @@ export default function PreferencesStep({ preferences, onSubmit, isLoading }: Pr
         <Button 
           onClick={handleSubmit}
           disabled={isLoading || selectedGenres.length === 0}
-          className="bg-blue-600 hover:bg-blue-700 text-white"
+          className="bg-violet-600 hover:bg-violet-700 text-white"
         >
           {isLoading ? 'Saving...' : 'Continue'}
         </Button>

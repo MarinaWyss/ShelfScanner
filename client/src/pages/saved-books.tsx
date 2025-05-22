@@ -208,7 +208,7 @@ export default function SavedBooks() {
                     {book.summary && book.summary.length > 240 && (
                       <button 
                         onClick={() => toggleExpand(book.id)}
-                        className="mt-2 text-blue-600 hover:text-blue-700 text-sm flex items-center font-medium"
+                        className="mt-2 text-violet-600 hover:text-violet-700 text-sm flex items-center font-medium"
                       >
                         {expandedBooks.includes(book.id) ? (
                           <>
