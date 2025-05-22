@@ -63,9 +63,8 @@ function requireAuth(req: Request, res: Response, next: NextFunction) {
 router.post('/login', (req: Request, res: Response) => {
   const { username, password } = req.body;
   
-  // For simplicity, use a fixed admin login for development
-  // This is a basic example only - use proper authentication in production
-  if (username !== 'admin' || password !== 'admin123') {
+  // Use the specified login credentials
+  if (username !== 'scanme' || password !== 'Sc4nnerD@rkly') {
     // Log failed login attempt
     console.warn(`Failed admin login attempt for username: ${username}`);
     return res.status(401).json({ message: 'Invalid username or password' });
