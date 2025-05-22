@@ -129,11 +129,23 @@ export class BookCacheService {
     rating?: string;
     summary?: string;
     metadata?: any;
-    source?: 'google' | 'amazon' | 'openai';
+    source?: 'google' | 'amazon' | 'openai' | 'saved';
     expiresAt?: Date;
   }): Promise<BookCache> {
     const source = bookData.source || 'google';
     try {
+      // Normalize inputs for consistent matching
+      const normalizedTitle = bookData.title.trim();
+      const normalizedAuthor = bookData.author.trim();
+      
+      // First perform a direct query to find exact match to prevent duplicates
+      const [directMatch] = await db.select().from(bookCache).where(
+        and(
+          eq(sql`LOWER(TRIM(${bookCache.title}))`, normalizedTitle.toLowerCase()),
+          eq(sql`LOWER(TRIM(${bookCache.author}))`, normalizedAuthor.toLowerCase())
+        )
+      );
+      
       // Set expiration based on source if not explicitly provided
       let expiresAt: Date;
       
@@ -149,49 +161,72 @@ export class BookCacheService {
           case 'google': expirationMs = CACHE_DURATION.GOOGLE; break;
           case 'amazon': expirationMs = CACHE_DURATION.AMAZON; break;
           case 'openai': expirationMs = CACHE_DURATION.OPENAI; break;
+          case 'saved': expirationMs = CACHE_DURATION.OPENAI; break; // Long expiration for user saved books
         }
         
         expiresAt = new Date(now.getTime() + expirationMs);
       }
 
-      // Check if this book already exists in cache
-      const existing = await this.findInCache(bookData.title, bookData.author);
+      // If we found an exact match with direct query, use that
+      if (directMatch) {
+        log(`Found exact match for "${normalizedTitle}" by ${normalizedAuthor} with ID ${directMatch.id}`, 'cache');
+        
+        // Update the existing entry with any new information
+        const [updated] = await db.update(bookCache)
+          .set({
+            isbn: bookData.isbn || directMatch.isbn,
+            coverUrl: bookData.coverUrl || directMatch.coverUrl,
+            rating: bookData.rating || directMatch.rating,
+            summary: bookData.summary || directMatch.summary,
+            source: source === 'openai' ? 'openai' : directMatch.source, // Prefer OpenAI source
+            metadata: bookData.metadata || directMatch.metadata,
+            expiresAt: expiresAt
+          })
+          .where(eq(bookCache.id, directMatch.id))
+          .returning();
+          
+        log(`Updated cache for "${normalizedTitle}" with ID ${updated.id}`, 'cache');
+        return updated;
+      }
+      
+      // If no direct match, try the fuzzy search
+      const existing = await this.findInCache(normalizedTitle, normalizedAuthor);
       
       if (existing) {
-        // Update existing cache entry
+        // Update existing cache entry with fuzzy match
         const [updated] = await db.update(bookCache)
           .set({
             isbn: bookData.isbn || existing.isbn,
             coverUrl: bookData.coverUrl || existing.coverUrl,
             rating: bookData.rating || existing.rating,
             summary: bookData.summary || existing.summary,
-            source: bookData.source || existing.source,
+            source: source === 'openai' ? 'openai' : existing.source, // Prefer OpenAI source
             metadata: bookData.metadata || existing.metadata,
             expiresAt: expiresAt
           })
           .where(eq(bookCache.id, existing.id))
           .returning();
         
-        log(`Updated cache for "${bookData.title}" by ${bookData.author}`, 'cache');
+        log(`Updated cache for "${normalizedTitle}" by ${normalizedAuthor} with ID ${updated.id} (fuzzy match)`, 'cache');
         return updated;
       }
       
       // Insert new cache entry
       const insertData: InsertBookCache = {
-        title: bookData.title,
-        author: bookData.author,
+        title: normalizedTitle,
+        author: normalizedAuthor,
         isbn: bookData.isbn || null,
         coverUrl: bookData.coverUrl || null,
         rating: bookData.rating || null,
         summary: bookData.summary || null,
-        source: bookData.source || 'google',
+        source: source,
         metadata: bookData.metadata || null,
         expiresAt: expiresAt
       };
       
       const [inserted] = await db.insert(bookCache).values(insertData).returning();
       
-      log(`Added to cache: "${bookData.title}" by ${bookData.author}`, 'cache');
+      log(`Added to cache: "${normalizedTitle}" by ${normalizedAuthor} with ID ${inserted.id}`, 'cache');
       return inserted;
     } catch (error) {
       log(`Error caching book: ${error instanceof Error ? error.message : String(error)}`, 'cache');
