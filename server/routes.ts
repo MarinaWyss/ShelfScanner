@@ -394,54 +394,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Save books
-  app.post('/api/books', async (req: Request, res: Response) => {
-    try {
-      const userId = 1; // Default user ID
-      
-      // Handle both single book and array of books
-      const booksToSave = Array.isArray(req.body) ? req.body : [req.body];
-      
-      const savedBooks = [];
-      
-      for (const bookData of booksToSave) {
-        // Validate book data
-        const validatedData = insertBookSchema.parse({
-          ...bookData,
-          userId
-        });
-        
-        // Save book
-        const book = await storage.createBook(validatedData);
-        savedBooks.push(book);
-      }
-      
-      return res.status(201).json(savedBooks);
-    } catch (error) {
-      console.error('Error saving books:', error);
-      return res.status(400).json({ 
-        message: 'Error saving books',
-        error: error instanceof Error ? error.message : String(error)
-      });
-    }
-  });
-  
-  // Get user books
-  app.get('/api/books', async (req: Request, res: Response) => {
-    try {
-      const userId = 1; // Default user ID
-      
-      const books = await storage.getBooksByUserId(userId);
-      
-      return res.status(200).json(books);
-    } catch (error) {
-      console.error('Error getting books:', error);
-      return res.status(500).json({ 
-        message: 'Error getting books',
-        error: error instanceof Error ? error.message : String(error)
-      });
-    }
-  });
+  // Books API has been updated to use book_cache instead of the deprecated books table
+  // Users should now use the /api/saved-books endpoint
   
   // Get recommendations
   app.post('/api/recommendations', async (req: Request, res: Response) => {
