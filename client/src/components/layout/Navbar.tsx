@@ -204,7 +204,7 @@ export default function Navbar({ sidebarOpen, toggleSidebar, toggleContact }: Na
             {/* Cross-device access with Google login */}
             <div className="bg-slate-700 rounded-lg p-3">
               <p className="text-sm text-slate-300 mb-2">
-                Use your books across all devices
+                Access your reading list everywhere
               </p>
               <div className="w-full">
                 <GoogleLoginButton 
