@@ -37,7 +37,7 @@ export function initializeGoogleAuth(callback?: () => void): void {
           callback();
         }
       })
-      .catch((error) => {
+      .catch((error: any) => {
         console.error('Error initializing Google Auth:', error);
       });
   });

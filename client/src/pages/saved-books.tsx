@@ -7,6 +7,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { Trash2, ChevronDown, ChevronUp } from "lucide-react";
 import StarRating from "@/components/ui/star-rating";
 import GoogleAdSense from "@/components/ads/GoogleAdSense";
+import GoogleLoginButton from "@/components/auth/GoogleLoginButton";
 
 interface SavedBook {
   id: number;
@@ -255,6 +256,22 @@ export default function SavedBooks() {
               style={{ height: '90px', width: '100%', maxWidth: '728px' }}
               className="mx-auto"
             />
+          </div>
+        )}
+        
+        {/* Login section at the bottom of reading list */}
+        {!isLoading && (
+          <div className="mt-10 bg-slate-900 rounded-xl p-8 shadow-sm border border-slate-800 text-center">
+            <h3 className="text-xl font-bold text-white mb-3">Access Your Reading List Everywhere</h3>
+            <p className="text-slate-400 mb-5 max-w-xl mx-auto">
+              Sign in with Google to sync your reading list across all your devices and never lose your saved books.
+            </p>
+            <div className="flex justify-center">
+              <GoogleLoginButton 
+                size="lg"
+                className="px-8"
+              />
+            </div>
           </div>
         )}
       </div>
