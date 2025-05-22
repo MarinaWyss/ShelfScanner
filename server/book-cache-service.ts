@@ -319,43 +319,38 @@ export class BookCacheService {
         // First check if we already have this book in cache to preserve its data
         const existingBook = await this.findInCache(title, author);
         
-        // Prepare cache data object with the new summary
-        const cacheData: {
-          title: string;
-          author: string;
-          summary: string;
-          source: "openai";
-          isbn?: string;
-          coverUrl?: string;
-          rating?: string;
-          metadata?: any;
-          expiresAt: Date;
-        } = {
-          title,
-          author,
-          summary,
-          source: 'openai',
-          expiresAt
-        };
-        
-        // Preserve existing data if available
-        if (existingBook?.isbn) {
-          cacheData.isbn = existingBook.isbn;
+        // If we have an existing book, update it directly to avoid duplicate entries
+        if (existingBook) {
+          log(`Updating existing book cache entry (ID: ${existingBook.id}) with new summary`, 'cache');
+          
+          // Direct database update to ensure we don't create duplicates
+          const [updated] = await db.update(bookCache)
+            .set({
+              summary: summary,
+              source: 'openai',
+              expiresAt
+            })
+            .where(eq(bookCache.id, existingBook.id))
+            .returning();
+            
+          log(`Updated summary for "${title}" in cache ID ${updated.id}`, 'cache');
+        } else {
+          // No existing entry - create a new one
+          const cacheData: InsertBookCache = {
+            title: title.trim(),
+            author: author.trim(),
+            summary,
+            source: 'openai',
+            isbn: null,
+            coverUrl: null,
+            rating: null,
+            metadata: null,
+            expiresAt
+          };
+          
+          const inserted = await this.cacheBook(cacheData);
+          log(`Created new cache entry with summary for "${title}" (ID: ${inserted.id})`, 'cache');
         }
-        
-        if (existingBook?.coverUrl) {
-          cacheData.coverUrl = existingBook.coverUrl;
-        }
-        
-        if (existingBook?.rating) {
-          cacheData.rating = existingBook.rating;
-        }
-        
-        if (existingBook?.metadata) {
-          cacheData.metadata = existingBook.metadata;
-        }
-        
-        await this.cacheBook(cacheData);
         
         log(`Successfully generated and cached summary for "${title}"`, 'cache');
       }

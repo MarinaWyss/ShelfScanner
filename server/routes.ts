@@ -549,9 +549,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
         
-        // Cache the recommendation data
+        // Only cache if we don't already have this book in the cache
+        // or if we got fresh data from OpenAI that needs to be stored
         try {
-          if (recommendation.rating || recommendation.summary) {
+          // We only need to update the cache if we got fresh data or the book wasn't in cache
+          const needsCaching = (!cachedBook) || 
+                              (cachedBook && (
+                                (recommendation.rating && recommendation.rating !== cachedBook.rating) || 
+                                (recommendation.summary && recommendation.summary !== cachedBook.summary)
+                              ));
+          
+          if (needsCaching && (recommendation.rating || recommendation.summary)) {
             await storage.cacheBook({
               title: recommendation.title,
               author: recommendation.author,
@@ -566,7 +574,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
               },
               expiresAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000) // 90 days cache
             });
-            console.log(`Cached OpenAI data for recommendation "${recommendation.title}"`);
+            console.log(`Cached OpenAI data for recommendation "${recommendation.title}" - ${needsCaching ? "new or updated data" : "already in cache"}`);
+          } else {
+            console.log(`Skipping cache for "${recommendation.title}" - already in cache with same data`);
           }
         } catch (cacheError) {
           console.error(`Error caching recommendation data for "${recommendation.title}":`, cacheError);
