@@ -27,11 +27,8 @@ export interface IStorage {
   getBooksByUserId(userId: number): Promise<Book[]>;
   createBook(book: InsertBook): Promise<Book>;
   
-  // Recommendations methods
-  getRecommendationsByUserId(userId: number): Promise<Recommendation[]>;
-  createRecommendation(recommendation: InsertRecommendation): Promise<Recommendation>;
-  updateRecommendation(id: number, updates: Partial<InsertRecommendation>): Promise<Recommendation | undefined>;
-  deleteAllRecommendations(userId: number): Promise<number>;
+  // NOTE: Recommendations are now ephemeral (generated on-demand)
+  // Recommendation methods have been removed from the storage interface
   
   // Saved Books methods
   getSavedBooksByDeviceId(deviceId: string): Promise<SavedBook[]>;
