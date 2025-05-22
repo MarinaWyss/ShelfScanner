@@ -157,31 +157,49 @@ Return the recommendations in JSON format:
     }
     
     try {
+      log(`OpenAI response: ${responseContent}`, 'recommendations');
       const recommendationsData = JSON.parse(responseContent);
       
-      if (!recommendationsData.recommendations || !Array.isArray(recommendationsData.recommendations)) {
-        // Try to handle different response formats
-        if (Array.isArray(recommendationsData)) {
-          // If the response is already an array
-          return processRecommendations(recommendationsData, books);
-        } else {
-          // If there's another property that might contain the array
-          const possibleArrays = Object.values(recommendationsData).filter(
-            value => Array.isArray(value)
-          );
-          
-          if (possibleArrays.length > 0) {
-            return processRecommendations(possibleArrays[0] as RecommendationResponse[], books);
-          }
-        }
+      // Handle different possible response formats
+      let recommendations: RecommendationResponse[] = [];
+      
+      if (Array.isArray(recommendationsData)) {
+        // Direct array format
+        log('Received direct array format from OpenAI', 'recommendations');
+        recommendations = recommendationsData;
+      } 
+      else if (recommendationsData.recommendations && Array.isArray(recommendationsData.recommendations)) {
+        // Object with recommendations array
+        log('Received object with recommendations array from OpenAI', 'recommendations');
+        recommendations = recommendationsData.recommendations;
+      }
+      else {
+        // Try to find any array in the response
+        const possibleArrays = Object.values(recommendationsData).filter(
+          value => Array.isArray(value)
+        );
         
-        log('Unexpected format in OpenAI response', 'recommendations');
+        if (possibleArrays.length > 0) {
+          log('Found array in OpenAI response object', 'recommendations');
+          recommendations = possibleArrays[0] as RecommendationResponse[];
+        } else {
+          log('No valid recommendations array found in OpenAI response', 'recommendations');
+          log(`Response keys: ${Object.keys(recommendationsData).join(', ')}`, 'recommendations');
+          return [];
+        }
+      }
+      
+      // Validate the recommendations
+      if (recommendations.length === 0) {
+        log('Empty recommendations array from OpenAI', 'recommendations');
         return [];
       }
       
-      return processRecommendations(recommendationsData.recommendations, books);
+      log(`Successfully parsed ${recommendations.length} recommendations from OpenAI`, 'recommendations');
+      return processRecommendations(recommendations, books);
     } catch (error) {
       log(`Error parsing OpenAI response: ${error instanceof Error ? error.message : String(error)}`, 'recommendations');
+      log(`Response content: ${responseContent}`, 'recommendations');
       return [];
     }
   } catch (error) {
