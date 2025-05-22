@@ -59,11 +59,11 @@ export default function Home() {
               <div>
                 <h2 className="text-lg font-semibold text-gray-900">AI Book Discovery</h2>
                 <p className="text-gray-600 mt-1">
-                  Take a photo of any bookshelf and get personalized recommendations instantly.
+                  Take a photo of an entire bookshelf at stores, the library, or a friend's house, and we'll help you figure out which ones you'll like!
                 </p>
               </div>
             </div>
-            <Link href="/books" className="flex items-center text-violet-600 hover:text-violet-700 font-medium text-sm mt-3">
+            <Link href="/books" className="flex items-center text-black hover:text-gray-800 font-medium text-sm mt-3">
               <span>Start scanning</span>
               <svg className="ml-1 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
