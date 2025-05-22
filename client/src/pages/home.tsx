@@ -137,6 +137,19 @@ export default function Home() {
           </Button>
         </Link>
       </div>
+      
+      {/* Footer with Privacy Policy and Terms */}
+      <div className="mt-20 pt-6 border-t border-gray-200">
+        <div className="flex flex-col md:flex-row justify-center items-center text-xs text-gray-500 space-y-2 md:space-y-0 md:space-x-6">
+          <span>© {new Date().getFullYear()} ShelfScanner. All rights reserved.</span>
+          <Link href="/privacy-policy">
+            <span className="hover:text-violet-600 transition-colors">Privacy Policy</span>
+          </Link>
+          <Link href="/terms-conditions">
+            <span className="hover:text-violet-600 transition-colors">Terms & Conditions</span>
+          </Link>
+        </div>
+      </div>
     </div>
   );
 }
