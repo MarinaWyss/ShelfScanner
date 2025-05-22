@@ -180,7 +180,7 @@ export default function Navbar({ sidebarOpen, toggleSidebar, toggleContact }: Na
               </p>
               <button 
                 onClick={toggleContact}
-                className="bg-blue-600 text-white text-sm px-3 py-1.5 rounded-md hover:bg-blue-700 transition-colors w-full flex items-center justify-center gap-2">
+                className="bg-violet-600 text-white text-sm px-3 py-1.5 rounded-md hover:bg-violet-700 transition-colors w-full flex items-center justify-center gap-2">
                 <svg 
                   xmlns="http://www.w3.org/2000/svg" 
                   width="24" 
