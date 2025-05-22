@@ -261,9 +261,9 @@ export default function SavedBooks() {
         
         {/* Login section at the bottom of reading list */}
         {!isLoading && (
-          <div className="mt-10 bg-violet-900 rounded-xl p-8 shadow-sm border border-violet-800 text-center">
-            <h3 className="text-xl font-bold text-white mb-3">Access Your Reading List Everywhere</h3>
-            <p className="text-violet-200 mb-5 max-w-xl mx-auto">
+          <div className="mt-10 bg-violet-50 rounded-xl p-8 shadow-sm border border-violet-100 text-center">
+            <h3 className="text-xl font-bold text-gray-800 mb-3">Access Your Reading List Everywhere</h3>
+            <p className="text-gray-600 mb-5 max-w-xl mx-auto">
               Sign in with Google to sync your reading list across all your devices and never lose your saved books.
             </p>
             <div className="flex justify-center">
