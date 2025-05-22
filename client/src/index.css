@@ -3,34 +3,44 @@
 @tailwind utilities;
 
 :root {
-  /* Dark theme by default */
-  --background: 240 10% 3.9%; /* Dark background */
-  --foreground: 0 0% 98%; /* Light text */
-  --muted: 240 3.7% 15.9%;
-  --muted-foreground: 240 5% 64.9%;
-  --popover: 240 10% 3.9%;
-  --popover-foreground: 0 0% 98%;
-  --card: 240 10% 3.9%; /* Dark cards */
-  --card-foreground: 0 0% 98%; /* Light text in cards */
-  --border: 240 3.7% 15.9%;
-  --input: 240 3.7% 15.9%;
+  /* Light theme like Notion */
+  --background: 0 0% 100%; /* White background */
+  --foreground: 222.2 84% 4.9%; /* Dark text */
+  --muted: 210 40% 96.1%;
+  --muted-foreground: 215.4 16.3% 46.9%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222.2 84% 4.9%;
+  --card: 0 0% 100%; /* White cards */
+  --card-foreground: 222.2 84% 4.9%; /* Dark text in cards */
+  --border: 214.3 31.8% 91.4%;
+  --input: 214.3 31.8% 91.4%;
   
-  /* Vibrant primary color - purple */
-  --primary: 265 89% 70%; /* Vibrant purple */
-  --primary-foreground: 211 100% 99%;
+  /* Blue primary color like Notion */
+  --primary: 214 100% 50%; /* Blue */
+  --primary-foreground: 210 40% 98%;
   
-  /* Vibrant secondary color - teal */
-  --secondary: 180 100% 45%;
-  --secondary-foreground: 0 0% 98%;
+  /* Subtle secondary color */
+  --secondary: 210 40% 96.1%;
+  --secondary-foreground: 222.2 47.4% 11.2%;
   
-  /* Vibrant accent color - pink */
-  --accent: 330 100% 65%;
-  --accent-foreground: 0 0% 98%;
+  /* Subtle accent color for highlights */
+  --accent: 210 40% 96.1%;
+  --accent-foreground: 222.2 47.4% 11.2%;
   
   --destructive: 0 84.2% 60.2%;
-  --destructive-foreground: 60 9.1% 97.8%;
-  --ring: 265 89% 70%; /* Match primary for focus rings */
+  --destructive-foreground: 210 40% 98%;
+  --ring: 214 100% 50%; /* Match primary for focus rings */
   --radius: 0.5rem;
+  
+  /* Sidebar colors */
+  --sidebar-background: 0 0% 100%;
+  --sidebar-foreground: 222.2 84% 4.9%;
+  --sidebar-primary: 214 100% 50%;
+  --sidebar-primary-foreground: 210 40% 98%;
+  --sidebar-accent: 210 40% 96.1%;
+  --sidebar-accent-foreground: 222.2 47.4% 11.2%;
+  --sidebar-border: 214.3 31.8% 91.4%;
+  --sidebar-ring: 214 100% 50%;
 }
 
 @layer base {
