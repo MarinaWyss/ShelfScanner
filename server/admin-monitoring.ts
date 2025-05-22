@@ -196,4 +196,40 @@ router.get('/health', requireAuth, (req: Request, res: Response) => {
   }
 });
 
+/**
+ * Manual test endpoint for incrementing API usage counters
+ * POST /api/admin/test-increment
+ */
+router.post('/test-increment', requireAuth, (req: Request, res: Response) => {
+  try {
+    const { apiName, count = 1 } = req.body;
+    
+    if (!apiName) {
+      return res.status(400).json({ message: 'API name is required' });
+    }
+    
+    // Import rate limiter here to avoid circular dependencies
+    const { rateLimiter } = require('./rate-limiter');
+    
+    // Increment the counter for the specified API
+    for (let i = 0; i < count; i++) {
+      rateLimiter.increment(apiName);
+    }
+    
+    // Get the updated stats
+    const stats = getApiUsageStats();
+    
+    return res.status(200).json({ 
+      message: `Successfully incremented usage counter for ${apiName} by ${count}`,
+      stats 
+    });
+  } catch (error) {
+    console.error(`Error testing API counter: ${error}`);
+    return res.status(500).json({ 
+      message: 'Error testing API counter',
+      error: error instanceof Error ? error.message : String(error)
+    });
+  }
+});
+
 export const adminMonitoringRoutes = router;
