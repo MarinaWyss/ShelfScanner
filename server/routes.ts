@@ -672,8 +672,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const savedBooks = await storage.getSavedBooksByDeviceId(deviceId);
       console.log(`GetSavedBooks - Found ${savedBooks.length} books for device ${deviceId}`);
       
+      // Enhance saved books with the latest data from book_cache
+      const enhancedSavedBooks = await Promise.all(
+        savedBooks.map(async (book) => {
+          // If book has a bookCacheId, fetch the latest cache data
+          if (book.bookCacheId) {
+            try {
+              // Get the latest cache data by ID
+              const cacheEntry = await storage.getBookCacheById(book.bookCacheId);
+              
+              if (cacheEntry) {
+                // Keep the saved book ID but use latest cache data for content
+                return {
+                  ...book,
+                  // Use cache data if available, otherwise fallback to saved data
+                  coverUrl: cacheEntry.coverUrl || book.coverUrl,
+                  rating: cacheEntry.rating || book.rating,
+                  summary: cacheEntry.summary || book.summary
+                };
+              }
+            } catch (error) {
+              console.error(`Error fetching cache data for book ID ${book.id}:`, error);
+            }
+          }
+          
+          // If no bookCacheId or error fetching cache, return original book
+          return book;
+        })
+      );
+      
       // Return empty array instead of 404 for no books
-      return res.status(200).json(savedBooks);
+      return res.status(200).json(enhancedSavedBooks);
     } catch (error) {
       console.error('Error getting saved books:', error);
       return res.status(500).json({ 
@@ -694,10 +723,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Device ID is required' });
       }
       
-      // Prepare book data with device ID
+      const { title, author, coverUrl, rating, summary } = req.body;
+      
+      if (!title || !author) {
+        return res.status(400).json({ message: 'Book title and author are required' });
+      }
+      
+      console.log(`Saving book "${title}" by ${author} for device ${deviceId}`);
+      
+      // First, check if book exists in cache or create it if not
+      let bookCacheEntry = await storage.findBookInCache(title, author);
+      
+      // If not in cache, add it to cache first
+      if (!bookCacheEntry) {
+        console.log(`Book "${title}" not in cache, adding it first`);
+        
+        // Create an expiration date (90 days)
+        const expiresAt = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
+        
+        bookCacheEntry = await storage.cacheBook({
+          title,
+          author,
+          isbn: req.body.isbn || null,
+          coverUrl: coverUrl || null,
+          rating: rating || null,
+          summary: summary || null,
+          source: 'saved', // Source is 'saved' for user-saved books
+          metadata: req.body.metadata || null,
+          expiresAt
+        });
+        
+        console.log(`Created cache entry for "${title}" with ID ${bookCacheEntry.id}`);
+      } else {
+        console.log(`Found existing cache entry for "${title}" with ID ${bookCacheEntry.id}`);
+      }
+      
+      // Now create the saved book with a reference to the cache entry
       const bookToSave = {
-        ...req.body,
-        deviceId
+        deviceId,
+        title,
+        author,
+        coverUrl: coverUrl || bookCacheEntry.coverUrl,
+        rating: rating || bookCacheEntry.rating,
+        summary: summary || bookCacheEntry.summary,
+        bookCacheId: bookCacheEntry.id
       };
       
       // Validate book data
@@ -705,6 +774,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Save book
       const savedBook = await storage.createSavedBook(validatedData);
+      
+      console.log(`Saved book "${title}" with ID ${savedBook.id}, linked to cache ID ${bookCacheEntry.id}`);
       
       return res.status(201).json(savedBook);
     } catch (error) {

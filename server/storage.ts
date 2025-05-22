@@ -39,6 +39,7 @@ export interface IStorage {
   // Book Cache methods
   findBookInCache(title: string, author: string): Promise<BookCache | undefined>;
   findBookByISBN(isbn: string): Promise<BookCache | undefined>;
+  getBookCacheById(id: number): Promise<BookCache | undefined>;
   cacheBook(bookData: InsertBookCache): Promise<BookCache>;
   getRecentlyAddedBooks(limit?: number): Promise<BookCache[]>;
 }

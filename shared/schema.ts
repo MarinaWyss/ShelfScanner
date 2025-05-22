@@ -84,3 +84,50 @@ export const insertBookCacheSchema = createInsertSchema(bookCache).pick({
 
 export type BookCache = typeof bookCache.$inferSelect;
 export type InsertBookCache = z.infer<typeof insertBookCacheSchema>;
+
+// Saved books schema - now with reference to book_cache table
+export const savedBooks = pgTable("saved_books", {
+  id: serial("id").primaryKey(),
+  deviceId: text("device_id").notNull(),
+  bookCacheId: integer("book_cache_id").references(() => bookCache.id),
+  title: text("title").notNull(),
+  author: text("author").notNull(),
+  coverUrl: text("cover_url"),
+  rating: text("rating"),
+  summary: text("summary"),
+  savedAt: timestamp("saved_at").defaultNow(),
+});
+
+export const insertSavedBookSchema = createInsertSchema(savedBooks).pick({
+  deviceId: true,
+  bookCacheId: true,
+  title: true,
+  author: true,
+  coverUrl: true,
+  rating: true,
+  summary: true,
+});
+
+// Type definitions
+export type User = typeof users.$inferSelect;
+export type InsertUser = z.infer<typeof insertUserSchema>;
+
+export type Preference = typeof preferences.$inferSelect;
+export type InsertPreference = z.infer<typeof insertPreferenceSchema>;
+
+export type Book = typeof books.$inferSelect;
+export type InsertBook = z.infer<typeof insertBookSchema>;
+
+export type SavedBook = typeof savedBooks.$inferSelect;
+export type InsertSavedBook = z.infer<typeof insertSavedBookSchema>;
+
+// Recommendation types are now defined as interfaces since we're using ephemeral recommendations
+export interface Recommendation {
+  title: string;
+  author: string;
+  coverUrl?: string;
+  rating?: string;
+  summary?: string;
+  matchScore?: number;
+  matchReason?: string;
+}
