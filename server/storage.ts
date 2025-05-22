@@ -1,7 +1,6 @@
 import { 
   users, type User, type InsertUser,
   preferences, type Preference, type InsertPreference,
-  books, type Book, type InsertBook,
   savedBooks, type SavedBook, type InsertSavedBook,
   bookCache, type BookCache, type InsertBookCache,
   type Recommendation // Now just an interface, not a table
@@ -23,9 +22,7 @@ export interface IStorage {
   createPreference(preference: InsertPreference): Promise<Preference>;
   updatePreference(id: number, preference: Partial<InsertPreference>): Promise<Preference | undefined>;
   
-  // Books methods
-  getBooksByUserId(userId: number): Promise<Book[]>;
-  createBook(book: InsertBook): Promise<Book>;
+  // Books methods have been removed in favor of using book_cache
   
   // NOTE: Recommendations are now ephemeral (generated on-demand)
   // Recommendation methods have been removed from the storage interface
@@ -93,18 +90,7 @@ export class DatabaseStorage implements IStorage {
     return updatedPreference || undefined;
   }
 
-  // Books methods
-  async getBooksByUserId(userId: number): Promise<Book[]> {
-    return db.select().from(books).where(eq(books.userId, userId));
-  }
-
-  async createBook(insertBook: InsertBook): Promise<Book> {
-    const [book] = await db
-      .insert(books)
-      .values(insertBook)
-      .returning();
-    return book;
-  }
+  // Books methods have been removed in favor of book_cache
 
   // NOTE: Recommendations are now ephemeral (generated on-demand)
   // We've removed all database-related recommendation methods

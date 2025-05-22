@@ -12,7 +12,7 @@ import { getOpenAIBookDetails } from "./openai-books";
 import { getOpenAIBookRating, getOpenAIBookSummary } from "./demo-openai";
 import multer from "multer";
 import { z } from "zod";
-import { insertPreferenceSchema, insertBookSchema, insertSavedBookSchema } from "@shared/schema";
+import { insertPreferenceSchema, insertSavedBookSchema, insertBookCacheSchema } from "@shared/schema";
 import { getApiUsageStats } from "./api-stats";
 
 // In-memory storage for multer

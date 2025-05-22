@@ -32,25 +32,7 @@ export const insertPreferenceSchema = createInsertSchema(preferences).pick({
   goodreadsData: true,
 });
 
-// Scanned books schema
-export const books = pgTable("books", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(),
-  title: text("title").notNull(),
-  author: text("author"),
-  isbn: text("isbn"),
-  coverUrl: text("cover_url"),
-  metadata: jsonb("metadata"),
-});
-
-export const insertBookSchema = createInsertSchema(books).pick({
-  userId: true,
-  title: true,
-  author: true,
-  isbn: true,
-  coverUrl: true,
-  metadata: true,
-});
+// Books table has been removed in favor of using book_cache as the primary storage
 
 // NOTE: Recommendations are now generated on-demand and not stored in the database
 // We've removed the recommendations table in favor of an ephemeral approach
@@ -115,8 +97,7 @@ export type InsertUser = z.infer<typeof insertUserSchema>;
 export type Preference = typeof preferences.$inferSelect;
 export type InsertPreference = z.infer<typeof insertPreferenceSchema>;
 
-export type Book = typeof books.$inferSelect;
-export type InsertBook = z.infer<typeof insertBookSchema>;
+// Book type definitions have been removed
 
 export type SavedBook = typeof savedBooks.$inferSelect;
 export type InsertSavedBook = z.infer<typeof insertSavedBookSchema>;
