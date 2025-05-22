@@ -130,15 +130,17 @@ For each book, provide:
 2. A match score from 0-100
 3. A brief explanation of why this book matches the user's preferences
 
-Return the recommendations in JSON format:
-[
-  {
-    "bookTitle": "Book Title",
-    "bookAuthor": "Author Name",
-    "matchScore": 85,
-    "matchReason": "This book matches the user's preference for science fiction and is by an author they've rated highly."
-  }
-]`
+IMPORTANT: Return the recommendations in this exact JSON format with no additional text before or after:
+{
+  "recommendations": [
+    {
+      "bookTitle": "Book Title",
+      "bookAuthor": "Author Name",
+      "matchScore": 85,
+      "matchReason": "This book matches the user's preference for science fiction and is by an author they've rated highly."
+    }
+  ]
+}`
         }
       ],
       response_format: { type: "json_object" },
@@ -157,46 +159,56 @@ Return the recommendations in JSON format:
     }
     
     try {
-      log(`OpenAI response: ${responseContent}`, 'recommendations');
+      log(`OpenAI response received`, 'recommendations');
+      
+      // Parse the JSON response
       const recommendationsData = JSON.parse(responseContent);
       
-      // Handle different possible response formats
-      let recommendations: RecommendationResponse[] = [];
-      
-      if (Array.isArray(recommendationsData)) {
-        // Direct array format
-        log('Received direct array format from OpenAI', 'recommendations');
-        recommendations = recommendationsData;
-      } 
-      else if (recommendationsData.recommendations && Array.isArray(recommendationsData.recommendations)) {
-        // Object with recommendations array
-        log('Received object with recommendations array from OpenAI', 'recommendations');
-        recommendations = recommendationsData.recommendations;
-      }
-      else {
-        // Try to find any array in the response
-        const possibleArrays = Object.values(recommendationsData).filter(
-          value => Array.isArray(value)
-        );
-        
-        if (possibleArrays.length > 0) {
-          log('Found array in OpenAI response object', 'recommendations');
-          recommendations = possibleArrays[0] as RecommendationResponse[];
-        } else {
-          log('No valid recommendations array found in OpenAI response', 'recommendations');
-          log(`Response keys: ${Object.keys(recommendationsData).join(', ')}`, 'recommendations');
-          return [];
-        }
+      // Extract the recommendations array
+      if (!recommendationsData.recommendations || !Array.isArray(recommendationsData.recommendations)) {
+        log('No recommendations array found in OpenAI response', 'recommendations');
+        log(`Response keys: ${Object.keys(recommendationsData).join(', ')}`, 'recommendations');
+        return [];
       }
       
-      // Validate the recommendations
+      const recommendations = recommendationsData.recommendations;
+      
+      // Check if we have any recommendations
       if (recommendations.length === 0) {
         log('Empty recommendations array from OpenAI', 'recommendations');
         return [];
       }
       
-      log(`Successfully parsed ${recommendations.length} recommendations from OpenAI`, 'recommendations');
-      return processRecommendations(recommendations, books);
+      // Process and enhance the book objects
+      log(`Successfully received ${recommendations.length} recommendations from OpenAI`, 'recommendations');
+      
+      // Match the recommendations back to the original book objects
+      const enhancedBooks = recommendations.map((rec: RecommendationResponse) => {
+        // Find the matching original book
+        const originalBook = books.find((book: BookInfo) => 
+          book.title.toLowerCase() === rec.bookTitle.toLowerCase() ||
+          book.title.toLowerCase().includes(rec.bookTitle.toLowerCase()) ||
+          rec.bookTitle.toLowerCase().includes(book.title.toLowerCase())
+        );
+        
+        if (!originalBook) {
+          log(`Could not find matching book for "${rec.bookTitle}"`, 'recommendations');
+          return null;
+        }
+        
+        // Add the match score and reason to the original book
+        return {
+          ...originalBook,
+          matchScore: rec.matchScore,
+          matchReason: rec.matchReason
+        };
+      }).filter((book: any) => book !== null);
+      
+      // Sort by match score (highest first)
+      enhancedBooks.sort((a: any, b: any) => (b.matchScore || 0) - (a.matchScore || 0));
+      
+      log(`Returning ${enhancedBooks.length} enhanced books with AI recommendations`, 'recommendations');
+      return enhancedBooks as BookInfo[];
     } catch (error) {
       log(`Error parsing OpenAI response: ${error instanceof Error ? error.message : String(error)}`, 'recommendations');
       log(`Response content: ${responseContent}`, 'recommendations');

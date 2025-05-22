@@ -510,31 +510,44 @@ export async function getRecommendations(
       newBooks = books;
     }
 
-    // Always try to use OpenAI for better recommendations
+    // *** EXPLICITLY TRY OPENAI FIRST ***
+    // This code will attempt to use OpenAI to generate intelligent book recommendations
+    // If successful, it will return them immediately, skipping the traditional algorithm
+    console.log(`OPENAI_API_KEY is ${process.env.OPENAI_API_KEY ? 'available' : 'not available'}`);
+    
     if (process.env.OPENAI_API_KEY) {
+      // Use OpenAI when the API key is available
       try {
         // Log that we're using OpenAI
-        log(`Using OpenAI for intelligent book recommendations with ${newBooks.length} books`, 'books');
+        console.log(`>>> ATTEMPTING TO USE OPENAI for book recommendations with ${newBooks.length} books`);
         
         // Call OpenAI for recommendations
         const aiRecommendations = await getOpenAIRecommendations(newBooks, preferences);
         
         if (aiRecommendations && aiRecommendations.length > 0) {
-          log(`SUCCESS! Got ${aiRecommendations.length} OpenAI recommendations`, 'books');
+          console.log(`>>> SUCCESS! OPENAI returned ${aiRecommendations.length} recommendations`);
           
-          // Convert the recommendations to our standard format
+          // Format OpenAI recommendations for our system
           const formattedRecommendations = aiRecommendations.map(book => {
             return {
-              ...book,
-              score: book.matchScore || 0,
+              title: book.title,
+              author: book.author,
+              coverUrl: book.coverUrl || '',
+              summary: book.summary || 'No summary available',
+              rating: book.rating || '',
+              isbn: book.isbn || '',
+              categories: book.categories || [],
+              score: (book as any).matchScore || 0,
+              matchReason: (book as any).matchReason || '',
               alreadyRead: false,
-              isBookRecommendation: true
+              isBookRecommendation: true,
+              fromAI: true // Mark these as AI recommendations
             };
           });
           
           // If we have already read books, add them too
           if (alreadyReadBooks2.length > 0) {
-            // Score the already read books with our traditional algorithm
+            // Score the already read books
             const scoredReadBooks = alreadyReadBooks2.map(book => {
               return {
                 ...book,
@@ -545,18 +558,22 @@ export async function getRecommendations(
             });
             
             // Add already read books to the recommendations
+            console.log(`>>> RETURNING ${formattedRecommendations.length} AI-powered recs + ${scoredReadBooks.length} read books`);
             return [...formattedRecommendations, ...scoredReadBooks];
           }
           
+          console.log(`>>> RETURNING ${formattedRecommendations.length} AI-powered recommendations ONLY`);
           return formattedRecommendations;
+        } else {
+          console.log('>>> OpenAI returned EMPTY recommendations, falling back to traditional algorithm');
         }
       } catch (error) {
         // Log detailed error for debugging
-        log(`OpenAI recommendations ERROR: ${error instanceof Error ? error.message : String(error)}`, 'books');
-        log('Falling back to traditional algorithm', 'books');
+        console.error(`>>> OPENAI ERROR: ${error instanceof Error ? error.message : String(error)}`);
+        console.log('>>> Falling back to traditional algorithm due to error');
       }
     } else {
-      log('OpenAI API key not available, using traditional algorithm', 'books');
+      console.log('>>> OpenAI API key NOT AVAILABLE, using traditional algorithm');
     }
     
     // Fallback: Use traditional algorithm if OpenAI failed or is not available
