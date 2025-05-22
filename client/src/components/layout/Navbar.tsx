@@ -94,9 +94,6 @@ export default function Navbar({ sidebarOpen, toggleSidebar, toggleContact }: Na
           <div className="p-2 flex-1 overflow-y-auto scrollbar-hide">
             <div className="space-y-4">
               <div>
-                <div className="text-gray-500 text-xs font-medium tracking-wide px-3 mb-1">
-                  MAIN
-                </div>
                 <ul className="space-y-1">
                   <li>
                     <Link href="/" className={`flex items-center gap-2 w-full px-3 py-1.5 rounded-md font-medium text-sm transition-colors duration-150 ${
@@ -169,48 +166,6 @@ export default function Navbar({ sidebarOpen, toggleSidebar, toggleContact }: Na
                     </Link>
                   </li>
                 </ul>
-              </div>
-            </div>
-          </div>
-          
-          <div className="p-3 border-t border-gray-200">
-            <div className="bg-gray-50 rounded-md p-3 mb-3">
-              <p className="text-sm text-gray-700 mb-2">
-                Questions or suggestions? Get in touch with our team
-              </p>
-              <button 
-                onClick={toggleContact}
-                className="bg-violet-600 text-white text-sm px-3 py-1.5 rounded-md hover:bg-violet-700 transition-colors w-full flex items-center justify-center gap-2">
-                <svg 
-                  xmlns="http://www.w3.org/2000/svg" 
-                  width="24" 
-                  height="24" 
-                  viewBox="0 0 24 24" 
-                  fill="none" 
-                  stroke="currentColor" 
-                  strokeWidth="2" 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round" 
-                  className="h-3.5 w-3.5"
-                >
-                  <rect x="2" y="4" width="20" height="16" rx="2" />
-                  <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
-                </svg>
-                <span>Contact Us</span>
-              </button>
-            </div>
-            
-            {/* Cross-device access with Google login */}
-            <div className="bg-gray-50 rounded-md p-3">
-              <p className="text-sm text-gray-700 mb-2">
-                Sync your reading list across devices
-              </p>
-              <div className="w-full">
-                <GoogleLoginButton 
-                  variant="default"
-                  size="sm"
-                  className="w-full"
-                />
               </div>
             </div>
           </div>
