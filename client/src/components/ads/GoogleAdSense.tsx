@@ -120,16 +120,16 @@ export default function GoogleAdSense({
   if (import.meta.env.MODE === 'development') {
     return (
       <div 
-        className={`ad-container ${className} bg-slate-100 border border-slate-200 flex items-center justify-center`} 
+        className={`ad-container ${className} bg-gray-100 border border-gray-200 flex items-center justify-center`} 
         style={{
           minHeight: adSize === '728x90' ? '90px' : adSize === '300x250' ? '250px' : '100px',
           ...containerStyle
         }}
       >
         <div className="text-center p-2">
-          <p className="text-slate-500 text-sm">Advertisement</p>
-          <p className="text-xs text-slate-400">({adSize || adFormat} ad will appear here)</p>
-          <p className="text-xs text-slate-400 mt-1">Publisher ID: {publisherId || 'loading...'}</p>
+          <p className="text-gray-500 text-sm">Advertisement</p>
+          <p className="text-xs text-gray-400">({adSize || adFormat} ad will appear here)</p>
+          <p className="text-xs text-gray-400 mt-1">Publisher ID: {publisherId || 'loading...'}</p>
         </div>
       </div>
     );
