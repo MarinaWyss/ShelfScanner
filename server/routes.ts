@@ -910,6 +910,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+  
+  // Test endpoint for OpenAI-powered recommendations
+  app.post('/api/test/ai-recommendations', async (req: Request, res: Response) => {
+    try {
+      const { books, preferences } = req.body;
+      
+      if (!books || !Array.isArray(books) || books.length === 0) {
+        return res.status(400).json({ message: 'Please provide a non-empty array of books' });
+      }
+      
+      // Import the OpenAI recommendations function
+      const { getOpenAIRecommendations } = await import('./openai-recommendations');
+      
+      console.log(`Testing AI recommendations with ${books.length} books`);
+      
+      // Get AI-powered recommendations
+      const recommendations = await getOpenAIRecommendations(books, preferences || {});
+      
+      console.log(`Received ${recommendations.length} AI-powered recommendations`);
+      
+      // Return the recommendations
+      res.json({
+        message: `Successfully generated ${recommendations.length} AI-powered recommendations`,
+        recommendations
+      });
+    } catch (error) {
+      console.error('Error generating AI recommendations:', error);
+      res.status(500).json({ 
+        message: 'Error generating AI recommendations',
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
 
   // Create HTTP server
   const server = createServer(app);
