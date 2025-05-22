@@ -1,7 +1,10 @@
 import { log } from './vite';
+import { logger, logRateLimit } from './logger';
+import { sendRateLimitAlert } from './notification';
 
 /**
  * Simple in-memory rate limiter to control API usage
+ * Enhanced with monitoring and alerting capabilities
  */
 export class RateLimiter {
   private requestCounts: Map<string, number> = new Map();
@@ -9,6 +12,7 @@ export class RateLimiter {
   private dailyLimits: Map<string, number> = new Map();
   private dailyUsage: Map<string, number> = new Map();
   private lastResetDay: Map<string, number> = new Map();
+  private alertsSent: Map<string, boolean> = new Map();
   
   constructor() {
     // Set default rate limits
@@ -17,6 +21,9 @@ export class RateLimiter {
     
     this.setLimit('google-books', 100, 60); // 100 requests per minute for Google Books
     this.setDailyLimit('google-books', 1000); // 1000 requests per day for Google Books
+    
+    this.setLimit('google-vision', 20, 60); // 20 requests per minute for Google Vision
+    this.setDailyLimit('google-vision', 1000); // 1000 requests per day for Google Vision
   }
   
   /**
@@ -45,6 +52,7 @@ export class RateLimiter {
   
   /**
    * Check if a request to the API is allowed based on rate limits
+   * Enhanced with monitoring and alerting
    * @param apiName API identifier
    * @param windowSeconds Time window in seconds
    * @returns boolean indicating if the request is allowed
@@ -72,7 +80,8 @@ export class RateLimiter {
     
     // Check rate limit
     const currentCount = this.requestCounts.get(key) || 0;
-    const limit = apiName === 'openai' ? 10 : 100; // Default limits if not set
+    const limit = apiName === 'openai' ? 10 : 
+                 apiName === 'google-vision' ? 20 : 100; // Get appropriate limits
     
     // Check daily limit
     const dailyUsage = this.dailyUsage.get(apiName) || 0;
@@ -81,15 +90,66 @@ export class RateLimiter {
     const isWithinRateLimit = currentCount < limit;
     const isWithinDailyLimit = dailyUsage < dailyLimit;
     
+    // Check if we need to send alerts
+    this.checkForAlerts(apiName, currentCount, limit, dailyUsage, dailyLimit);
+    
     if (!isWithinRateLimit) {
       log(`Rate limit exceeded for ${apiName}: ${currentCount}/${limit} requests within ${windowSeconds}s`, 'rate-limiter');
+      logger.error(`Rate limit exceeded for ${apiName}: ${currentCount}/${limit} requests within ${windowSeconds}s`);
     }
     
     if (!isWithinDailyLimit) {
       log(`Daily limit exceeded for ${apiName}: ${dailyUsage}/${dailyLimit} requests`, 'rate-limiter');
+      logger.error(`Daily limit exceeded for ${apiName}: ${dailyUsage}/${dailyLimit} requests`);
     }
     
     return isWithinRateLimit && isWithinDailyLimit;
+  }
+  
+  /**
+   * Check if alerts should be sent based on usage thresholds
+   * @param apiName API name
+   * @param currentCount Current count in window
+   * @param limit Window limit
+   * @param dailyUsage Daily usage
+   * @param dailyLimit Daily limit
+   */
+  private async checkForAlerts(
+    apiName: string, 
+    currentCount: number, 
+    limit: number, 
+    dailyUsage: number, 
+    dailyLimit: number
+  ): Promise<void> {
+    const usagePercent = (dailyUsage / dailyLimit) * 100;
+    const windowPercent = (currentCount / limit) * 100;
+    const alertKey = `${apiName}_alert`;
+    
+    // Check if we've already sent an alert for this API today
+    const alreadySentAlert = this.alertsSent.get(alertKey) || false;
+    
+    // Alert on high daily usage (only send once per day)
+    if (usagePercent >= 80 && !alreadySentAlert) {
+      // Log the high usage
+      const shouldAlert = logRateLimit(apiName, dailyUsage, dailyLimit, { type: 'daily' });
+      
+      if (shouldAlert && process.env.SENDGRID_API_KEY && process.env.ADMIN_EMAIL) {
+        try {
+          // Send email alert
+          await sendRateLimitAlert(apiName, dailyUsage, dailyLimit);
+          this.alertsSent.set(alertKey, true);
+        } catch (error) {
+          logger.error(`Failed to send rate limit alert for ${apiName}: ${error}`);
+        }
+      }
+    }
+    
+    // Reset alert flag at midnight
+    const currentDay = new Date().getDate();
+    const lastAlertDay = this.lastResetDay.get(apiName) || currentDay;
+    if (currentDay !== lastAlertDay) {
+      this.alertsSent.set(alertKey, false);
+    }
   }
   
   /**
