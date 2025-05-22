@@ -367,7 +367,7 @@ export default function PreferencesStep({ preferences, onSubmit, isLoading }: Pr
                 onClick={() => toggleGenre(genre)}
                 className={`px-3 py-2 border rounded-md text-sm font-medium transition-colors ${
                   selectedGenres.includes(genre)
-                    ? 'bg-blue-50 text-blue-600 border-blue-200'
+                    ? 'bg-violet-50 text-violet-600 border-violet-200'
                     : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
                 }`}
               >
@@ -465,7 +465,7 @@ export default function PreferencesStep({ preferences, onSubmit, isLoading }: Pr
             </div>
 
             <div className="mt-2 text-xs text-gray-600">
-              <p><a href="https://www.goodreads.com/review/import" className="text-blue-600 underline" target="_blank" rel="noopener noreferrer">Export your Goodreads library</a> by going to "Import and Export" in your account settings</p>
+              <p><a href="https://www.goodreads.com/review/import" className="text-violet-600 underline" target="_blank" rel="noopener noreferrer">Export your Goodreads library</a> by going to "Import and Export" in your account settings</p>
               <p className="mt-1 text-amber-600">Note: The Goodreads mobile app does not allow data export. Unfortunately data export must happen on desktop.</p>
             </div>
           </div>
@@ -482,13 +482,13 @@ export default function PreferencesStep({ preferences, onSubmit, isLoading }: Pr
               value={newAuthor}
               onChange={e => setNewAuthor(e.target.value)}
               placeholder="Enter author name"
-              className="flex-1 px-3 py-2 border bg-white border-gray-200 text-gray-900 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              className="flex-1 px-3 py-2 border bg-white border-gray-200 text-gray-900 rounded-l-md focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
             />
             <button
               type="button"
               onClick={addAuthor}
               disabled={!newAuthor.trim()}
-              className="bg-blue-600 text-white px-4 py-2 rounded-r-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="bg-violet-600 text-white px-4 py-2 rounded-r-md hover:bg-violet-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Add
             </button>

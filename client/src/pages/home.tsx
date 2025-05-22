@@ -14,7 +14,7 @@ export default function Home() {
         </p>
         <div className="flex flex-wrap gap-3">
           <Link href="/books">
-            <Button className="bg-blue-600 hover:bg-blue-700 text-white font-medium">
+            <Button className="bg-violet-600 hover:bg-violet-700 text-white font-medium">
               <svg 
                 xmlns="http://www.w3.org/2000/svg" 
                 width="24" 
@@ -63,7 +63,7 @@ export default function Home() {
                 </p>
               </div>
             </div>
-            <Link href="/books" className="flex items-center text-blue-600 hover:text-blue-700 font-medium text-sm mt-3">
+            <Link href="/books" className="flex items-center text-violet-600 hover:text-violet-700 font-medium text-sm mt-3">
               <span>Start scanning</span>
               <svg className="ml-1 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
@@ -132,7 +132,7 @@ export default function Home() {
           Never miss a great book again. Our app helps you quickly find books that match your unique reading preferences even in a crowded bookshelf.
         </p>
         <Link href="/books" onClick={() => window.scrollTo(0, 0)}>
-          <Button className="bg-blue-600 hover:bg-blue-700 text-white font-medium">
+          <Button className="bg-violet-600 hover:bg-violet-700 text-white font-medium">
             Get Started Now
           </Button>
         </Link>
