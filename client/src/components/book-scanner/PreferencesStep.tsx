@@ -367,8 +367,8 @@ export default function PreferencesStep({ preferences, onSubmit, isLoading }: Pr
                 onClick={() => toggleGenre(genre)}
                 className={`px-3 py-2 border rounded-md text-sm font-medium transition-colors ${
                   selectedGenres.includes(genre)
-                    ? 'bg-primary/20 text-primary border-primary/40'
-                    : 'bg-slate-800 text-slate-300 border-slate-700 hover:bg-slate-700'
+                    ? 'bg-blue-50 text-blue-600 border-blue-200'
+                    : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
                 }`}
               >
                 {genre}
@@ -378,13 +378,13 @@ export default function PreferencesStep({ preferences, onSubmit, isLoading }: Pr
         </div>
         
         {/* Goodreads Import */}
-        <Card className="p-4 mb-6 border-slate-700 bg-slate-800">
+        <Card className="p-4 mb-6 border-gray-200 bg-gray-50">
           <div className="flex flex-col">
-            <Label className="block text-sm font-medium text-foreground mb-2">
+            <Label className="block text-sm font-medium text-gray-900 mb-2">
               Import your Goodreads library (Optional)
             </Label>
             
-            <p className="text-sm text-muted-foreground mb-3">
+            <p className="text-sm text-gray-600 mb-3">
               Upload your Goodreads export to quickly set your preferences based on your reading history.
             </p>
             
@@ -464,16 +464,16 @@ export default function PreferencesStep({ preferences, onSubmit, isLoading }: Pr
               )}
             </div>
 
-            <div className="mt-2 text-xs text-muted-foreground">
-              <p><a href="https://www.goodreads.com/review/import" className="text-primary underline" target="_blank" rel="noopener noreferrer">Export your Goodreads library</a> by going to "Import and Export" in your account settings</p>
-              <p className="mt-1 text-yellow-400">Note: The Goodreads mobile app does not allow data export. Unfortunately data export must happen on desktop.</p>
+            <div className="mt-2 text-xs text-gray-600">
+              <p><a href="https://www.goodreads.com/review/import" className="text-blue-600 underline" target="_blank" rel="noopener noreferrer">Export your Goodreads library</a> by going to "Import and Export" in your account settings</p>
+              <p className="mt-1 text-amber-600">Note: The Goodreads mobile app does not allow data export. Unfortunately data export must happen on desktop.</p>
             </div>
           </div>
         </Card>
 
         {/* Favorite Authors */}
         <div>
-          <Label className="block text-sm font-medium text-foreground mb-2">
+          <Label className="block text-sm font-medium text-gray-900 mb-2">
             Any favorite authors? (Optional)
           </Label>
           <div className="flex">
@@ -482,13 +482,13 @@ export default function PreferencesStep({ preferences, onSubmit, isLoading }: Pr
               value={newAuthor}
               onChange={e => setNewAuthor(e.target.value)}
               placeholder="Enter author name"
-              className="flex-1 px-3 py-2 border bg-slate-800 border-slate-700 text-foreground rounded-l-md focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary"
+              className="flex-1 px-3 py-2 border bg-white border-gray-200 text-gray-900 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
             <button
               type="button"
               onClick={addAuthor}
               disabled={!newAuthor.trim()}
-              className="bg-primary text-white px-4 py-2 rounded-r-md hover:bg-primary/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="bg-blue-600 text-white px-4 py-2 rounded-r-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               Add
             </button>
@@ -497,12 +497,12 @@ export default function PreferencesStep({ preferences, onSubmit, isLoading }: Pr
           {authors.length > 0 && (
             <div className="mt-3 flex flex-wrap gap-2">
               {authors.map(author => (
-                <div key={author} className="bg-slate-700 text-slate-200 px-3 py-1 rounded-full text-sm flex items-center">
+                <div key={author} className="bg-gray-200 text-gray-800 px-3 py-1 rounded-full text-sm flex items-center">
                   {author}
                   <button
                     type="button"
                     onClick={() => removeAuthor(author)}
-                    className="ml-2 text-slate-400 hover:text-slate-200"
+                    className="ml-2 text-gray-500 hover:text-gray-800"
                   >
                     <svg 
                       xmlns="http://www.w3.org/2000/svg" 
@@ -531,7 +531,7 @@ export default function PreferencesStep({ preferences, onSubmit, isLoading }: Pr
         <Button 
           onClick={handleSubmit}
           disabled={isLoading || selectedGenres.length === 0}
-          className="bg-primary hover:bg-primary/90"
+          className="bg-blue-600 hover:bg-blue-700 text-white"
         >
           {isLoading ? 'Saving...' : 'Continue'}
         </Button>
