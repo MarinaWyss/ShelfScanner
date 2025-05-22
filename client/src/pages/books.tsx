@@ -41,6 +41,7 @@ export default function Books() {
   });
   const [detectedBooks, setDetectedBooks] = useState<Book[]>([]);
   const [bookImageBase64, setBookImageBase64] = useState<string>('');
+  const [currentRecommendations, setCurrentRecommendations] = useState<Recommendation[]>([]);
   const { toast } = useToast();
 
   // Fetch existing preferences if any
@@ -98,7 +99,7 @@ export default function Books() {
     }
   });
 
-  // Generate recommendations
+  // Generate recommendations - now directly store and use the returned data
   const recommendationsMutation = useMutation({
     mutationFn: async () => {
       if (!detectedBooks || detectedBooks.length === 0) {
@@ -116,7 +117,9 @@ export default function Books() {
     },
     onSuccess: (data) => {
       console.log("Successfully created recommendations:", data);
-      queryClient.invalidateQueries({ queryKey: ['/api/recommendations'] });
+      
+      // Store the recommendations directly instead of relying on a GET request
+      setCurrentRecommendations(data);
       
       if (data && (Array.isArray(data) && data.length > 0)) {
         nextStep(); // Only proceed if we got actual recommendations
@@ -144,11 +147,7 @@ export default function Books() {
     }
   });
 
-  // Fetch recommendations
-  const { data: recommendations, isLoading: recommendationsLoading } = useQuery<Recommendation[]>({
-    queryKey: ['/api/recommendations'],
-    enabled: currentStep === 3,
-  });
+  // No longer fetching recommendations with a GET request - using state directly instead
 
   const handlePreferencesSubmit = (preferences: Preference) => {
     setUserPreferences(preferences);
@@ -244,8 +243,8 @@ export default function Books() {
           {/* Step 3: Recommendations */}
           {currentStep === 3 && (
             <RecommendationsStep 
-              recommendations={recommendations || []}
-              isLoading={recommendationsLoading}
+              recommendations={currentRecommendations}
+              isLoading={recommendationsMutation.isPending}
               goodreadsData={userPreferences.goodreadsData}
             />
           )}
