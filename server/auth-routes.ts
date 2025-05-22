@@ -29,12 +29,50 @@ router.get('/google', (req: Request, res: Response) => {
   });
 });
 
-// Google OAuth callback endpoint
-router.get('/google/callback', (req: Request, res: Response) => {
-  // For now, return a placeholder response
-  res.status(200).json({ 
-    message: 'Google authentication callback will be implemented here when you deploy the app'
-  });
+// Google OAuth callback endpoint - now handles server-side verification
+router.post('/google/callback', async (req: Request, res: Response) => {
+  try {
+    const { access_token } = req.body;
+    
+    if (!access_token) {
+      return res.status(400).json({ message: 'Missing access token' });
+    }
+
+    // Use Google API to fetch user profile using the access token
+    const response = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+      headers: {
+        Authorization: `Bearer ${access_token}`
+      }
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch user info from Google');
+    }
+
+    const googleUserInfo = await response.json();
+    
+    // Create a session with the user info
+    const userInfo = {
+      id: googleUserInfo.sub,
+      email: googleUserInfo.email,
+      name: googleUserInfo.name,
+      picture: googleUserInfo.picture
+    };
+    
+    // In a real-world app, we would create/update the user in our database here
+    
+    // Set session data
+    // Note: Proper session management would be added here when deployed
+    // This is a simplified approach for now that doesn't require additional setup
+    
+    return res.status(200).json(userInfo);
+  } catch (error) {
+    console.error('Error in Google callback:', error);
+    return res.status(500).json({ 
+      message: 'Authentication failed',
+      error: error instanceof Error ? error.message : String(error)
+    });
+  }
 });
 
 // Logout endpoint

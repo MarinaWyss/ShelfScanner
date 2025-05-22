@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { getDeviceId, syncDeviceIdCookie } from '@/lib/deviceId';
+import { GoogleOAuthProvider, useGoogleLogin, googleLogout } from '@react-oauth/google';
+import { processGoogleToken, mergeDeviceData, type GoogleUserInfo } from '@/lib/auth';
 
 // Define the User type
 interface User {
@@ -28,8 +30,8 @@ const AuthContext = createContext<AuthContextType>({
   logout: () => {},
 });
 
-// Provider component
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+// Inner provider component (gets wrapped by GoogleOAuthProvider)
+const AuthProviderInner: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [deviceId, setDeviceId] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
@@ -69,19 +71,57 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // Setup Google login using the react-oauth library
+  const googleLogin = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      try {
+        setIsLoading(true);
+        
+        // Get user info from token
+        const userInfo: GoogleUserInfo = await processGoogleToken(tokenResponse);
+        
+        // Set user state
+        setUser({
+          id: userInfo.id,
+          name: userInfo.name,
+          email: userInfo.email,
+          picture: userInfo.picture,
+          isGoogleAccount: true
+        });
+        
+        // Merge data from device to new user account
+        await mergeDeviceData(deviceId, userInfo.id);
+        
+      } catch (error) {
+        console.error('Error during Google login:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    onError: (error) => {
+      console.error('Google login error:', error);
+      setIsLoading(false);
+    },
+    flow: 'implicit'
+  });
+
   // Login with Google
   const loginWithGoogle = () => {
-    // Redirect to Google OAuth endpoint
-    window.location.href = '/api/auth/google';
+    setIsLoading(true);
+    googleLogin();
   };
 
   // Logout function
   const logout = async () => {
     try {
+      setIsLoading(true);
       await fetch('/api/auth/logout', { method: 'POST' });
+      googleLogout();
       setUser(null);
     } catch (error) {
       console.error('Error logging out:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -97,6 +137,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     >
       {children}
     </AuthContext.Provider>
+  );
+};
+
+// Main provider component that wraps with Google OAuth provider
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID as string;
+  
+  return (
+    <GoogleOAuthProvider clientId={clientId}>
+      <AuthProviderInner>{children}</AuthProviderInner>
+    </GoogleOAuthProvider>
   );
 };
 
