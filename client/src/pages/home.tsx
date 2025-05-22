@@ -7,27 +7,37 @@ export default function Home() {
     <div className="p-6 sm:p-8 lg:p-10 max-w-6xl mx-auto">
       <div className="mb-10 max-w-3xl">
         <h1 className="text-4xl font-bold text-gray-900 mb-3">
-          The AI workspace that works for you.
+          AI bookshelf scanner and book recommender
         </h1>
         <p className="text-xl text-gray-600 mb-6">
-          One place where readers find every answer, automate the busywork, and get book recommendations done.
+          Find the perfect book for you.
         </p>
         <div className="flex flex-wrap gap-3">
           <Link href="/books">
             <Button className="bg-blue-600 hover:bg-blue-700 text-white font-medium">
-              Get ShelfScanner free
-            </Button>
-          </Link>
-          <Link href="/reading-list">
-            <Button variant="outline" className="border-gray-300 text-gray-700 hover:bg-gray-50">
-              View reading list
+              <svg 
+                xmlns="http://www.w3.org/2000/svg" 
+                width="24" 
+                height="24" 
+                viewBox="0 0 24 24" 
+                fill="none" 
+                stroke="currentColor" 
+                strokeWidth="2" 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+                className="h-4 w-4 mr-2"
+              >
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                <circle cx="12" cy="13" r="4" />
+              </svg>
+              Start Scanning
             </Button>
           </Link>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 my-12">
-        <Card className="border border-gray-200 bg-white shadow-sm overflow-hidden">
+      <div className="my-12">
+        <Card className="border border-gray-200 bg-white shadow-sm overflow-hidden max-w-xl mx-auto">
           <CardContent className="p-6">
             <div className="flex items-start mb-4">
               <div className="bg-red-50 text-red-600 h-10 w-10 rounded-full flex items-center justify-center mr-4 shrink-0">
@@ -55,43 +65,6 @@ export default function Home() {
             </div>
             <Link href="/books" className="flex items-center text-blue-600 hover:text-blue-700 font-medium text-sm mt-3">
               <span>Start scanning</span>
-              <svg className="ml-1 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </Link>
-          </CardContent>
-        </Card>
-
-        <Card className="border border-gray-200 bg-white shadow-sm overflow-hidden">
-          <CardContent className="p-6">
-            <div className="flex items-start mb-4">
-              <div className="bg-blue-50 text-blue-600 h-10 w-10 rounded-full flex items-center justify-center mr-4 shrink-0">
-                <svg 
-                  xmlns="http://www.w3.org/2000/svg" 
-                  width="24" 
-                  height="24" 
-                  viewBox="0 0 24 24" 
-                  fill="none" 
-                  stroke="currentColor" 
-                  strokeWidth="2" 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round" 
-                  className="h-5 w-5"
-                >
-                  <circle cx="12" cy="12" r="10" />
-                  <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
-                  <path d="M12 17h.01" />
-                </svg>
-              </div>
-              <div>
-                <h2 className="text-lg font-semibold text-gray-900">AI-Enhanced Descriptions</h2>
-                <p className="text-gray-600 mt-1">
-                  Get more detailed and personalized book summaries powered by OpenAI.
-                </p>
-              </div>
-            </div>
-            <Link href="/books" className="flex items-center text-blue-600 hover:text-blue-700 font-medium text-sm mt-3">
-              <span>Explore books</span>
               <svg className="ml-1 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
               </svg>
