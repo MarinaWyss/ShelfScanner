@@ -101,7 +101,7 @@ export default function Navbar({ sidebarOpen, toggleSidebar, toggleContact }: Na
                   <li>
                     <Link href="/" className={`flex items-center gap-2 w-full px-3 py-1.5 rounded-md font-medium text-sm transition-colors duration-150 ${
                         location === '/' 
-                          ? 'bg-blue-50 text-blue-600' 
+                          ? 'bg-violet-50 text-violet-600' 
                           : 'text-gray-800 hover:bg-gray-100'
                       }`}>
                         <svg 
@@ -125,7 +125,7 @@ export default function Navbar({ sidebarOpen, toggleSidebar, toggleContact }: Na
                   <li>
                     <Link href="/books" className={`flex items-center gap-2 w-full px-3 py-1.5 rounded-md font-medium text-sm transition-colors duration-150 ${
                         location === '/books' 
-                          ? 'bg-blue-50 text-blue-600' 
+                          ? 'bg-violet-50 text-violet-600' 
                           : 'text-gray-800 hover:bg-gray-100'
                       }`}>
                         <svg 
@@ -148,7 +148,7 @@ export default function Navbar({ sidebarOpen, toggleSidebar, toggleContact }: Na
                   <li>
                     <Link href="/reading-list" className={`flex items-center gap-2 w-full px-3 py-1.5 rounded-md font-medium text-sm transition-colors duration-150 ${
                         location === '/reading-list' 
-                          ? 'bg-blue-50 text-blue-600' 
+                          ? 'bg-violet-50 text-violet-600' 
                           : 'text-gray-800 hover:bg-gray-100'
                       }`}>
                         <svg 

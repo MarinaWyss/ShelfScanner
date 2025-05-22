@@ -78,7 +78,7 @@ export default function Home() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="bg-gray-50 border border-gray-200 rounded-lg p-5">
             <div className="flex items-center mb-3">
-              <div className="bg-blue-100 text-blue-600 h-8 w-8 rounded-full flex items-center justify-center mr-3">
+              <div className="bg-amber-100 text-amber-600 h-8 w-8 rounded-full flex items-center justify-center mr-3">
                 <span className="font-semibold">1</span>
               </div>
               <h3 className="font-medium text-gray-900">Upload Photo</h3>
@@ -88,7 +88,7 @@ export default function Home() {
           
           <div className="bg-gray-50 border border-gray-200 rounded-lg p-5">
             <div className="flex items-center mb-3">
-              <div className="bg-blue-100 text-blue-600 h-8 w-8 rounded-full flex items-center justify-center mr-3">
+              <div className="bg-amber-100 text-amber-600 h-8 w-8 rounded-full flex items-center justify-center mr-3">
                 <span className="font-semibold">2</span>
               </div>
               <h3 className="font-medium text-gray-900">Set Preferences</h3>
@@ -98,7 +98,7 @@ export default function Home() {
           
           <div className="bg-gray-50 border border-gray-200 rounded-lg p-5">
             <div className="flex items-center mb-3">
-              <div className="bg-blue-100 text-blue-600 h-8 w-8 rounded-full flex items-center justify-center mr-3">
+              <div className="bg-amber-100 text-amber-600 h-8 w-8 rounded-full flex items-center justify-center mr-3">
                 <span className="font-semibold">3</span>
               </div>
               <h3 className="font-medium text-gray-900">Find Matching Books</h3>
@@ -109,7 +109,7 @@ export default function Home() {
       </div>
 
       <div className="mt-16 text-center">
-        <div className="inline-flex justify-center items-center bg-blue-50 text-blue-600 h-12 w-12 rounded-full mb-4">
+        <div className="inline-flex justify-center items-center bg-green-50 text-green-600 h-12 w-12 rounded-full mb-4">
           <svg 
             xmlns="http://www.w3.org/2000/svg" 
             width="24" 
