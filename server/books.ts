@@ -157,31 +157,18 @@ export async function searchBooksByTitle(title: string): Promise<any[]> {
         detectedFrom: string;
       }
       
-      // Process all books to ensure they have ratings
-      const booksWithRatings = await Promise.all(
+      // Process all books - CLEAR ratings from Google Books and OpenAI will provide them
+      const booksWithoutRatings = await Promise.all(
         books.map(async (book: BookObject) => {
-          // If Google Books already provided a rating, use it as our primary source
-          if (book.rating) {
-            // We already have a Google Books rating
-            console.log(`Using Google Books rating for "${book.title}": ${book.rating}`);
-          } else {
-            // Try using our local database of verified ratings
-            const verifiedRating = getPopularBookRating(book.title, book.author);
-            if (verifiedRating) {
-              book.rating = verifiedRating;
-              console.log(`Using verified rating from database for "${book.title}": ${book.rating}`);
-            } else {
-              // If no rating is available, leave it blank
-              book.rating = '';
-              console.log(`No rating available for "${book.title}" - leaving blank`);
-            }
-          }
-          
+          // IMPORTANT: Don't use Google Books ratings - OpenAI will provide them later
+          // Clear any ratings that might have come from Google Books
+          book.rating = '';
+          console.log(`Cleared Google Books rating for "${book.title}" - will be replaced with OpenAI rating`);
           return book;
         })
       );
       
-      return booksWithRatings;
+      return booksWithoutRatings;
     }
 
     // Fallback to Open Library API
@@ -216,22 +203,16 @@ export async function searchBooksByTitle(title: string): Promise<any[]> {
       
       // Reuse our BookObject interface from above
       
-      // Process books and use only Google Books ratings or verified database
-      const booksWithRatings = await Promise.all(
+      // Process books - CLEAR ratings from Open Library and OpenAI will provide them
+      const booksWithoutRatings = await Promise.all(
         books.map(async (book: any) => {
-          // If the book already has a rating from Google Books, keep it
-          if (!book.rating && book.title && book.author) {
-            // If not, try to get a verified rating from our database
-            const verifiedRating = getPopularBookRating(book.title, book.author);
-            if (verifiedRating) {
-              book.rating = verifiedRating;
-              console.log(`Using verified rating from database for "${book.title}": ${verifiedRating}`);
-            } else {
-              // If no verified rating available, leave it blank
-              console.log(`No verified rating available for "${book.title}" - leaving blank`);
-              book.rating = '';
-            }
-          }
+          // IMPORTANT: Don't use Open Library ratings - OpenAI will provide them later
+          // Clear any ratings that might have come from Open Library
+          book.rating = '';
+          console.log(`Cleared ratings for "${book.title}" - will be replaced with OpenAI rating`);
+          
+          // Clear any summaries that might have come from Open Library
+          book.summary = '';
           
           return book;
         })

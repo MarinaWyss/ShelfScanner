@@ -200,17 +200,17 @@ export async function searchBooksByTitle(title: string): Promise<any[]> {
         const bookAuthor = item.volumeInfo?.authors ? item.volumeInfo.authors.join(', ') : 'Unknown Author';
         const isbn = item.volumeInfo?.industryIdentifiers?.find(id => id.type === 'ISBN_13')?.identifier || '';
         
+        // ONLY use title, author, isbn, and coverUrl from Google Books API
+        // All other data (summary, rating) should come exclusively from OpenAI
         return {
           title: bookTitle,
           author: bookAuthor,
           isbn: isbn,
           coverUrl: item.volumeInfo?.imageLinks?.thumbnail || '',
-          summary: item.volumeInfo?.description || '',
-          // Use Google Books rating as initial value (this will be updated with Amazon rating)
-          rating: item.volumeInfo?.averageRating ? item.volumeInfo.averageRating.toString() : '',
-          publisher: item.volumeInfo?.publisher || '',
-          categories: item.volumeInfo?.categories || [],
-          // Include the detected book title for debugging
+          summary: '',  // Will be filled by OpenAI
+          rating: '',   // Will be filled by OpenAI
+          publisher: item.volumeInfo?.publisher || '', // Not critical
+          categories: item.volumeInfo?.categories || [], // Not critical
           detectedFrom: title
         };
       });
@@ -365,7 +365,7 @@ export async function searchBooksByTitle(title: string): Promise<any[]> {
             return book;
           }
           
-          // Step 2: Get enhanced rating
+          // Step 2: Get rating ONLY from OpenAI
           try {
             const enhancedRating = await bookCacheService.getEnhancedRating(book.title, book.author, book.isbn);
             if (enhancedRating) {
@@ -373,32 +373,28 @@ export async function searchBooksByTitle(title: string): Promise<any[]> {
               log(`Enhanced rating for "${book.title}": ${enhancedRating}`, 'books');
             }
           } catch (error) {
-            // Fallback to local database
-            const verifiedRating = getPopularBookRating(book.title, book.author);
-            if (verifiedRating) {
-              book.rating = verifiedRating;
-              log(`Using verified rating from database for "${book.title}": ${verifiedRating}`, 'books');
-            } else {
-              // If no rating is available, use estimated rating
-              book.rating = getEstimatedBookRating(book.title, book.author);
-              log(`Using estimated rating for "${book.title}": ${book.rating}`, 'books');
-            }
+            log(`Failed to get OpenAI rating for "${book.title}": ${error instanceof Error ? error.message : String(error)}`, 'books');
+            // Leave rating empty rather than using fallbacks - will be filled by OpenAI later
+            book.rating = '';
           }
           
-          // Step 3: Get enhanced summary with improved 3-4 sentence format
+          // Step 3: Get summary ONLY from OpenAI with improved 3-4 sentence format
           try {
+            // Pass only title and author to force generating a new summary from OpenAI
+            // This ensures we don't use any Google Books summary data
             const enhancedSummary = await bookCacheService.getEnhancedSummary(
               book.title, 
-              book.author,
-              book.summary
+              book.author
             );
             
             if (enhancedSummary) {
               book.summary = enhancedSummary;
-              log(`Enhanced summary for "${book.title}"`, 'books');
+              log(`Enhanced summary for "${book.title}" from OpenAI`, 'books');
             }
           } catch (error) {
-            log(`Failed to enhance summary for "${book.title}": ${error instanceof Error ? error.message : String(error)}`, 'books');
+            log(`Failed to get OpenAI summary for "${book.title}": ${error instanceof Error ? error.message : String(error)}`, 'books');
+            // Leave summary empty rather than using Google Books data
+            book.summary = '';
           }
           
           // Step 4: Cache this book for future use
@@ -410,7 +406,7 @@ export async function searchBooksByTitle(title: string): Promise<any[]> {
               coverUrl: book.coverUrl,
               rating: book.rating,
               summary: book.summary,
-              source: 'open-library',
+              source: 'openai', // We now treat all summaries and ratings as from OpenAI
               metadata: {
                 publisher: book.publisher,
                 categories: book.categories
