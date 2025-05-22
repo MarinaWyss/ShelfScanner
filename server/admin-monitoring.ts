@@ -1,6 +1,7 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { getApiUsageStats } from './api-stats';
 import { checkSystemHealth, getRecentEvents, getLogs, LogLevel } from './monitor';
+import { rateLimiter } from './rate-limiter';
 import crypto from 'crypto';
 
 const router = Router();
@@ -208,11 +209,8 @@ router.post('/test-increment', requireAuth, (req: Request, res: Response) => {
       return res.status(400).json({ message: 'API name is required' });
     }
     
-    // Import rate limiter here to avoid circular dependencies
-    const { rateLimiter } = require('./rate-limiter');
-    
     // Increment the counter for the specified API
-    for (let i = 0; i < count; i++) {
+    for (let i = 0; i < (count as number); i++) {
       rateLimiter.increment(apiName);
     }
     
