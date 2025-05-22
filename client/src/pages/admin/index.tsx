@@ -13,8 +13,9 @@ import { Progress } from "@/components/ui/progress";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertCircle, Clock } from "lucide-react";
-import LoginForm from '@/components/admin/LoginForm';
+import { AlertCircle, Clock, AlertTriangle, CheckCircle, Info } from "lucide-react";
+// Import the LoginForm component 
+import LoginForm from '../../components/admin/LoginForm';
 
 interface ApiStats {
   windowUsage: number;

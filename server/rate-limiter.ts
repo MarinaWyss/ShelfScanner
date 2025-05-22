@@ -1,6 +1,5 @@
 import { log } from './vite';
-import { logger, logRateLimit } from './logger';
-import { sendRateLimitAlert } from './notification';
+import { logApiUsage, LogLevel, logEvent } from './monitor';
 
 /**
  * Simple in-memory rate limiter to control API usage
@@ -95,32 +94,32 @@ export class RateLimiter {
     
     if (!isWithinRateLimit) {
       log(`Rate limit exceeded for ${apiName}: ${currentCount}/${limit} requests within ${windowSeconds}s`, 'rate-limiter');
-      logger.error(`Rate limit exceeded for ${apiName}: ${currentCount}/${limit} requests within ${windowSeconds}s`);
+      logEvent(LogLevel.ERROR, `Rate limit exceeded for ${apiName}: ${currentCount}/${limit} requests within ${windowSeconds}s`);
     }
     
     if (!isWithinDailyLimit) {
       log(`Daily limit exceeded for ${apiName}: ${dailyUsage}/${dailyLimit} requests`, 'rate-limiter');
-      logger.error(`Daily limit exceeded for ${apiName}: ${dailyUsage}/${dailyLimit} requests`);
+      logEvent(LogLevel.ERROR, `Daily limit exceeded for ${apiName}: ${dailyUsage}/${dailyLimit} requests`);
     }
     
     return isWithinRateLimit && isWithinDailyLimit;
   }
   
   /**
-   * Check if alerts should be sent based on usage thresholds
+   * Check if alerts should be logged based on usage thresholds
    * @param apiName API name
    * @param currentCount Current count in window
    * @param limit Window limit
    * @param dailyUsage Daily usage
    * @param dailyLimit Daily limit
    */
-  private async checkForAlerts(
+  private checkForAlerts(
     apiName: string, 
     currentCount: number, 
     limit: number, 
     dailyUsage: number, 
     dailyLimit: number
-  ): Promise<void> {
+  ): void {
     const usagePercent = (dailyUsage / dailyLimit) * 100;
     const windowPercent = (currentCount / limit) * 100;
     const alertKey = `${apiName}_alert`;
@@ -128,20 +127,22 @@ export class RateLimiter {
     // Check if we've already sent an alert for this API today
     const alreadySentAlert = this.alertsSent.get(alertKey) || false;
     
-    // Alert on high daily usage (only send once per day)
+    // Alert on high daily usage (only log once per day)
     if (usagePercent >= 80 && !alreadySentAlert) {
-      // Log the high usage
-      const shouldAlert = logRateLimit(apiName, dailyUsage, dailyLimit, { type: 'daily' });
+      // Log the high usage with proper log level
+      logApiUsage(apiName, dailyUsage, dailyLimit, { type: 'daily' });
       
-      if (shouldAlert && process.env.SENDGRID_API_KEY && process.env.ADMIN_EMAIL) {
-        try {
-          // Send email alert
-          await sendRateLimitAlert(apiName, dailyUsage, dailyLimit);
-          this.alertsSent.set(alertKey, true);
-        } catch (error) {
-          logger.error(`Failed to send rate limit alert for ${apiName}: ${error}`);
-        }
+      // Log a critical event if usage is very high
+      if (usagePercent >= 90) {
+        logEvent(
+          LogLevel.CRITICAL, 
+          `${apiName} API quota is nearly exhausted (${usagePercent.toFixed(1)}%)`,
+          { apiName, dailyUsage, dailyLimit, usagePercent }
+        );
       }
+      
+      // Mark that we've alerted for this API today
+      this.alertsSent.set(alertKey, true);
     }
     
     // Reset alert flag at midnight
@@ -171,6 +172,20 @@ export class RateLimiter {
     this.dailyUsage.set(apiName, dailyUsage + 1);
     
     log(`API call to ${apiName}: ${currentCount + 1} requests in current window, daily total: ${dailyUsage + 1}`, 'rate-limiter');
+    
+    // Check if we need to log high usage warning
+    const limit = apiName === 'openai' ? 10 : 
+                 apiName === 'google-vision' ? 20 : 100;
+    const dailyLimit = this.dailyLimits.get(apiName) || Infinity;
+    
+    // Only log when usage reaches significant thresholds
+    if (dailyUsage + 1 >= dailyLimit * 0.5 && (dailyUsage + 1) % 5 === 0) {
+      // Log usage milestone every 5 requests once we're past 50%
+      logApiUsage(apiName, dailyUsage + 1, dailyLimit, { 
+        windowUsage: currentCount + 1,
+        windowLimit: limit
+      });
+    }
   }
   
   /**
