@@ -65,11 +65,11 @@ function App() {
               toggleContact={toggleContact} 
             />
             <div className="flex flex-1">
-              {/* Overlay for mobile when sidebar is open */}
+              {/* Overlay when sidebar is open (all devices) */}
               {sidebarOpen && (
                 <div 
                   onClick={() => setSidebarOpen(false)}
-                  className="fixed inset-0 bg-black bg-opacity-50 z-10 lg:hidden"
+                  className="fixed inset-0 bg-black bg-opacity-50 z-10"
                 />
               )}
               

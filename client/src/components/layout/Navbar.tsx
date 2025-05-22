@@ -18,7 +18,7 @@ export default function Navbar({ sidebarOpen, toggleSidebar, toggleContact }: Na
       <header className="bg-slate-900 border-b border-slate-800 sticky top-0 z-20">
         <div className="px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
           <div className="flex items-center">
-            <button onClick={toggleSidebar} className="lg:hidden mr-4 text-slate-300 hover:text-white">
+            <button onClick={toggleSidebar} className="mr-4 text-slate-300 hover:text-white">
               <svg 
                 xmlns="http://www.w3.org/2000/svg" 
                 width="24" 
@@ -86,8 +86,8 @@ export default function Navbar({ sidebarOpen, toggleSidebar, toggleContact }: Na
       
       {/* Sidebar Navigation */}
       <aside 
-        className={`w-64 bg-slate-800 border-r border-slate-700 fixed top-[69px] bottom-0 left-0 z-20 transition-transform duration-300 ease-in-out lg:relative lg:top-0 ${
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+        className={`w-64 bg-slate-800 border-r border-slate-700 fixed top-[69px] bottom-0 left-0 z-20 transition-transform duration-300 ease-in-out ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         <nav className="h-full flex flex-col">
