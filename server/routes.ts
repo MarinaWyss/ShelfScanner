@@ -395,7 +395,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Books API has been updated to use book_cache instead of the deprecated books table
-  // Users should now use the /api/saved-books endpoint
+  // However, we still need this endpoint for compatibility with the frontend
+  
+  // Save books endpoint (redirects to use book_cache internally)
+  app.post('/api/books', async (req: Request, res: Response) => {
+    try {
+      const userId = 1; // Default user ID
+      
+      // Handle both single book and array of books
+      const booksToSave = Array.isArray(req.body) ? req.body : [req.body];
+      
+      const savedBooks = [];
+      
+      for (const bookData of booksToSave) {
+        // Cache the book data in book_cache to ensure consistent IDs
+        const cachedBook = await storage.cacheBook({
+          title: bookData.title,
+          author: bookData.author || "Unknown",
+          isbn: bookData.isbn || null,
+          coverUrl: bookData.coverUrl || null,
+          source: "saved", // Mark as saved by user
+          expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) // 1 year expiration
+        });
+        
+        savedBooks.push({
+          id: cachedBook.id,
+          userId,
+          title: cachedBook.title,
+          author: cachedBook.author,
+          isbn: cachedBook.isbn,
+          coverUrl: cachedBook.coverUrl,
+          metadata: cachedBook.metadata
+        });
+      }
+      
+      return res.status(200).json(savedBooks);
+    } catch (error) {
+      console.error('Error saving books:', error);
+      return res.status(400).json({ 
+        message: 'Error saving books',
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
   
   // Get recommendations
   app.post('/api/recommendations', async (req: Request, res: Response) => {
