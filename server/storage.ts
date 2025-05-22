@@ -228,12 +228,38 @@ export class DatabaseStorage implements IStorage {
 
   async cacheBook(bookData: InsertBookCache): Promise<BookCache> {
     try {
-      const [book] = await db
-        .insert(bookCache)
-        .values(bookData)
-        .returning();
-      log(`Book cached: "${bookData.title}" by ${bookData.author}`, 'cache');
-      return book;
+      // First, check if the book already exists in the cache
+      const existingBook = await this.findBookInCache(bookData.title, bookData.author);
+      
+      if (existingBook) {
+        // Update the existing book
+        log(`Updating existing cache entry for "${bookData.title}" by ${bookData.author}`, 'cache');
+        const [updatedBook] = await db
+          .update(bookCache)
+          .set({
+            isbn: bookData.isbn || existingBook.isbn,
+            coverUrl: bookData.coverUrl || existingBook.coverUrl,
+            rating: bookData.rating || existingBook.rating,
+            summary: bookData.summary || existingBook.summary,
+            source: bookData.source || existingBook.source,
+            metadata: bookData.metadata || existingBook.metadata,
+            expiresAt: bookData.expiresAt || existingBook.expiresAt,
+            updatedAt: new Date()
+          })
+          .where(eq(bookCache.id, existingBook.id))
+          .returning();
+        
+        return updatedBook;
+      } else {
+        // Insert new book
+        log(`Creating new cache entry for "${bookData.title}" by ${bookData.author}`, 'cache');
+        const [book] = await db
+          .insert(bookCache)
+          .values(bookData)
+          .returning();
+        
+        return book;
+      }
     } catch (error) {
       log(`Error caching book: ${error instanceof Error ? error.message : String(error)}`, 'cache');
       throw error;
