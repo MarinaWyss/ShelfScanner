@@ -2,9 +2,9 @@ import {
   users, type User, type InsertUser,
   preferences, type Preference, type InsertPreference,
   books, type Book, type InsertBook,
-  recommendations, type Recommendation, type InsertRecommendation,
   savedBooks, type SavedBook, type InsertSavedBook,
-  bookCache, type BookCache, type InsertBookCache
+  bookCache, type BookCache, type InsertBookCache,
+  type Recommendation // Now just an interface, not a table
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, asc, or, sql, lte, gte } from "drizzle-orm";
@@ -108,56 +108,8 @@ export class DatabaseStorage implements IStorage {
     return book;
   }
 
-  // Recommendations methods
-  async getRecommendationsByUserId(userId: number): Promise<Recommendation[]> {
-    return db.select().from(recommendations).where(eq(recommendations.userId, userId));
-  }
-
-  async createRecommendation(insertRecommendation: InsertRecommendation): Promise<Recommendation> {
-    const [recommendation] = await db
-      .insert(recommendations)
-      .values(insertRecommendation)
-      .returning();
-    return recommendation;
-  }
-
-  async updateRecommendation(id: number, updates: Partial<InsertRecommendation>): Promise<Recommendation | undefined> {
-    try {
-      const [updatedRecommendation] = await db
-        .update(recommendations)
-        .set(updates)
-        .where(eq(recommendations.id, id))
-        .returning();
-      
-      if (updatedRecommendation) {
-        log(`Updated recommendation: "${updatedRecommendation.title}" with enhanced data`, 'storage');
-      }
-      
-      return updatedRecommendation || undefined;
-    } catch (error) {
-      log(`Error updating recommendation: ${error instanceof Error ? error.message : String(error)}`, 'storage');
-      return undefined;
-    }
-  }
-  
-  /**
-   * Delete all recommendations for a user
-   * This ensures that we only show recommendations from the current image
-   */
-  async deleteAllRecommendations(userId: number): Promise<number> {
-    try {
-      const result = await db.delete(recommendations)
-        .where(eq(recommendations.userId, userId))
-        .returning();
-      
-      const count = result.length;
-      log(`Deleted ${count} previous recommendations for user ${userId}`, 'storage');
-      return count;
-    } catch (error) {
-      log(`Error deleting recommendations: ${error instanceof Error ? error.message : String(error)}`, 'storage');
-      return 0;
-    }
-  }
+  // NOTE: Recommendations are now ephemeral (generated on-demand)
+  // We've removed all database-related recommendation methods
 
   // Saved Books methods
   async getSavedBooksByDeviceId(deviceId: string): Promise<SavedBook[]> {

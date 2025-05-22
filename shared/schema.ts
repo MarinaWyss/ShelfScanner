@@ -52,27 +52,8 @@ export const insertBookSchema = createInsertSchema(books).pick({
   metadata: true,
 });
 
-// Book recommendations schema
-export const recommendations = pgTable("recommendations", {
-  id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(),
-  bookId: integer("book_id").notNull(),
-  title: text("title").notNull(),
-  author: text("author").notNull(),
-  coverUrl: text("cover_url"),
-  rating: text("rating"),
-  summary: text("summary"),
-});
-
-export const insertRecommendationSchema = createInsertSchema(recommendations).pick({
-  userId: true,
-  bookId: true,
-  title: true,
-  author: true,
-  coverUrl: true,
-  rating: true,
-  summary: true,
-});
+// NOTE: Recommendations are now generated on-demand and not stored in the database
+// We've removed the recommendations table in favor of an ephemeral approach
 
 // Saved books schema
 export const savedBooks = pgTable("saved_books", {
@@ -105,8 +86,16 @@ export type InsertPreference = z.infer<typeof insertPreferenceSchema>;
 export type Book = typeof books.$inferSelect;
 export type InsertBook = z.infer<typeof insertBookSchema>;
 
-export type Recommendation = typeof recommendations.$inferSelect;
-export type InsertRecommendation = z.infer<typeof insertRecommendationSchema>;
+// Recommendation types are now defined as interfaces since we're using ephemeral recommendations
+export interface Recommendation {
+  title: string;
+  author: string;
+  coverUrl?: string;
+  rating?: string;
+  summary?: string;
+  matchScore?: number;
+  matchReason?: string;
+}
 
 export type SavedBook = typeof savedBooks.$inferSelect;
 export type InsertSavedBook = z.infer<typeof insertSavedBookSchema>;
