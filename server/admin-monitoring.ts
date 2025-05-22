@@ -9,9 +9,9 @@ const router = Router();
 const sessions = new Map<string, { username: string, expires: Date }>();
 
 // Admin credentials (in production, use environment variables)
-const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
-// Default password: 'admin1234' (make sure to change this in production)
-const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH || hashPassword('admin1234');
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'bookshelf_admin';
+// More secure password
+const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH || hashPassword('BookScan@2025');
 
 /**
  * Hash a password using SHA-256

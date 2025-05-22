@@ -91,10 +91,10 @@ export default function LoginForm({ onLoginSuccess }: LoginFormProps) {
       </Button>
       
       <div className="text-xs text-gray-500 mt-4">
-        <p>Default credentials:</p>
-        <p>Username: admin</p>
-        <p>Password: admin1234</p>
-        <p className="mt-1">Note: Change these in production by setting ADMIN_USERNAME and ADMIN_PASSWORD_HASH environment variables.</p>
+        <p>Admin credentials:</p>
+        <p>Username: bookshelf_admin</p>
+        <p>Password: BookScan@2025</p>
+        <p className="mt-1">Note: For additional security, you can change these by setting ADMIN_USERNAME and ADMIN_PASSWORD_HASH environment variables.</p>
       </div>
     </form>
   );
