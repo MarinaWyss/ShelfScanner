@@ -37,9 +37,9 @@ export default function Home() {
       </div>
 
       <div className="my-12">
-        <Card className="border border-gray-200 bg-white shadow-sm overflow-hidden max-w-xl mx-auto">
+        <Card className="border border-gray-200 bg-white shadow-sm overflow-hidden">
           <CardContent className="p-6">
-            <div className="flex items-start mb-4">
+            <div className="flex items-start">
               <div className="bg-violet-50 text-violet-300 h-10 w-10 rounded-full flex items-center justify-center mr-4 shrink-0">
                 <svg 
                   xmlns="http://www.w3.org/2000/svg" 
@@ -61,14 +61,14 @@ export default function Home() {
                 <p className="text-gray-600 mt-1">
                   Take a photo of an entire bookshelf at stores, the library, or a friend's house, and we'll help you figure out which ones you'll like!
                 </p>
+                <Link href="/books" className="flex items-center text-black hover:text-gray-800 font-medium text-sm mt-3">
+                  <span>Start scanning</span>
+                  <svg className="ml-1 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                  </svg>
+                </Link>
               </div>
             </div>
-            <Link href="/books" className="flex items-center text-black hover:text-gray-800 font-medium text-sm mt-3">
-              <span>Start scanning</span>
-              <svg className="ml-1 h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </Link>
           </CardContent>
         </Card>
       </div>
