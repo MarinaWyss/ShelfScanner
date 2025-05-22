@@ -23,7 +23,7 @@ export default function TechImplementation() {
               <li><strong>Backend API:</strong> Express.js REST API with TypeScript</li>
               <li><strong>Database:</strong> PostgreSQL with Drizzle ORM for type-safe database operations</li>
               <li><strong>AI Integrations:</strong> OpenAI API for book descriptions, ratings, and recommendations</li>
-              <li><strong>Authentication:</strong> Device ID-based authentication with optional Google OAuth</li>
+              <li><strong>Device Tracking:</strong> Device ID-based user tracking for personalized recommendations</li>
             </ul>
           </CardContent>
         </Card>
