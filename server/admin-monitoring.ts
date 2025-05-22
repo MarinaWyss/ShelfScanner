@@ -63,8 +63,20 @@ function requireAuth(req: Request, res: Response, next: NextFunction) {
 router.post('/login', (req: Request, res: Response) => {
   const { username, password } = req.body;
   
-  // Use the specified login credentials
-  if (username !== 'scanme' || password !== 'Sc4nnerD@rkly') {
+  // Check if environment variables are set
+  const envUsername = process.env.ADMIN_USERNAME;
+  const envPassword = process.env.ADMIN_PASSWORD;
+  
+  // If environment variables aren't set, return a configuration error
+  if (!envUsername || !envPassword) {
+    console.error('Admin credentials not configured in environment variables');
+    return res.status(500).json({ 
+      message: 'Admin dashboard is not properly configured. Please set ADMIN_USERNAME and ADMIN_PASSWORD environment variables.'
+    });
+  }
+  
+  // Check credentials against environment variables
+  if (username !== envUsername || password !== envPassword) {
     // Log failed login attempt
     console.warn(`Failed admin login attempt for username: ${username}`);
     return res.status(401).json({ message: 'Invalid username or password' });
