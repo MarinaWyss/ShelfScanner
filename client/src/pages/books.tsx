@@ -190,34 +190,34 @@ export default function Books() {
   };
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-foreground mb-1">Book Scanner</h1>
-        <p className="text-muted-foreground">
+    <div className="p-6 sm:p-8 lg:p-10 max-w-6xl mx-auto">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">Book Scanner</h1>
+        <p className="text-gray-600 text-lg">
           Scan books to get personalized recommendations
         </p>
       </div>
 
       {/* Progress Bar */}
-      <Card className="mb-6 border-slate-700 bg-slate-800 shadow-lg">
+      <Card className="mb-8 border border-gray-200 bg-white shadow-sm">
         <CardContent className="pt-6">
           <div className="flex items-center mb-6">
             <div className="flex-1">
               <div className="relative">
-                <div className="h-1 bg-slate-700 rounded-full w-full"></div>
+                <div className="h-1 bg-gray-100 rounded-full w-full"></div>
                 <div 
-                  className="absolute inset-y-0 left-0 bg-primary rounded-full"
+                  className="absolute inset-y-0 left-0 bg-blue-600 rounded-full"
                   style={{ width: `${(currentStep / 3) * 100}%` }}
                 ></div>
               </div>
               <div className="flex justify-between mt-2">
-                <span className={`text-sm ${currentStep >= 1 ? 'text-primary font-medium' : 'text-slate-400'}`}>
+                <span className={`text-sm ${currentStep >= 1 ? 'text-blue-600 font-medium' : 'text-gray-400'}`}>
                   Preferences
                 </span>
-                <span className={`text-sm ${currentStep >= 2 ? 'text-primary font-medium' : 'text-slate-400'}`}>
+                <span className={`text-sm ${currentStep >= 2 ? 'text-blue-600 font-medium' : 'text-gray-400'}`}>
                   Book Upload
                 </span>
-                <span className={`text-sm ${currentStep >= 3 ? 'text-primary font-medium' : 'text-slate-400'}`}>
+                <span className={`text-sm ${currentStep >= 3 ? 'text-blue-600 font-medium' : 'text-gray-400'}`}>
                   Recommendations
                 </span>
               </div>
