@@ -222,6 +222,23 @@ export class DatabaseStorage implements IStorage {
       return undefined;
     }
   }
+  
+  async getBookCacheById(id: number): Promise<BookCache | undefined> {
+    try {
+      const [book] = await db.select().from(bookCache).where(eq(bookCache.id, id));
+      
+      if (book) {
+        log(`Book cache retrieved for ID ${id}`, 'cache');
+      } else {
+        log(`No book cache found for ID ${id}`, 'cache');
+      }
+      
+      return book;
+    } catch (error) {
+      log(`Error getting book cache by ID: ${error instanceof Error ? error.message : String(error)}`, 'cache');
+      return undefined;
+    }
+  }
 
   async cacheBook(bookData: InsertBookCache): Promise<BookCache> {
     try {
