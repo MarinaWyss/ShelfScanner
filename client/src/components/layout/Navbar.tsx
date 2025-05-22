@@ -1,4 +1,6 @@
 import { Link, useLocation } from "wouter";
+import GoogleLoginButton from "@/components/auth/GoogleLoginButton";
+import { useAuth } from "@/contexts/AuthContext";
 
 interface NavbarProps {
   sidebarOpen: boolean;
@@ -8,6 +10,7 @@ interface NavbarProps {
 
 export default function Navbar({ sidebarOpen, toggleSidebar, toggleContact }: NavbarProps) {
   const [location] = useLocation();
+  const { user } = useAuth();
 
   return (
     <>
@@ -51,6 +54,14 @@ export default function Navbar({ sidebarOpen, toggleSidebar, toggleContact }: Na
           </div>
           
           <div className="flex items-center gap-4">
+            <div className="hidden md:block">
+              <GoogleLoginButton 
+                variant="outline" 
+                size="sm" 
+                className="border-slate-700 text-slate-200 hover:bg-slate-800" 
+              />
+            </div>
+            
             <button onClick={toggleContact} className="text-slate-300 hover:text-white flex items-center gap-2">
               <svg 
                 xmlns="http://www.w3.org/2000/svg" 
@@ -164,7 +175,7 @@ export default function Navbar({ sidebarOpen, toggleSidebar, toggleContact }: Na
           </div>
           
           <div className="p-4 border-t border-slate-700">
-            <div className="bg-slate-700 rounded-lg p-3">
+            <div className="bg-slate-700 rounded-lg p-3 mb-3">
               <p className="text-sm text-slate-300 mb-2">
                 Questions or suggestions? Get in touch with our team
               </p>
@@ -188,6 +199,20 @@ export default function Navbar({ sidebarOpen, toggleSidebar, toggleContact }: Na
                 </svg>
                 <span>Contact Us</span>
               </button>
+            </div>
+            
+            {/* Cross-device access with Google login */}
+            <div className="bg-slate-700 rounded-lg p-3">
+              <p className="text-sm text-slate-300 mb-2">
+                Use your books across all devices
+              </p>
+              <div className="w-full">
+                <GoogleLoginButton 
+                  variant="default"
+                  size="sm"
+                  className="w-full"
+                />
+              </div>
             </div>
           </div>
         </nav>
