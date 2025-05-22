@@ -1,6 +1,4 @@
 import { Link, useLocation } from "wouter";
-import GoogleLoginButton from "@/components/auth/GoogleLoginButton";
-import { useAuth } from "@/contexts/AuthContext";
 
 interface NavbarProps {
   sidebarOpen: boolean;
@@ -10,7 +8,6 @@ interface NavbarProps {
 
 export default function Navbar({ sidebarOpen, toggleSidebar, toggleContact }: NavbarProps) {
   const [location] = useLocation();
-  const { user } = useAuth();
 
   return (
     <>
@@ -54,14 +51,6 @@ export default function Navbar({ sidebarOpen, toggleSidebar, toggleContact }: Na
           </div>
           
           <div className="flex items-center gap-4">
-            <div className="hidden md:block">
-              <GoogleLoginButton 
-                variant="outline" 
-                size="sm" 
-                className="border-gray-200 text-gray-700 hover:bg-gray-50 transition-colors" 
-              />
-            </div>
-            
             <button onClick={toggleContact} className="text-gray-700 hover:text-gray-900 flex items-center gap-2 transition-colors">
               <svg 
                 xmlns="http://www.w3.org/2000/svg" 

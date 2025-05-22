@@ -1,39 +1,16 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { getDeviceId, syncDeviceIdCookie } from '@/lib/deviceId';
-import { 
-  initializeGoogleAuth, 
-  signInWithGoogle, 
-  signOutFromGoogle, 
-  getCurrentGoogleUser, 
-  isSignedInWithGoogle,
-  type GoogleUser
-} from '@/lib/googleAuth';
-
-// Define the User type
-interface User {
-  id: string;
-  name?: string;
-  email?: string;
-  picture?: string;
-  isGoogleAccount: boolean;
-}
 
 // Auth context interface
 interface AuthContextType {
-  user: User | null;
   deviceId: string;
   isLoading: boolean;
-  loginWithGoogle: () => void;
-  logout: () => void;
 }
 
 // Create context with default values
 const AuthContext = createContext<AuthContextType>({
-  user: null,
   deviceId: '',
   isLoading: true,
-  loginWithGoogle: () => {},
-  logout: () => {},
 });
 
 // Provider component

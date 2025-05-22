@@ -15,19 +15,7 @@ import ContactForm from "@/components/contact/ContactForm";
 import { AuthProvider } from "./contexts/AuthContext";
 import { syncDeviceIdCookie } from "./lib/deviceId";
 
-// Load Google API script
-const loadGoogleScript = () => {
-  const id = 'google-script';
-  // Return early if script is already loaded
-  if (document.getElementById(id)) return;
-  
-  const script = document.createElement('script');
-  script.id = id;
-  script.src = 'https://apis.google.com/js/platform.js';
-  script.async = true;
-  script.defer = true;
-  document.body.appendChild(script);
-};
+// Google script loading removed
 
 function Router() {
   return (
@@ -49,13 +37,10 @@ function App() {
   const toggleSidebar = () => setSidebarOpen(!sidebarOpen);
   const toggleContact = () => setContactOpen(!contactOpen);
 
-  // Initialize device ID and load Google scripts on app load
+  // Initialize device ID on app load
   useEffect(() => {
     // Ensure device ID is set and synced with cookies
     syncDeviceIdCookie();
-    
-    // Load Google API script for authentication
-    loadGoogleScript();
   }, []);
 
   return (
