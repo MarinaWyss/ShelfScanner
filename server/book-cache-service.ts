@@ -284,19 +284,41 @@ export class BookCacheService {
         // First check if we already have this book in cache to preserve its data
         const existingBook = await this.findInCache(title, author);
         
-        // Prepare cache data, preserving any existing fields
-        const cacheData: any = {
+        // Prepare cache data object with the new summary
+        const cacheData: {
+          title: string;
+          author: string;
+          summary: string;
+          source: "openai";
+          isbn?: string;
+          coverUrl?: string;
+          rating?: string;
+          metadata?: any;
+          expiresAt: Date;
+        } = {
           title,
           author,
           summary,
-          expiresAt,
           source: 'openai',
-          // Preserve existing data if available
-          isbn: existingBook?.isbn || null,
-          coverUrl: existingBook?.coverUrl || null,
-          rating: existingBook?.rating || null,
-          metadata: existingBook?.metadata || {}
+          expiresAt
         };
+        
+        // Preserve existing data if available
+        if (existingBook?.isbn) {
+          cacheData.isbn = existingBook.isbn;
+        }
+        
+        if (existingBook?.coverUrl) {
+          cacheData.coverUrl = existingBook.coverUrl;
+        }
+        
+        if (existingBook?.rating) {
+          cacheData.rating = existingBook.rating;
+        }
+        
+        if (existingBook?.metadata) {
+          cacheData.metadata = existingBook.metadata;
+        }
         
         await this.cacheBook(cacheData);
         
@@ -409,19 +431,45 @@ export class BookCacheService {
       // First check if we already have this book in cache to preserve its data
       const existingBook = await this.findInCache(title, author);
       
-      // Cache the rating while preserving existing data
-      await this.cacheBook({
+      // Prepare cache data object with only the new rating
+      const cacheData: {
+        title: string;
+        author: string;
+        isbn?: string;
+        rating: string;
+        source: "openai";
+        summary?: string;
+        coverUrl?: string;
+        metadata?: any;
+        expiresAt: Date;
+      } = {
         title,
         author,
-        isbn,
         rating,
         source: 'openai',
-        // Preserve existing data if available
-        summary: existingBook?.summary,
-        coverUrl: existingBook?.coverUrl,
-        metadata: existingBook?.metadata,
         expiresAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000) // 90 days
-      });
+      };
+      
+      // Add ISBN if available
+      if (isbn) {
+        cacheData.isbn = isbn;
+      }
+      
+      // Preserve existing data if available
+      if (existingBook?.summary) {
+        cacheData.summary = existingBook.summary;
+      }
+      
+      if (existingBook?.coverUrl) {
+        cacheData.coverUrl = existingBook.coverUrl;
+      }
+      
+      if (existingBook?.metadata) {
+        cacheData.metadata = existingBook.metadata;
+      }
+      
+      // Cache the rating with preserved data
+      await this.cacheBook(cacheData);
       
       log(`Generated rating for "${title}": ${rating}`, 'cache');
       return rating;
