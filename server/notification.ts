@@ -84,10 +84,12 @@ export async function sendAlertEmail(params: EmailParams): Promise<boolean> {
  */
 export async function sendRateLimitAlert(api: string, usage: number, limit: number): Promise<boolean> {
   const usagePercent = ((usage / limit) * 100).toFixed(1);
+  const adminEmail = process.env.ADMIN_EMAIL || '';
+  const fromEmail = `alerts@${process.env.HOST || 'shelfscanner.app'}`;
   
   return await sendAlertEmail({
-    to: process.env.ADMIN_EMAIL || '',
-    from: `alerts@${process.env.HOST || 'shelfscanner.app'}`,
+    to: adminEmail,
+    from: fromEmail,
     subject: `⚠️ ${api} API usage at ${usagePercent}% of limit`,
     html: `
       <h2>API Rate Limit Alert</h2>
