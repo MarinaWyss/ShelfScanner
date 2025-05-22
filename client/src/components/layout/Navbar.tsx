@@ -36,7 +36,7 @@ export default function Navbar({ sidebarOpen, toggleSidebar, toggleContact }: Na
                 <line x1="4" x2="20" y1="18" y2="18" />
               </svg>
             </button>
-            <div className="flex items-center gap-2">
+            <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
               <svg 
                 xmlns="http://www.w3.org/2000/svg" 
                 className="h-7 w-7 text-gray-900" 
@@ -50,7 +50,7 @@ export default function Navbar({ sidebarOpen, toggleSidebar, toggleContact }: Na
                 <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path>
               </svg>
               <span className="text-lg font-medium text-gray-900">ShelfScanner</span>
-            </div>
+            </Link>
           </div>
           
           <div className="flex items-center gap-4">
