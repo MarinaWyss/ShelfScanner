@@ -281,13 +281,24 @@ export class BookCacheService {
         const expiresAt = new Date();
         expiresAt.setDate(expiresAt.getDate() + 120); // 120 days cache for summaries
         
-        await this.cacheBook({
+        // First check if we already have this book in cache to preserve its data
+        const existingBook = await this.findInCache(title, author);
+        
+        // Prepare cache data, preserving any existing fields
+        const cacheData: any = {
           title,
           author,
           summary,
           expiresAt,
-          source: 'openai'
-        });
+          source: 'openai',
+          // Preserve existing data if available
+          isbn: existingBook?.isbn || null,
+          coverUrl: existingBook?.coverUrl || null,
+          rating: existingBook?.rating || null,
+          metadata: existingBook?.metadata || {}
+        };
+        
+        await this.cacheBook(cacheData);
         
         log(`Successfully generated and cached summary for "${title}"`, 'cache');
       }
@@ -395,13 +406,21 @@ export class BookCacheService {
         rating = getEstimatedBookRating(title, author);
       }
       
-      // Cache the result
+      // First check if we already have this book in cache to preserve its data
+      const existingBook = await this.findInCache(title, author);
+      
+      // Cache the rating while preserving existing data
       await this.cacheBook({
         title,
         author,
         isbn,
         rating,
-        source: 'openai'
+        source: 'openai',
+        // Preserve existing data if available
+        summary: existingBook?.summary,
+        coverUrl: existingBook?.coverUrl,
+        metadata: existingBook?.metadata,
+        expiresAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000) // 90 days
       });
       
       log(`Generated rating for "${title}": ${rating}`, 'cache');

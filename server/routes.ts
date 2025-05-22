@@ -633,84 +633,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Get user recommendations with enhanced OpenAI content
+  // Get user recommendations - IMPROVED to work with ephemeral recommendations
   app.get('/api/recommendations', async (req: Request, res: Response) => {
     try {
-      const userId = 1; // Default user ID
-      const sessionId = req.query.sessionId || '';
+      // Since recommendations are now ephemeral and generated on-demand,
+      // we need to inform the client that they should use the POST endpoint
+      console.log('GET /api/recommendations requested, but recommendations are now ephemeral');
       
-      // IMPORTANT: Clear all previous recommendations before returning new ones
-      // This ensures we only show recommendations from the current image
-      if (!sessionId) {
-        // If no sessionId provided, delete all previous recommendations
-        await storage.deleteAllRecommendations(userId);
-        console.log('Cleared all previous recommendations to ensure fresh results');
-      }
-      
-      // Get recommendations from storage (now only the latest ones will exist)
-      let recommendations = await storage.getRecommendationsByUserId(userId);
-      
-      console.log(`Retrieved ${recommendations.length} recommendations for current session`);
-      
-      // Enhance recommendations with OpenAI-generated content when needed
-      recommendations = await Promise.all(recommendations.map(async (recommendation) => {
-        // Get OpenAI summary if missing
-        if (!recommendation.summary) {
-          try {
-            // Get the enhanced summary from OpenAI through the cache service
-            const enhancedSummary = await bookCacheService.getEnhancedSummary(
-              recommendation.title, 
-              recommendation.author
-            );
-            
-            if (enhancedSummary) {
-              // Update the recommendation object
-              recommendation.summary = enhancedSummary;
-              
-              // Also update in the database for future requests
-              await storage.updateRecommendation(recommendation.id, {
-                summary: enhancedSummary
-              });
-              
-              console.log(`Enhanced recommendation summary for "${recommendation.title}" with OpenAI`);
-            }
-          } catch (error) {
-            console.error(`Error enhancing recommendation summary for "${recommendation.title}":`, error);
-          }
-        }
-        
-        // Get enhanced rating if missing
-        if (!recommendation.rating) {
-          try {
-            const enhancedRating = await bookCacheService.getEnhancedRating(
-              recommendation.title, 
-              recommendation.author
-            );
-            
-            if (enhancedRating) {
-              // Update the recommendation object
-              recommendation.rating = enhancedRating;
-              
-              // Also update in the database for future requests
-              await storage.updateRecommendation(recommendation.id, {
-                rating: enhancedRating
-              });
-              
-              console.log(`Enhanced recommendation rating for "${recommendation.title}" with OpenAI: ${enhancedRating}`);
-            }
-          } catch (error) {
-            console.error(`Error enhancing recommendation rating for "${recommendation.title}":`, error);
-          }
-        }
-        
-        return recommendation;
-      }));
-      
-      return res.status(200).json(recommendations);
+      return res.status(200).json({ 
+        message: 'Recommendations are now generated on-demand and not stored. Please use POST /api/recommendations with your detected books to get recommendations.',
+        recommendations: [] 
+      });
     } catch (error) {
-      console.error('Error getting recommendations:', error);
+      console.error('Error with recommendations endpoint:', error);
       return res.status(500).json({ 
-        message: 'Error getting recommendations',
+        message: 'Error with recommendations endpoint',
         error: error instanceof Error ? error.message : String(error)
       });
     }
