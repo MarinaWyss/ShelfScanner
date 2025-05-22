@@ -2,6 +2,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import cookieParser from "cookie-parser";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { ensureDeviceId } from "./middleware/deviceId";
 
 const app = express();
 // Increase payload limit to 50MB for handling large CSV files
