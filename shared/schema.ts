@@ -38,11 +38,17 @@ export const insertPreferenceSchema = createInsertSchema(preferences).pick({
 // We've removed the recommendations table in favor of an ephemeral approach
 
 // Book cache schema for storing book metadata to reduce external API calls
+// We'll create a unique book identifier from ISBN if available, or title+author if not
 export const bookCache = pgTable("book_cache", {
+  // Keep the numeric ID for now as we transition
   id: serial("id").primaryKey(),
+  // Make title and author required for all books
   title: text("title").notNull(),
   author: text("author").notNull(),
-  isbn: varchar("isbn", { length: 30 }),
+  // ISBN is optional but unique when provided
+  isbn: varchar("isbn", { length: 30 }).unique(),
+  // Generate a unique book identifier as title+author for books without ISBN
+  bookId: text("book_id").notNull().unique(),
   coverUrl: text("cover_url"),
   rating: varchar("rating", { length: 10 }),
   summary: text("summary"),
@@ -56,6 +62,7 @@ export const insertBookCacheSchema = createInsertSchema(bookCache).pick({
   title: true,
   author: true,
   isbn: true,
+  bookId: true,
   coverUrl: true,
   rating: true,
   summary: true,

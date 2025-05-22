@@ -228,12 +228,30 @@ export class DatabaseStorage implements IStorage {
 
   async cacheBook(bookData: InsertBookCache): Promise<BookCache> {
     try {
-      // First, check if the book already exists in the cache
-      const existingBook = await this.findBookInCache(bookData.title, bookData.author);
+      // Generate a unique bookId from ISBN or title+author
+      let bookId = '';
+      if (bookData.isbn) {
+        // Use ISBN directly if available
+        bookId = `isbn_${bookData.isbn.replace(/[^0-9X]/g, '')}`;
+      } else {
+        // Create a normalized ID from title and author
+        const normalizedTitle = bookData.title.toLowerCase().trim();
+        const normalizedAuthor = bookData.author.toLowerCase().trim();
+        bookId = `book_${normalizedTitle.replace(/[^a-z0-9]/g, '_')}_${normalizedAuthor.replace(/[^a-z0-9]/g, '_')}`;
+      }
+      
+      // Add bookId to the data
+      const bookDataWithId = {
+        ...bookData,
+        bookId
+      };
+      
+      // Check if book already exists by bookId
+      const [existingBook] = await db.select().from(bookCache).where(eq(bookCache.bookId, bookId));
       
       if (existingBook) {
         // Update the existing book
-        log(`Updating existing cache entry for "${bookData.title}" by ${bookData.author}`, 'cache');
+        log(`Updating existing cache entry for "${bookData.title}" (ID: ${bookId})`, 'cache');
         const [updatedBook] = await db
           .update(bookCache)
           .set({
@@ -244,7 +262,7 @@ export class DatabaseStorage implements IStorage {
             source: bookData.source || existingBook.source,
             metadata: bookData.metadata || existingBook.metadata,
             expiresAt: bookData.expiresAt || existingBook.expiresAt,
-            updatedAt: new Date()
+            cachedAt: new Date() // Update the cached timestamp
           })
           .where(eq(bookCache.id, existingBook.id))
           .returning();
@@ -252,10 +270,10 @@ export class DatabaseStorage implements IStorage {
         return updatedBook;
       } else {
         // Insert new book
-        log(`Creating new cache entry for "${bookData.title}" by ${bookData.author}`, 'cache');
+        log(`Creating new cache entry for "${bookData.title}" (ID: ${bookId})`, 'cache');
         const [book] = await db
           .insert(bookCache)
-          .values(bookData)
+          .values(bookDataWithId)
           .returning();
         
         return book;
