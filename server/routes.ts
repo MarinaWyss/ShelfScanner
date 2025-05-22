@@ -25,7 +25,11 @@ const upload = multer({
 
 import { registerEnvRoutes } from './env-routes';
 
+import { authRoutes } from './auth-routes';
+
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Register auth routes
+  app.use('/api/auth', authRoutes);
   // Clean up non-OpenAI ratings to ensure consistent OpenAI-generated content
   try {
     const cleanedCount = await bookCacheService.cleanupNonOpenAIRatings();

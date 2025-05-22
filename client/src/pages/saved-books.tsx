@@ -31,11 +31,6 @@ export default function SavedBooks() {
         setIsLoading(true);
         setError(null); // Clear any previous errors
         
-        // Set consistent deviceId cookie with longer expiration
-        const deviceId = "device_1747757269918_qk38pmaz8";
-        document.cookie = `deviceId=${deviceId}; path=/; max-age=31536000; SameSite=Lax`;
-        console.log("Setting device ID:", deviceId);
-        
         // Use the fetch API with credentials included
         const response = await fetch('/api/saved-books', {
           credentials: 'include',

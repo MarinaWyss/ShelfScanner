@@ -9,6 +9,7 @@ const app = express();
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: false, limit: '50mb' }));
 app.use(cookieParser());
+app.use(ensureDeviceId);
 
 app.use((req, res, next) => {
   const start = Date.now();
