@@ -252,17 +252,14 @@ export default function Books() {
 
           {/* Navigation Buttons */}
           <div className="flex justify-between mt-8">
-            <button 
-              onClick={prevStep}
-              disabled={currentStep === 1}
-              className={`px-4 py-2 border rounded-md text-sm font-medium ${
-                currentStep === 1 
-                  ? 'text-slate-600 border-slate-700 cursor-not-allowed' 
-                  : 'text-slate-300 border-slate-600 hover:bg-slate-700 transition-colors'
-              }`}
-            >
-              Back
-            </button>
+            {currentStep > 1 && (
+              <button 
+                onClick={prevStep}
+                className="px-4 py-2 border rounded-md text-sm font-medium text-slate-300 border-slate-600 hover:bg-slate-700 transition-colors"
+              >
+                Back
+              </button>
+            )}
             {/* Continue button for steps 2 and 3 only - step 1 has its own button */}
             {currentStep === 2 && (
               <button 
