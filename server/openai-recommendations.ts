@@ -42,6 +42,14 @@ interface RecommendationResponse {
 }
 
 /**
+ * Interface for enhanced BookInfo with match details
+ */
+interface EnhancedBookInfo extends BookInfo {
+  matchScore?: number;
+  matchReason?: string;
+}
+
+/**
  * Generate book recommendations using OpenAI
  * Takes a list of books and user preferences, returns scored recommendations
  * 
@@ -108,15 +116,18 @@ export async function getOpenAIRecommendations(
       messages: [
         {
           role: "system",
-          content: `You are a book recommendation expert. Analyze the detected books and the user's preferences to provide personalized book recommendations.
-          
-Consider the following factors:
-1. Genre matches between the user's preferred genres and the book's categories
-2. Author matches if the user has read other books by the same author
-3. The user's reading history and ratings of similar books
-4. The book's overall quality and rating
+          content: `You are an expert literary recommendation system with deep knowledge of books, genres, authors, and reading patterns. Your task is to analyze the books detected in a user's bookshelf photo and provide highly personalized recommendations based on their preferences and reading history.
 
-For each book in the detected books list, assign a match score from 0-100 and explain why it would be a good recommendation.`
+Consider the following factors when generating recommendations:
+1. Genre alignment: How well the book's categories match the user's preferred genres
+2. Author familiarity: Whether the user has enjoyed other works by the same author
+3. Reading patterns: Themes, styles and subjects that appear in the user's highly-rated books
+4. Critical acclaim: The book's overall quality, cultural impact, and ratings
+5. Thematic connections: How the book connects to others the user has enjoyed
+6. Reading level and complexity: Match to the user's demonstrated preferences
+7. Cultural or historical significance: Books that expand on interests shown in their collection
+
+For each book, assign a match score from 0-100 that represents how strongly you recommend it based on these factors.`
         },
         {
           role: "user",
@@ -124,20 +135,21 @@ For each book in the detected books list, assign a match score from 0-100 and ex
           
 Here are the user's preferences: ${preferencesInput}
 
-Recommend the top books from the detected list that would be most interesting to this user.
-For each book, provide:
-1. The book title and author
-2. A match score from 0-100
-3. A brief explanation of why this book matches the user's preferences
+Analyze these books and provide personalized recommendations from this list only. Don't recommend books not in this list.
 
-IMPORTANT: Return the recommendations in this exact JSON format with no additional text before or after:
+For each recommended book, provide:
+1. The exact book title and author name as shown in the detected books list
+2. A match score from 0-100 (where higher scores indicate stronger recommendations)
+3. A concise, specific explanation (2-3 sentences) of why this book would appeal to this user based on their preferences and reading history
+
+IMPORTANT: Return your recommendations in this exact JSON format with no text before or after:
 {
   "recommendations": [
     {
       "bookTitle": "Book Title",
       "bookAuthor": "Author Name",
       "matchScore": 85,
-      "matchReason": "This book matches the user's preference for science fiction and is by an author they've rated highly."
+      "matchReason": "This book connects to the user's interest in philosophical non-fiction with its exploration of existential themes. The user has rated similar contemplative works by Seneca highly, suggesting they would appreciate this book's reflective approach to life's big questions."
     }
   ]
 }`
@@ -183,9 +195,11 @@ IMPORTANT: Return the recommendations in this exact JSON format with no addition
       log(`Successfully received ${recommendations.length} recommendations from OpenAI`, 'recommendations');
       
       // Match the recommendations back to the original book objects
-      const enhancedBooks = recommendations.map((rec: RecommendationResponse) => {
+      const enhancedBooks: EnhancedBookInfo[] = [];
+      
+      for (const rec of recommendations) {
         // Find the matching original book
-        const originalBook = books.find((book: BookInfo) => 
+        const originalBook = books.find(book => 
           book.title.toLowerCase() === rec.bookTitle.toLowerCase() ||
           book.title.toLowerCase().includes(rec.bookTitle.toLowerCase()) ||
           rec.bookTitle.toLowerCase().includes(book.title.toLowerCase())
@@ -193,19 +207,19 @@ IMPORTANT: Return the recommendations in this exact JSON format with no addition
         
         if (!originalBook) {
           log(`Could not find matching book for "${rec.bookTitle}"`, 'recommendations');
-          return null;
+          continue;
         }
         
         // Add the match score and reason to the original book
-        return {
+        enhancedBooks.push({
           ...originalBook,
           matchScore: rec.matchScore,
           matchReason: rec.matchReason
-        };
-      }).filter((book: any) => book !== null);
+        });
+      }
       
       // Sort by match score (highest first)
-      enhancedBooks.sort((a: any, b: any) => (b.matchScore || 0) - (a.matchScore || 0));
+      enhancedBooks.sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0));
       
       log(`Returning ${enhancedBooks.length} enhanced books with AI recommendations`, 'recommendations');
       return enhancedBooks as BookInfo[];
