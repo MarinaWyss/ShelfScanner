@@ -510,16 +510,18 @@ export async function getRecommendations(
       newBooks = books;
     }
 
-    // Try to use the OpenAI-powered recommendation algorithm first
-    try {
-      if (process.env.OPENAI_API_KEY) {
-        log(`Using OpenAI for intelligent book recommendations`, 'books');
+    // Always try to use OpenAI for better recommendations
+    if (process.env.OPENAI_API_KEY) {
+      try {
+        // Log that we're using OpenAI
+        log(`Using OpenAI for intelligent book recommendations with ${newBooks.length} books`, 'books');
+        
+        // Call OpenAI for recommendations
         const aiRecommendations = await getOpenAIRecommendations(newBooks, preferences);
         
         if (aiRecommendations && aiRecommendations.length > 0) {
-          log(`Successfully got ${aiRecommendations.length} OpenAI recommendations`, 'books');
+          log(`SUCCESS! Got ${aiRecommendations.length} OpenAI recommendations`, 'books');
           
-          // OpenAI successfully generated recommendations
           // Convert the recommendations to our standard format
           const formattedRecommendations = aiRecommendations.map(book => {
             return {
@@ -548,10 +550,13 @@ export async function getRecommendations(
           
           return formattedRecommendations;
         }
+      } catch (error) {
+        // Log detailed error for debugging
+        log(`OpenAI recommendations ERROR: ${error instanceof Error ? error.message : String(error)}`, 'books');
+        log('Falling back to traditional algorithm', 'books');
       }
-    } catch (error) {
-      log(`Error using OpenAI for recommendations, falling back to traditional algorithm: ${error instanceof Error ? error.message : String(error)}`, 'books');
-      // Continue with the traditional algorithm as fallback
+    } else {
+      log('OpenAI API key not available, using traditional algorithm', 'books');
     }
     
     // Fallback: Use traditional algorithm if OpenAI failed or is not available
