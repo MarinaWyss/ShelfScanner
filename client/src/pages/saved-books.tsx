@@ -141,7 +141,7 @@ export default function SavedBooks() {
             <h2 className="text-xl font-semibold mb-2 text-gray-900">Your reading list is empty</h2>
             <p className="text-gray-600 mb-6">Save books to read later by clicking "Save for Later" on any book recommendation.</p>
             <Link href="/books">
-              <Button className="bg-blue-600 hover:bg-blue-700 text-white">Scan Books Now</Button>
+              <Button className="bg-violet-600 hover:bg-violet-700 text-white">Scan Books Now</Button>
             </Link>
           </div>
         ) : (
