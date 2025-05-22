@@ -62,7 +62,9 @@ export async function searchEnhancedBooks(title: string): Promise<BookInfo[]> {
 }
 
 /**
- * Search for books using Google Books API
+ * Search for books using Google Books API - ONLY FOR IMAGES
+ * This function follows the requirement to use Google Books API only for images
+ * All other data (summaries, ratings) will come from OpenAI
  */
 async function searchGoogleBooks(title: string): Promise<BookInfo[]> {
   try {
@@ -84,27 +86,26 @@ async function searchGoogleBooks(title: string): Promise<BookInfo[]> {
       log(`Found ${googleResponse.data.items.length} results for "${title}" in Google Books API`, 'books');
       
       // Map the Google Books results to our format
+      // ONLY USING COVER IMAGES, TITLE, AUTHOR AND ISBN
       const books = googleResponse.data.items.map((item: any) => {
         const bookTitle = item.volumeInfo?.title || 'Unknown Title';
         const bookAuthor = item.volumeInfo?.authors ? item.volumeInfo.authors.join(', ') : 'Unknown Author';
         const isbn = item.volumeInfo?.industryIdentifiers?.find((id: any) => id.type === 'ISBN_13')?.identifier || '';
         
+        // ONLY INCLUDE ESSENTIAL IDENTIFYING INFO PLUS COVER IMAGE
+        // OpenAI will provide all other data
         const bookInfo: BookInfo = {
           title: bookTitle,
           author: bookAuthor,
           isbn: isbn,
           coverUrl: item.volumeInfo?.imageLinks?.thumbnail || undefined,
-          summary: item.volumeInfo?.description || undefined,
-          rating: item.volumeInfo?.averageRating ? item.volumeInfo.averageRating.toString() : undefined,
-          publisher: item.volumeInfo?.publisher,
-          categories: item.volumeInfo?.categories,
           detectedFrom: title
         };
         
         return bookInfo;
       });
       
-      // Enhance the books with OpenAI generated data
+      // Enhance the books with OpenAI generated data for summaries and ratings
       return await enhanceBookData(books);
     }
     
@@ -118,7 +119,9 @@ async function searchGoogleBooks(title: string): Promise<BookInfo[]> {
 }
 
 /**
- * Search for books using Open Library API (fallback)
+ * Search for books using Open Library API (fallback) - ONLY FOR IMAGES
+ * This function follows the requirement to use book APIs only for images
+ * All other data (summaries, ratings) will come from OpenAI
  */
 async function searchOpenLibrary(title: string): Promise<BookInfo[]> {
   try {
@@ -137,21 +140,22 @@ async function searchOpenLibrary(title: string): Promise<BookInfo[]> {
     if (openLibraryResponse.data.docs && openLibraryResponse.data.docs.length > 0) {
       log(`Found ${openLibraryResponse.data.docs.length} results for "${title}" in Open Library`, 'books');
       
-      // Map Open Library results to our format
+      // Map Open Library results to our format - ONLY USING BASIC INFO AND COVER IMAGES
       const books = openLibraryResponse.data.docs.map((doc: any) => {
+        // ONLY INCLUDE ESSENTIAL IDENTIFYING INFO PLUS COVER IMAGE
+        // OpenAI will provide all other data
         const bookInfo: BookInfo = {
           title: doc.title || 'Unknown Title',
           author: doc.author_name ? doc.author_name.join(', ') : 'Unknown Author',
           isbn: doc.isbn ? doc.isbn[0] : undefined,
           coverUrl: doc.cover_i ? `https://covers.openlibrary.org/b/id/${doc.cover_i}-M.jpg` : undefined,
-          publisher: doc.publisher ? doc.publisher[0] : undefined,
           detectedFrom: title
         };
         
         return bookInfo;
       });
       
-      // Enhance the books with OpenAI generated data
+      // Enhance the books with OpenAI generated data for summaries and ratings
       return await enhanceBookData(books);
     }
     
@@ -165,6 +169,7 @@ async function searchOpenLibrary(title: string): Promise<BookInfo[]> {
 
 /**
  * Enhance book data with OpenAI-generated ratings and summaries
+ * This function ensures that ALL ratings and summaries come exclusively from OpenAI
  */
 async function enhanceBookData(books: BookInfo[]): Promise<BookInfo[]> {
   try {
@@ -173,16 +178,16 @@ async function enhanceBookData(books: BookInfo[]): Promise<BookInfo[]> {
       books.map(async (book: BookInfo) => {
         log(`Enhancing data for book: "${book.title}" by ${book.author}`, 'books');
         
-        // Check our cache first
+        // Check our cache first - but ONLY use OpenAI-sourced data
         const cachedBook = await storage.findBookInCache(book.title, book.author);
         
-        if (cachedBook) {
-          // Use cached data where it exists and is better than what we have
-          if (cachedBook.summary && (!book.summary || book.summary.length < cachedBook.summary.length)) {
+        if (cachedBook && cachedBook.source === 'openai') {
+          // Use cached OpenAI data
+          if (cachedBook.summary) {
             book.summary = cachedBook.summary;
           }
           
-          if (cachedBook.rating && (!book.rating || cachedBook.source === 'openai')) {
+          if (cachedBook.rating) {
             book.rating = cachedBook.rating;
           }
           
@@ -190,34 +195,31 @@ async function enhanceBookData(books: BookInfo[]): Promise<BookInfo[]> {
             book.coverUrl = cachedBook.coverUrl;
           }
           
-          log(`Enhanced book "${book.title}" with cached data`, 'books');
+          log(`Enhanced book "${book.title}" with cached OpenAI data`, 'books');
           return book;
         }
         
-        // Get enhanced rating from OpenAI if missing
-        if (!book.rating) {
-          try {
-            const rating = await bookCacheService.getEnhancedRating(book.title, book.author, book.isbn);
-            if (rating) {
-              book.rating = rating;
-              log(`Enhanced rating for "${book.title}": ${rating}`, 'books');
-            }
-          } catch (error) {
-            log(`Failed to get enhanced rating for "${book.title}": ${error instanceof Error ? error.message : String(error)}`, 'books');
+        // ALWAYS get rating from OpenAI - never use data from Google Books or other sources
+        try {
+          const rating = await bookCacheService.getEnhancedRating(book.title, book.author, book.isbn);
+          if (rating) {
+            book.rating = rating;
+            log(`Enhanced rating for "${book.title}": ${rating}`, 'books');
           }
+        } catch (error) {
+          log(`Failed to get enhanced rating for "${book.title}": ${error instanceof Error ? error.message : String(error)}`, 'books');
         }
         
-        // Get enhanced summary from OpenAI if missing or short
-        if (!book.summary || book.summary.length < 100) {
-          try {
-            const summary = await bookCacheService.getEnhancedSummary(book.title, book.author, book.summary);
-            if (summary) {
-              book.summary = summary;
-              log(`Enhanced summary for "${book.title}"`, 'books');
-            }
-          } catch (error) {
-            log(`Failed to get enhanced summary for "${book.title}": ${error instanceof Error ? error.message : String(error)}`, 'books');
+        // ALWAYS get summary from OpenAI - never use data from Google Books or other sources
+        try {
+          // We're passing existing summary as null to force OpenAI to generate a new one
+          const summary = await bookCacheService.getEnhancedSummary(book.title, book.author);
+          if (summary) {
+            book.summary = summary;
+            log(`Enhanced summary for "${book.title}"`, 'books');
           }
+        } catch (error) {
+          log(`Failed to get enhanced summary for "${book.title}": ${error instanceof Error ? error.message : String(error)}`, 'books');
         }
         
         // Cache this book for future use

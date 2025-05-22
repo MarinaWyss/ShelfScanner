@@ -135,8 +135,8 @@ export async function searchBooksByTitle(title: string): Promise<any[]> {
           coverUrl: cachedBooksFromTitle.coverUrl || '',
           summary: cachedBooksFromTitle.summary || '',
           rating: cachedBooksFromTitle.rating || '',
-          publisher: cachedBooksFromTitle.metadata?.publisher || '',
-          categories: cachedBooksFromTitle.metadata?.categories || []
+          publisher: cachedBooksFromTitle.metadata ? (cachedBooksFromTitle.metadata as any).publisher || '' : '',
+          categories: cachedBooksFromTitle.metadata ? (cachedBooksFromTitle.metadata as any).categories || [] : []
         };
         
         // If the summary is sparse or missing, try to enhance it
