@@ -76,7 +76,7 @@ const AuthProviderInner: React.FC<{ children: React.ReactNode }> = ({ children }
     onSuccess: async (tokenResponse) => {
       try {
         setIsLoading(true);
-        console.log("Google login successful");
+        console.log("Google login successful", tokenResponse);
         
         // For now, create a simplified user without backend validation
         // This allows the app to work in development mode
@@ -98,7 +98,7 @@ const AuthProviderInner: React.FC<{ children: React.ReactNode }> = ({ children }
       console.error('Google login error:', error);
       setIsLoading(false);
     },
-    flow: 'implicit'
+    flow: 'implicit',
   });
 
   // Login with Google
