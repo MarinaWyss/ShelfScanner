@@ -218,7 +218,7 @@ export async function searchBooksByTitle(title: string): Promise<any[]> {
         })
       );
       
-      return booksWithRatings;
+      return booksWithoutRatings;
     }
     
     console.log(`No results found for "${title}"`);
