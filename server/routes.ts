@@ -455,47 +455,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: 'Preferences not found' });
       }
       
-      // Get books from request or from storage
-      let books = req.body.books || await storage.getBooksByUserId(userId);
+      // IMPORTANT: Only use books from the current image - no longer using stored books
+      let books = req.body.books || [];
       
       if (!books || books.length === 0) {
-        return res.status(400).json({ message: 'No books provided or found for this user' });
+        return res.status(400).json({ message: 'No books provided in the current image' });
       }
       
-      // Enhance books with OpenAI-generated ratings and summaries
+      console.log(`Processing ${books.length} books from current image only`);
+      
+      // Process books: First check cache, then get OpenAI data if needed, and store in cache
       books = await Promise.all(books.map(async (book: any) => {
-        // Always try to get rating from OpenAI first
-        try {
-          // Use the book cache service to get an enhanced rating
-          const openAIRating = await bookCacheService.getEnhancedRating(book.title, book.author, book.isbn);
-          if (openAIRating) {
-            book.rating = openAIRating;
-            console.log(`Using OpenAI rating for "${book.title}": ${openAIRating}`);
-          }
-        } catch (error) {
-          console.error(`Error getting OpenAI rating for "${book.title}":`, error);
+        console.log(`Processing book: "${book.title}" by ${book.author}`);
+        
+        // First check if we have this book in cache with OpenAI data
+        const cachedBook = await storage.findBookInCache(book.title, book.author);
+        
+        if (cachedBook && cachedBook.source === 'openai') {
+          // We have cache hit - use cached data
+          console.log(`Using cached OpenAI data for "${book.title}"`);
           
-          // Fallback to Amazon rating if OpenAI fails
-          const amazonRating = await getAmazonBookRating(book.title, book.author, book.isbn);
-          if (amazonRating) {
-            book.rating = amazonRating;
-          } else {
-            // Last resort - use estimation
-            book.rating = getEstimatedBookRating(book.title, book.author);
+          // Apply cached rating if available
+          if (cachedBook.rating) {
+            book.rating = cachedBook.rating;
+            console.log(`Using cached OpenAI rating for "${book.title}": ${cachedBook.rating}`);
+          }
+          
+          // Apply cached summary if available
+          if (cachedBook.summary) {
+            book.summary = cachedBook.summary;
+            console.log(`Using cached OpenAI summary for "${book.title}"`);
           }
         }
         
-        // Also enhance the book summary with OpenAI if it's missing or too short
+        // If rating is still missing, get fresh rating from OpenAI
+        if (!book.rating) {
+          try {
+            const rating = await bookCacheService.getEnhancedRating(book.title, book.author, book.isbn);
+            if (rating) {
+              book.rating = rating;
+              console.log(`Got fresh OpenAI rating for "${book.title}": ${rating}`);
+            }
+          } catch (error) {
+            console.error(`Error getting OpenAI rating for "${book.title}":`, error);
+            book.rating = '';  // Leave empty rather than using fallbacks
+          }
+        }
+        
+        // If summary is missing or too short, get fresh summary from OpenAI
         if (!book.summary || book.summary.length < 100) {
           try {
             const summary = await bookCacheService.getEnhancedSummary(book.title, book.author);
             if (summary) {
               book.summary = summary;
-              console.log(`Enhanced summary for "${book.title}" with OpenAI`);
+              console.log(`Got fresh OpenAI summary for "${book.title}"`);
             }
           } catch (error) {
             console.error(`Error getting OpenAI summary for "${book.title}":`, error);
+            book.summary = '';  // Leave empty rather than using fallbacks
           }
+        }
+        
+        // Ensure everything we got from OpenAI is cached for future use
+        try {
+          if (book.rating || book.summary) {
+            await storage.cacheBook({
+              title: book.title,
+              author: book.author,
+              isbn: book.isbn || null,
+              coverUrl: book.coverUrl || null,
+              rating: book.rating || null,
+              summary: book.summary || null,
+              source: 'openai',
+              metadata: {
+                publisher: book.publisher || null,
+                categories: book.categories || null
+              },
+              expiresAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000) // 90 days cache
+            });
+            console.log(`Cached OpenAI data for "${book.title}"`);
+          }
+        } catch (cacheError) {
+          console.error(`Error caching book data for "${book.title}":`, cacheError);
         }
         
         return book;
@@ -504,65 +545,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Generate recommendations
       const recommendationsData = await getRecommendations(books, preferences);
       
-      // Enhance recommendations with OpenAI content
-      for (const recommendation of recommendationsData) {
-        // Only enhance if summary is missing or too short
+      // Enhance each recommendation with OpenAI data and cache it for future use
+      const enhancedRecommendations = await Promise.all(recommendationsData.map(async (recommendation: any) => {
+        console.log(`Enhancing recommendation: "${recommendation.title}" by ${recommendation.author}`);
+        
+        // First check if we have this recommendation in cache
+        const cachedBook = await storage.findBookInCache(recommendation.title, recommendation.author);
+        
+        if (cachedBook && cachedBook.source === 'openai') {
+          // Use cached OpenAI data if available
+          console.log(`Using cached OpenAI data for recommendation "${recommendation.title}"`);
+          
+          // Use cached rating
+          if (cachedBook.rating) {
+            recommendation.rating = cachedBook.rating;
+            console.log(`Using cached OpenAI rating for recommendation "${recommendation.title}": ${cachedBook.rating}`);
+          }
+          
+          // Use cached summary
+          if (cachedBook.summary) {
+            recommendation.summary = cachedBook.summary;
+            console.log(`Using cached OpenAI summary for recommendation "${recommendation.title}"`);
+          }
+        }
+        
+        // If we still don't have a rating, get it from OpenAI
+        if (!recommendation.rating || recommendation.rating === "0") {
+          try {
+            const rating = await bookCacheService.getEnhancedRating(recommendation.title, recommendation.author);
+            if (rating) {
+              recommendation.rating = rating;
+              console.log(`Got fresh OpenAI rating for recommendation "${recommendation.title}": ${rating}`);
+            }
+          } catch (error) {
+            console.error(`Error getting OpenAI rating for recommendation "${recommendation.title}":`, error);
+          }
+        }
+        
+        // If summary is missing or too short, get it from OpenAI
         if (!recommendation.summary || recommendation.summary.length < 100) {
           try {
             const summary = await bookCacheService.getEnhancedSummary(recommendation.title, recommendation.author);
             if (summary) {
               recommendation.summary = summary;
-              console.log(`Enhanced recommendation summary for "${recommendation.title}" with OpenAI`);
+              console.log(`Got fresh OpenAI summary for recommendation "${recommendation.title}"`);
             }
           } catch (error) {
             console.error(`Error getting OpenAI summary for recommendation "${recommendation.title}":`, error);
           }
         }
         
-        // If rating is missing or zero, get one from OpenAI
-        if (!recommendation.rating || recommendation.rating === "0") {
-          try {
-            const rating = await bookCacheService.getEnhancedRating(recommendation.title, recommendation.author);
-            if (rating) {
-              recommendation.rating = rating;
-              console.log(`Enhanced recommendation rating for "${recommendation.title}" with OpenAI: ${rating}`);
-            }
-          } catch (error) {
-            console.error(`Error getting OpenAI rating for recommendation "${recommendation.title}":`, error);
+        // Cache the recommendation data
+        try {
+          if (recommendation.rating || recommendation.summary) {
+            await storage.cacheBook({
+              title: recommendation.title,
+              author: recommendation.author,
+              isbn: recommendation.isbn || null,
+              coverUrl: recommendation.coverUrl || null,
+              rating: recommendation.rating || null,
+              summary: recommendation.summary || null,
+              source: 'openai',
+              metadata: {
+                publisher: recommendation.publisher || null,
+                categories: recommendation.categories || null
+              },
+              expiresAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000) // 90 days cache
+            });
+            console.log(`Cached OpenAI data for recommendation "${recommendation.title}"`);
           }
+        } catch (cacheError) {
+          console.error(`Error caching recommendation data for "${recommendation.title}":`, cacheError);
         }
-      }
-      
-      // Save recommendations
-      const savedRecommendations = [];
-      
-      for (const recommendation of recommendationsData) {
-        // Find matching book - or use the first book as a reference
-        const matchingBook = books.find((b: any) => 
-          b.title === recommendation.title || 
-          (recommendation.isbn && b.isbn === recommendation.isbn)
-        ) || books[0];
         
-        // Ensure we have a valid bookId
-        const bookId = matchingBook?.id || 1;
-        
-        // Validate recommendation data
-        const validatedData = insertRecommendationSchema.parse({
-          userId,
-          bookId, // Use the determined bookId
-          title: recommendation.title,
-          author: recommendation.author,
-          coverUrl: recommendation.coverUrl || null,
-          summary: recommendation.summary || null,
-          rating: typeof recommendation.rating === 'string' ? recommendation.rating : (recommendation.rating?.toString() || "0")
-        });
-        
-        // Save recommendation
-        const savedRecommendation = await storage.createRecommendation(validatedData);
-        savedRecommendations.push(savedRecommendation);
-      }
+        return recommendation;
+      }));
       
-      return res.status(200).json(savedRecommendations);
+      // Return recommendations directly without storing in database
+      console.log(`Returning ${enhancedRecommendations.length} recommendations directly to client`);
+      return res.status(200).json(enhancedRecommendations);
     } catch (error) {
       console.error('Error generating recommendations:', error);
       return res.status(500).json({ 
