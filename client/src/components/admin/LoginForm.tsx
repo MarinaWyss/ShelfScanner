@@ -90,12 +90,7 @@ export default function LoginForm({ onLoginSuccess }: LoginFormProps) {
         {isLoading ? 'Logging in...' : 'Log in'}
       </Button>
       
-      <div className="text-xs text-gray-500 mt-4">
-        <p>Admin credentials:</p>
-        <p>Username: bookshelf_admin</p>
-        <p>Password: BookScan@2025</p>
-        <p className="mt-1">Note: For additional security, you can change these by setting ADMIN_USERNAME and ADMIN_PASSWORD_HASH environment variables.</p>
-      </div>
+      {/* No credentials displayed for security reasons */}
     </form>
   );
 }
