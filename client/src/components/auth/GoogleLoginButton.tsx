@@ -70,7 +70,7 @@ export default function GoogleLoginButton({
           <path d="M1 1h22v22H1z" fill="none" />
         </svg>
       )}
-      {isLoading ? 'Loading...' : 'Login to save your reading list and sync across devices'}
+      {isLoading ? 'Loading...' : 'Continue with Google'}
     </Button>
   );
 }
