@@ -576,9 +576,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/recommendations', async (req: Request, res: Response) => {
     try {
       const userId = 1; // Default user ID
+      const sessionId = req.query.sessionId || '';
       
-      // Get recommendations from storage
+      // IMPORTANT: Clear all previous recommendations before returning new ones
+      // This ensures we only show recommendations from the current image
+      if (!sessionId) {
+        // If no sessionId provided, delete all previous recommendations
+        await storage.deleteAllRecommendations(userId);
+        console.log('Cleared all previous recommendations to ensure fresh results');
+      }
+      
+      // Get recommendations from storage (now only the latest ones will exist)
       let recommendations = await storage.getRecommendationsByUserId(userId);
+      
+      console.log(`Retrieved ${recommendations.length} recommendations for current session`);
       
       // Enhance recommendations with OpenAI-generated content when needed
       recommendations = await Promise.all(recommendations.map(async (recommendation) => {

@@ -31,6 +31,7 @@ export interface IStorage {
   getRecommendationsByUserId(userId: number): Promise<Recommendation[]>;
   createRecommendation(recommendation: InsertRecommendation): Promise<Recommendation>;
   updateRecommendation(id: number, updates: Partial<InsertRecommendation>): Promise<Recommendation | undefined>;
+  deleteAllRecommendations(userId: number): Promise<number>;
   
   // Saved Books methods
   getSavedBooksByDeviceId(deviceId: string): Promise<SavedBook[]>;
@@ -136,6 +137,25 @@ export class DatabaseStorage implements IStorage {
     } catch (error) {
       log(`Error updating recommendation: ${error instanceof Error ? error.message : String(error)}`, 'storage');
       return undefined;
+    }
+  }
+  
+  /**
+   * Delete all recommendations for a user
+   * This ensures that we only show recommendations from the current image
+   */
+  async deleteAllRecommendations(userId: number): Promise<number> {
+    try {
+      const result = await db.delete(recommendations)
+        .where(eq(recommendations.userId, userId))
+        .returning();
+      
+      const count = result.length;
+      log(`Deleted ${count} previous recommendations for user ${userId}`, 'storage');
+      return count;
+    } catch (error) {
+      log(`Error deleting recommendations: ${error instanceof Error ? error.message : String(error)}`, 'storage');
+      return 0;
     }
   }
 
