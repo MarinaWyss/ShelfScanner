@@ -55,51 +55,6 @@ export const insertBookSchema = createInsertSchema(books).pick({
 // NOTE: Recommendations are now generated on-demand and not stored in the database
 // We've removed the recommendations table in favor of an ephemeral approach
 
-// Saved books schema
-export const savedBooks = pgTable("saved_books", {
-  id: serial("id").primaryKey(),
-  deviceId: text("device_id").notNull(),
-  title: text("title").notNull(),
-  author: text("author").notNull(),
-  coverUrl: text("cover_url"),
-  rating: text("rating"),
-  summary: text("summary"),
-  savedAt: timestamp("saved_at").defaultNow(),
-});
-
-export const insertSavedBookSchema = createInsertSchema(savedBooks).pick({
-  deviceId: true,
-  title: true,
-  author: true,
-  coverUrl: true,
-  rating: true,
-  summary: true,
-});
-
-// Type definitions
-export type User = typeof users.$inferSelect;
-export type InsertUser = z.infer<typeof insertUserSchema>;
-
-export type Preference = typeof preferences.$inferSelect;
-export type InsertPreference = z.infer<typeof insertPreferenceSchema>;
-
-export type Book = typeof books.$inferSelect;
-export type InsertBook = z.infer<typeof insertBookSchema>;
-
-// Recommendation types are now defined as interfaces since we're using ephemeral recommendations
-export interface Recommendation {
-  title: string;
-  author: string;
-  coverUrl?: string;
-  rating?: string;
-  summary?: string;
-  matchScore?: number;
-  matchReason?: string;
-}
-
-export type SavedBook = typeof savedBooks.$inferSelect;
-export type InsertSavedBook = z.infer<typeof insertSavedBookSchema>;
-
 // Book cache schema for storing book metadata to reduce external API calls
 export const bookCache = pgTable("book_cache", {
   id: serial("id").primaryKey(),
