@@ -48,7 +48,7 @@ export default function TechImplementation() {
               <li><strong>Responsive Design:</strong> Mobile-first approach with responsive layouts for all devices</li>
               <li><strong>Progressive Enhancement:</strong> Core functionality works without JavaScript</li>
               <li><strong>Optimized Bundle Size:</strong> Uses Vite for efficient code splitting and bundling</li>
-              <li><strong>Device Fingerprinting:</strong> Tracks user preferences with device ID</li>
+              <li><strong>User Preference System:</strong> Personalized experience based on reading interests</li>
               <li><strong>Offline Support:</strong> Caches previously viewed books for offline access</li>
             </ul>
           </CardContent>
@@ -69,11 +69,11 @@ export default function TechImplementation() {
               <li><strong>OpenAI SDK:</strong> Integration with GPT models</li>
             </ul>
 
-            <h3 className="text-xl font-medium mb-3">API Endpoints</h3>
+            <h3 className="text-xl font-medium mb-3">API Structure</h3>
             <ul className="list-disc pl-6 space-y-2">
-              <li><strong>/api/enhanced-books:</strong> Search books with AI-enhanced data</li>
-              <li><strong>/api/book-details:</strong> Get details for a specific book</li>
-              <li><strong>/api/admin:</strong> Administrative monitoring endpoints</li>
+              <li><strong>Book Search:</strong> RESTful endpoints for searching books with AI-enhanced data</li>
+              <li><strong>Book Details:</strong> Endpoints for retrieving detailed book information</li>
+              <li><strong>Administration:</strong> Secure restricted access for system monitoring</li>
             </ul>
           </CardContent>
         </Card>
@@ -84,15 +84,14 @@ export default function TechImplementation() {
         <h2 className="text-2xl font-semibold text-gray-900 mb-4">Database Implementation</h2>
         <Card>
           <CardContent className="pt-6">
-            <h3 className="text-xl font-medium mb-3">Schema Design</h3>
+            <h3 className="text-xl font-medium mb-3">Data Storage Approach</h3>
             <p className="mb-4">
-              The database schema is designed for performance and scalability using Drizzle ORM for type-safe operations:
+              The application uses a well-structured database design for performance and scalability with Drizzle ORM for type-safe operations:
             </p>
             <ul className="list-disc pl-6 space-y-2">
-              <li><strong>Users:</strong> Stores user credentials and profile information</li>
-              <li><strong>Preferences:</strong> Stores user reading preferences with device ID mapping</li>
-              <li><strong>BookCache:</strong> Caches book data from external APIs and AI-generated content</li>
-              <li><strong>SavedBooks:</strong> Stores user's saved/favorited books</li>
+              <li><strong>User Data:</strong> Safe storage of user reading preferences and profile information</li>
+              <li><strong>Content Caching:</strong> Efficient storage of book data from external sources and AI-generated content</li>
+              <li><strong>User Collections:</strong> System for tracking user's saved and favorite reading materials</li>
             </ul>
 
             <h3 className="text-xl font-medium mt-6 mb-3">Data Flow</h3>
@@ -120,15 +119,15 @@ export default function TechImplementation() {
               <li><strong>Recommendation Engine:</strong> AI-powered personalized book recommendations</li>
             </ul>
 
-            <h3 className="text-xl font-medium mb-3">Rate Limiting and Caching</h3>
+            <h3 className="text-xl font-medium mb-3">Optimization Strategies</h3>
             <p className="mb-4">
-              To optimize API usage and costs, the application implements:
+              To deliver a responsive user experience while managing resources efficiently:
             </p>
             <ul className="list-disc pl-6 space-y-2">
-              <li><strong>Intelligent Rate Limiting:</strong> Custom rate limiter prevents API quota exhaustion</li>
-              <li><strong>Long-term Caching:</strong> AI-generated content is cached for 90 days</li>
-              <li><strong>Fallback Mechanisms:</strong> Static data and approximations when API limits are reached</li>
-              <li><strong>Background Processing:</strong> Non-critical AI tasks run in the background</li>
+              <li><strong>Intelligent Resource Management:</strong> Smart allocation of AI resources based on demand</li>
+              <li><strong>Content Persistence:</strong> Efficient long-term storage of AI-generated content</li>
+              <li><strong>Graceful Degradation:</strong> Ensures consistent user experience under all conditions</li>
+              <li><strong>Asynchronous Processing:</strong> Non-critical tasks are handled in the background</li>
             </ul>
           </CardContent>
         </Card>
@@ -147,12 +146,12 @@ export default function TechImplementation() {
               <li><strong>Optimized API Calls:</strong> Batching and caching to minimize network requests</li>
             </ul>
 
-            <h3 className="text-xl font-medium mb-3">Monitoring & Logging</h3>
+            <h3 className="text-xl font-medium mb-3">Monitoring & Analytics</h3>
             <ul className="list-disc pl-6 space-y-2">
-              <li><strong>Winston Logger:</strong> Structured logging with rotation for debugging</li>
-              <li><strong>API Usage Tracking:</strong> Monitors external API usage and costs</li>
-              <li><strong>Admin Dashboard:</strong> Real-time monitoring of system health and API usage</li>
-              <li><strong>Alerts:</strong> Automatic notifications for critical events</li>
+              <li><strong>Structured Logging:</strong> Comprehensive system activity tracking</li>
+              <li><strong>Resource Optimization:</strong> Monitoring systems to balance performance and costs</li>
+              <li><strong>System Health:</strong> Continuous monitoring of application components</li>
+              <li><strong>Event Notification:</strong> Automated system for important application events</li>
             </ul>
           </CardContent>
         </Card>
@@ -174,20 +173,20 @@ export default function TechImplementation() {
         </Card>
       </section>
 
-      {/* Deployment Architecture */}
+      {/* Cloud Architecture */}
       <section className="mb-12">
-        <h2 className="text-2xl font-semibold text-gray-900 mb-4">Deployment Architecture</h2>
+        <h2 className="text-2xl font-semibold text-gray-900 mb-4">Cloud Architecture</h2>
         <Card>
           <CardContent className="pt-6">
             <p className="mb-4">
-              ShelfScanner is deployed using a modern cloud-native approach:
+              ShelfScanner leverages modern cloud technology for reliability and scalability:
             </p>
             <ul className="list-disc pl-6 space-y-2">
-              <li><strong>Replit Infrastructure:</strong> Hosted on Replit's scalable platform</li>
-              <li><strong>PostgreSQL Database:</strong> Managed by Neon for serverless scaling</li>
-              <li><strong>Static Asset CDN:</strong> Fast global delivery of frontend assets</li>
-              <li><strong>Automatic Scaling:</strong> Resources scale based on demand</li>
-              <li><strong>CI/CD Pipeline:</strong> Automated testing and deployment workflow</li>
+              <li><strong>Cloud Hosting:</strong> Modern scalable hosting infrastructure</li>
+              <li><strong>Managed Database:</strong> Relational database with serverless capabilities</li>
+              <li><strong>Content Delivery:</strong> Global distribution network for fast asset delivery</li>
+              <li><strong>Dynamic Scaling:</strong> Resource allocation that adapts to user demand</li>
+              <li><strong>Continuous Deployment:</strong> Streamlined release process with automated testing</li>
             </ul>
           </CardContent>
         </Card>
