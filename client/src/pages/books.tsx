@@ -162,10 +162,12 @@ export default function Books() {
       setBookImageBase64(imageBase64);
       saveBooksMutation.mutate(books);
       
-      // Use setTimeout to ensure books are saved before requesting recommendations
-      setTimeout(() => {
-        recommendationsMutation.mutate();
-      }, 500);
+      // No longer automatically process recommendations
+      // Let the user review the detected books and click the button manually
+      toast({
+        title: "Books detected!",
+        description: `We found ${books.length} book${books.length === 1 ? '' : 's'}. Review them and click 'Get Recommendations' when ready.`,
+      });
     } else {
       toast({
         title: "No books detected",
