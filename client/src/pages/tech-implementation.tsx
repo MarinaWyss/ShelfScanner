@@ -73,7 +73,6 @@ export default function TechImplementation() {
             <ul className="list-disc pl-6 space-y-2">
               <li><strong>/api/enhanced-books:</strong> Search books with AI-enhanced data</li>
               <li><strong>/api/book-details:</strong> Get details for a specific book</li>
-              <li><strong>/api/auth:</strong> Authentication endpoints</li>
               <li><strong>/api/admin:</strong> Administrative monitoring endpoints</li>
             </ul>
           </CardContent>
@@ -165,11 +164,9 @@ export default function TechImplementation() {
         <Card>
           <CardContent className="pt-6">
             <ul className="list-disc pl-6 space-y-2">
-              <li><strong>Password Hashing:</strong> Secure password storage with modern hashing</li>
               <li><strong>HTTPS Only:</strong> All communications encrypted with TLS</li>
-              <li><strong>OAuth Integration:</strong> Secure authentication with Google</li>
               <li><strong>Content Security Policy:</strong> Prevents XSS attacks</li>
-              <li><strong>Rate Limiting:</strong> Protection against brute force attacks</li>
+              <li><strong>Rate Limiting:</strong> Protection against API abuse and DDoS attacks</li>
               <li><strong>Input Validation:</strong> Zod schema validation for all user inputs</li>
               <li><strong>Environment Variable Isolation:</strong> Secure handling of sensitive configuration</li>
             </ul>
@@ -191,26 +188,6 @@ export default function TechImplementation() {
               <li><strong>Static Asset CDN:</strong> Fast global delivery of frontend assets</li>
               <li><strong>Automatic Scaling:</strong> Resources scale based on demand</li>
               <li><strong>CI/CD Pipeline:</strong> Automated testing and deployment workflow</li>
-            </ul>
-          </CardContent>
-        </Card>
-      </section>
-
-      {/* Future Technical Roadmap */}
-      <section>
-        <h2 className="text-2xl font-semibold text-gray-900 mb-4">Technical Roadmap</h2>
-        <Card>
-          <CardContent className="pt-6">
-            <p className="mb-4">
-              Planned technical enhancements for future releases:
-            </p>
-            <ul className="list-disc pl-6 space-y-2">
-              <li><strong>Computer Vision Integration:</strong> Enhanced book cover recognition</li>
-              <li><strong>PWA Implementation:</strong> Full offline capabilities</li>
-              <li><strong>Serverless Functions:</strong> Microservices architecture for scalability</li>
-              <li><strong>GraphQL API:</strong> More efficient data querying</li>
-              <li><strong>User Preference Learning:</strong> Enhanced ML models for better recommendations</li>
-              <li><strong>WebAssembly Integration:</strong> Client-side ML acceleration</li>
             </ul>
           </CardContent>
         </Card>
