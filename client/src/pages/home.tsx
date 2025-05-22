@@ -40,7 +40,7 @@ export default function Home() {
         <Card className="border border-gray-200 bg-white shadow-sm overflow-hidden max-w-xl mx-auto">
           <CardContent className="p-6">
             <div className="flex items-start mb-4">
-              <div className="bg-red-50 text-red-600 h-10 w-10 rounded-full flex items-center justify-center mr-4 shrink-0">
+              <div className="bg-violet-50 text-violet-300 h-10 w-10 rounded-full flex items-center justify-center mr-4 shrink-0">
                 <svg 
                   xmlns="http://www.w3.org/2000/svg" 
                   width="24" 
@@ -109,7 +109,7 @@ export default function Home() {
       </div>
 
       <div className="mt-16 text-center">
-        <div className="inline-flex justify-center items-center bg-green-50 text-green-600 h-12 w-12 rounded-full mb-4">
+        <div className="inline-flex justify-center items-center bg-violet-50 text-violet-300 h-12 w-12 rounded-full mb-4">
           <svg 
             xmlns="http://www.w3.org/2000/svg" 
             width="24" 
