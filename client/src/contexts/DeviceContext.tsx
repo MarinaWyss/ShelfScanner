@@ -1,20 +1,20 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { getDeviceId, syncDeviceIdCookie } from '@/lib/deviceId';
 
-// Auth context interface with only device ID functionality
-interface AuthContextType {
+// Device context interface for device ID persistence
+interface DeviceContextType {
   deviceId: string;
   isLoading: boolean;
 }
 
 // Create context with default values
-const AuthContext = createContext<AuthContextType>({
+const DeviceContext = createContext<DeviceContextType>({
   deviceId: '',
   isLoading: true,
 });
 
 // Provider component
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const DeviceProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [deviceId, setDeviceId] = useState<string>('');
   const [isLoading, setIsLoading] = useState(true);
 
@@ -28,16 +28,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   return (
-    <AuthContext.Provider
+    <DeviceContext.Provider
       value={{
         deviceId,
         isLoading
       }}
     >
       {children}
-    </AuthContext.Provider>
+    </DeviceContext.Provider>
   );
 };
 
-// Custom hook for using the auth context
-export const useAuth = () => useContext(AuthContext);
+// Custom hook for using the device context
+export const useDevice = () => useContext(DeviceContext);

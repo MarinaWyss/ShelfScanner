@@ -12,7 +12,7 @@ import PrivacyPolicy from "@/pages/privacy-policy";
 import TermsConditions from "@/pages/terms-conditions";
 import Navbar from "@/components/layout/Navbar";
 import ContactForm from "@/components/contact/ContactForm";
-import { AuthProvider } from "./contexts/AuthContext";
+import { DeviceProvider } from "./contexts/DeviceContext";
 import { syncDeviceIdCookie } from "./lib/deviceId";
 
 // Google script loading removed
@@ -45,7 +45,7 @@ function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <AuthProvider>
+      <DeviceProvider>
         <TooltipProvider>
           <div className="min-h-screen flex flex-col bg-background text-foreground">
             <Navbar 
@@ -71,7 +71,7 @@ function App() {
           </div>
           <Toaster />
         </TooltipProvider>
-      </AuthProvider>
+      </DeviceProvider>
     </QueryClientProvider>
   );
 }
