@@ -116,18 +116,23 @@ export function AdMobBanner({
       platformIndicator.textContent = platform.toUpperCase();
       adElement.appendChild(platformIndicator);
       
-      // Create ad content
+      // Create ad content safely without innerHTML
       const adContent = document.createElement('div');
-      adContent.innerHTML = `
-        <div>
-          <div style="font-weight: bold; margin-bottom: 2px;">
-            Google AdMob Banner
-          </div>
-          <div style="font-size: 10px;">
-            ${getAdUnitId('banner', platform)}
-          </div>
-        </div>
-      `;
+      
+      const container = document.createElement('div');
+      
+      const titleDiv = document.createElement('div');
+      titleDiv.style.fontWeight = 'bold';
+      titleDiv.style.marginBottom = '2px';
+      titleDiv.textContent = 'Google AdMob Banner';
+      
+      const idDiv = document.createElement('div');
+      idDiv.style.fontSize = '10px';
+      idDiv.textContent = getAdUnitId('banner', platform);
+      
+      container.appendChild(titleDiv);
+      container.appendChild(idDiv);
+      adContent.appendChild(container);
       adElement.appendChild(adContent);
     }
     
@@ -217,41 +222,67 @@ export function useInterstitialAd({
         overlay.style.justifyContent = 'center';
         overlay.style.color = 'white';
         
-        // Add content to the overlay
-        overlay.innerHTML = `
-          <div style="background: #444; padding: 20px; border-radius: 10px; text-align: center; max-width: 80%;">
-            <h2 style="margin-top: 0; color: white;">Interstitial Ad</h2>
-            <p>This is a placeholder for an AdMob interstitial ad that will appear on ${platform}.</p>
-            <p style="font-size: 12px; color: #ccc;">Ad Unit ID: ${getAdUnitId('interstitial', platform)}</p>
-            <button id="close-ad-btn" style="background: #2196F3; border: none; color: white; padding: 8px 16px; margin-top: 16px; border-radius: 4px; cursor: pointer;">
-              Close Ad (3)
-            </button>
-          </div>
-        `;
+        // Add content to the overlay safely without innerHTML
+        const container = document.createElement('div');
+        container.style.background = '#444';
+        container.style.padding = '20px';
+        container.style.borderRadius = '10px';
+        container.style.textAlign = 'center';
+        container.style.maxWidth = '80%';
+        
+        const title = document.createElement('h2');
+        title.style.marginTop = '0';
+        title.style.color = 'white';
+        title.textContent = 'Interstitial Ad';
+        
+        const description = document.createElement('p');
+        description.textContent = `This is a placeholder for an AdMob interstitial ad that will appear on ${platform}.`;
+        
+        const idInfo = document.createElement('p');
+        idInfo.style.fontSize = '12px';
+        idInfo.style.color = '#ccc';
+        idInfo.textContent = `Ad Unit ID: ${getAdUnitId('interstitial', platform)}`;
+        
+        const closeBtn = document.createElement('button');
+        closeBtn.id = 'close-ad-btn';
+        closeBtn.style.background = '#2196F3';
+        closeBtn.style.border = 'none';
+        closeBtn.style.color = 'white';
+        closeBtn.style.padding = '8px 16px';
+        closeBtn.style.marginTop = '16px';
+        closeBtn.style.borderRadius = '4px';
+        closeBtn.style.cursor = 'pointer';
+        closeBtn.textContent = 'Close Ad (3)';
+        
+        container.appendChild(title);
+        container.appendChild(description);
+        container.appendChild(idInfo);
+        container.appendChild(closeBtn);
+        overlay.appendChild(container);
         
         document.body.appendChild(overlay);
         
         // Add a countdown to the close button
-        const closeBtn = document.getElementById('close-ad-btn');
+        const closeBtnElement = document.getElementById('close-ad-btn');
         let countdown = 3;
         
         const countdownInterval = setInterval(() => {
           countdown--;
-          if (closeBtn) {
-            closeBtn.textContent = `Close Ad (${countdown})`;
+          if (closeBtnElement) {
+            closeBtnElement.textContent = `Close Ad (${countdown})`;
           }
           
           if (countdown <= 0) {
             clearInterval(countdownInterval);
-            if (closeBtn) {
-              closeBtn.textContent = 'Close Ad';
+            if (closeBtnElement) {
+              closeBtnElement.textContent = 'Close Ad';
             }
           }
         }, 1000);
         
         // Add click event to close button
-        if (closeBtn) {
-          closeBtn.addEventListener('click', () => {
+        if (closeBtnElement) {
+          closeBtnElement.addEventListener('click', () => {
             if (countdown <= 0) {
               document.body.removeChild(overlay);
               setLoaded(false);
@@ -348,49 +379,97 @@ export function useRewardedAd({
         overlay.style.justifyContent = 'center';
         overlay.style.color = 'white';
         
-        // Add content to the overlay
-        overlay.innerHTML = `
-          <div style="background: #444; padding: 20px; border-radius: 10px; text-align: center; max-width: 80%;">
-            <h2 style="margin-top: 0; color: white;">Rewarded Ad</h2>
-            <p>This is a placeholder for an AdMob rewarded ad that will appear on ${platform}.</p>
-            <p style="font-size: 12px; color: #ccc;">Ad Unit ID: ${getAdUnitId('rewarded', platform)}</p>
-            <div style="margin: 16px 0;">
-              <p>Watch to receive:</p>
-              <p style="font-size: 18px; font-weight: bold; color: gold;">10 Coins</p>
-            </div>
-            <button id="watch-ad-btn" style="background: #4CAF50; border: none; color: white; padding: 8px 16px; margin-top: 8px; border-radius: 4px; cursor: pointer;">
-              Watch Ad (5)
-            </button>
-            <button id="skip-ad-btn" style="background: #F44336; border: none; color: white; padding: 8px 16px; margin-top: 8px; margin-left: 8px; border-radius: 4px; cursor: pointer;">
-              Skip (No Reward)
-            </button>
-          </div>
-        `;
+        // Add content to the overlay safely without innerHTML
+        const container = document.createElement('div');
+        container.style.background = '#444';
+        container.style.padding = '20px';
+        container.style.borderRadius = '10px';
+        container.style.textAlign = 'center';
+        container.style.maxWidth = '80%';
+        
+        const title = document.createElement('h2');
+        title.style.marginTop = '0';
+        title.style.color = 'white';
+        title.textContent = 'Rewarded Ad';
+        
+        const description = document.createElement('p');
+        description.textContent = `This is a placeholder for an AdMob rewarded ad that will appear on ${platform}.`;
+        
+        const idInfo = document.createElement('p');
+        idInfo.style.fontSize = '12px';
+        idInfo.style.color = '#ccc';
+        idInfo.textContent = `Ad Unit ID: ${getAdUnitId('rewarded', platform)}`;
+        
+        const rewardContainer = document.createElement('div');
+        rewardContainer.style.margin = '16px 0';
+        
+        const rewardLabel = document.createElement('p');
+        rewardLabel.textContent = 'Watch to receive:';
+        
+        const rewardAmount = document.createElement('p');
+        rewardAmount.style.fontSize = '18px';
+        rewardAmount.style.fontWeight = 'bold';
+        rewardAmount.style.color = 'gold';
+        rewardAmount.textContent = '10 Coins';
+        
+        rewardContainer.appendChild(rewardLabel);
+        rewardContainer.appendChild(rewardAmount);
+        
+        const watchBtn = document.createElement('button');
+        watchBtn.id = 'watch-ad-btn';
+        watchBtn.style.background = '#4CAF50';
+        watchBtn.style.border = 'none';
+        watchBtn.style.color = 'white';
+        watchBtn.style.padding = '8px 16px';
+        watchBtn.style.marginTop = '8px';
+        watchBtn.style.borderRadius = '4px';
+        watchBtn.style.cursor = 'pointer';
+        watchBtn.textContent = 'Watch Ad (5)';
+        
+        const skipBtn = document.createElement('button');
+        skipBtn.id = 'skip-ad-btn';
+        skipBtn.style.background = '#F44336';
+        skipBtn.style.border = 'none';
+        skipBtn.style.color = 'white';
+        skipBtn.style.padding = '8px 16px';
+        skipBtn.style.marginTop = '8px';
+        skipBtn.style.marginLeft = '8px';
+        skipBtn.style.borderRadius = '4px';
+        skipBtn.style.cursor = 'pointer';
+        skipBtn.textContent = 'Skip (No Reward)';
+        
+        container.appendChild(title);
+        container.appendChild(description);
+        container.appendChild(idInfo);
+        container.appendChild(rewardContainer);
+        container.appendChild(watchBtn);
+        container.appendChild(skipBtn);
+        overlay.appendChild(container);
         
         document.body.appendChild(overlay);
         
         // Add a countdown to the watch button
-        const watchBtn = document.getElementById('watch-ad-btn');
-        const skipBtn = document.getElementById('skip-ad-btn');
+        const watchBtnElement = document.getElementById('watch-ad-btn');
+        const skipBtnElement = document.getElementById('skip-ad-btn');
         let countdown = 5;
         
         const countdownInterval = setInterval(() => {
           countdown--;
-          if (watchBtn) {
-            watchBtn.textContent = `Watch Ad (${countdown})`;
+          if (watchBtnElement) {
+            watchBtnElement.textContent = `Watch Ad (${countdown})`;
           }
           
           if (countdown <= 0) {
             clearInterval(countdownInterval);
-            if (watchBtn) {
-              watchBtn.textContent = 'Collect Reward';
+            if (watchBtnElement) {
+              watchBtnElement.textContent = 'Collect Reward';
             }
           }
         }, 1000);
         
         // Add click event to watch button
-        if (watchBtn) {
-          watchBtn.addEventListener('click', () => {
+        if (watchBtnElement) {
+          watchBtnElement.addEventListener('click', () => {
             if (countdown <= 0) {
               // User gets the reward
               onRewarded && onRewarded('coins', 10);
@@ -412,8 +491,8 @@ export function useRewardedAd({
         }
         
         // Add click event to skip button
-        if (skipBtn) {
-          skipBtn.addEventListener('click', () => {
+        if (skipBtnElement) {
+          skipBtnElement.addEventListener('click', () => {
             console.log('[AdMob Placeholder] User skipped the rewarded ad (no reward given)');
             document.body.removeChild(overlay);
             setLoaded(false);
