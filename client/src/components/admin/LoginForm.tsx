@@ -89,6 +89,13 @@ export default function LoginForm({ onLoginSuccess }: LoginFormProps) {
       <Button type="submit" className="w-full" disabled={isLoading}>
         {isLoading ? 'Logging in...' : 'Log in'}
       </Button>
+      
+      <div className="text-xs text-gray-500 mt-4">
+        <p>Default credentials:</p>
+        <p>Username: admin</p>
+        <p>Password: admin1234</p>
+        <p className="mt-1">Note: Change these in production by setting ADMIN_USERNAME and ADMIN_PASSWORD_HASH environment variables.</p>
+      </div>
     </form>
   );
 }

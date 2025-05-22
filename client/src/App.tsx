@@ -14,6 +14,7 @@ import Navbar from "@/components/layout/Navbar";
 import ContactForm from "@/components/contact/ContactForm";
 import { DeviceProvider } from "./contexts/DeviceContext";
 import { syncDeviceIdCookie } from "./lib/deviceId";
+import AdminPage from "@/pages/admin";
 
 // Google script loading removed
 
@@ -25,6 +26,7 @@ function Router() {
       <Route path="/reading-list" component={SavedBooks} />
       <Route path="/privacy-policy" component={PrivacyPolicy} />
       <Route path="/terms-conditions" component={TermsConditions} />
+      <Route path="/admin" component={AdminPage} />
       <Route component={NotFound} />
     </Switch>
   );
