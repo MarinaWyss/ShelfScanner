@@ -90,19 +90,7 @@ export async function getOpenAIRecommendations(
       };
     });
     
-    // Create a prompt for OpenAI
-    const prompt = {
-      role: "system",
-      content: `You are a book recommendation expert. Analyze the detected books and the user's preferences to provide personalized book recommendations.
-      
-Consider the following factors:
-1. Genre matches between the user's preferred genres and the book's categories
-2. Author matches if the user has read other books by the same author
-3. The user's reading history and ratings of similar books
-4. The book's overall quality and rating
-
-For each book in the detected books list, assign a match score from 0-100 and explain why it would be a good recommendation.`
-    };
+    // System prompt for OpenAI
     
     // Books the user has in their collection
     const booksInput = JSON.stringify(detectedBooks);
@@ -118,7 +106,18 @@ For each book in the detected books list, assign a match score from 0-100 and ex
     const response = await openai.chat.completions.create({
       model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
       messages: [
-        prompt,
+        {
+          role: "system",
+          content: `You are a book recommendation expert. Analyze the detected books and the user's preferences to provide personalized book recommendations.
+          
+Consider the following factors:
+1. Genre matches between the user's preferred genres and the book's categories
+2. Author matches if the user has read other books by the same author
+3. The user's reading history and ratings of similar books
+4. The book's overall quality and rating
+
+For each book in the detected books list, assign a match score from 0-100 and explain why it would be a good recommendation.`
+        },
         {
           role: "user",
           content: `Here are the books detected in the user's photo: ${booksInput}

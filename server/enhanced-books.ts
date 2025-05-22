@@ -3,6 +3,7 @@ import { log } from './vite';
 import { getEstimatedBookRating, getAmazonBookRating } from './amazon';
 import { rateLimiter } from './rate-limiter';
 import { bookCacheService } from './book-cache-service';
+import { getOpenAIRecommendations } from './openai-recommendations';
 
 /**
  * Local database of popular book ratings to provide accurate ratings without API calls
@@ -508,6 +509,53 @@ export async function getRecommendations(
       // No Goodreads data available, all books are new
       newBooks = books;
     }
+
+    // Try to use the OpenAI-powered recommendation algorithm first
+    try {
+      if (process.env.OPENAI_API_KEY) {
+        log(`Using OpenAI for intelligent book recommendations`, 'books');
+        const aiRecommendations = await getOpenAIRecommendations(newBooks, preferences);
+        
+        if (aiRecommendations && aiRecommendations.length > 0) {
+          log(`Successfully got ${aiRecommendations.length} OpenAI recommendations`, 'books');
+          
+          // OpenAI successfully generated recommendations
+          // Convert the recommendations to our standard format
+          const formattedRecommendations = aiRecommendations.map(book => {
+            return {
+              ...book,
+              score: book.matchScore || 0,
+              alreadyRead: false,
+              isBookRecommendation: true
+            };
+          });
+          
+          // If we have already read books, add them too
+          if (alreadyReadBooks2.length > 0) {
+            // Score the already read books with our traditional algorithm
+            const scoredReadBooks = alreadyReadBooks2.map(book => {
+              return {
+                ...book,
+                score: 50, // Default score for books already read
+                alreadyRead: true,
+                isBookYouveRead: true
+              };
+            });
+            
+            // Add already read books to the recommendations
+            return [...formattedRecommendations, ...scoredReadBooks];
+          }
+          
+          return formattedRecommendations;
+        }
+      }
+    } catch (error) {
+      log(`Error using OpenAI for recommendations, falling back to traditional algorithm: ${error instanceof Error ? error.message : String(error)}`, 'books');
+      // Continue with the traditional algorithm as fallback
+    }
+    
+    // Fallback: Use traditional algorithm if OpenAI failed or is not available
+    log(`Using traditional algorithm for book recommendations`, 'books');
     
     // Function to score books based on preferences
     const scoreBook = (book: any) => {
@@ -528,49 +576,6 @@ export async function getRecommendations(
             score += 10;
             log(`${book.title} matches preferred genre ${preferredGenre}, +10 points`, 'books');
           }
-        }
-      }
-      
-      // Add genres based on specific book content - these are hard-coded for the test books
-      if (book.title.toLowerCase().includes('stranger in a strange land')) {
-        if (preferredGenres.includes('Science Fiction')) {
-          score += 12;
-          log(`${book.title} is a sci-fi classic and matches preferences, +12 points`, 'books');
-        }
-      }
-      
-      if (book.title.toLowerCase().includes('leviathan wakes')) {
-        if (preferredGenres.includes('Science Fiction')) {
-          score += 15;
-          log(`${book.title} is modern sci-fi and matches preferences, +15 points`, 'books');
-        }
-      }
-      
-      if (book.title.toLowerCase().includes('cognitive behavioral')) {
-        if (preferredGenres.includes('Self-Help') || preferredGenres.includes('Non-Fiction')) {
-          score += 14;
-          log(`${book.title} is self-help/non-fiction and matches preferences, +14 points`, 'books');
-        }
-      }
-      
-      if (book.title.toLowerCase().includes('overdiagnosed')) {
-        if (preferredGenres.includes('Non-Fiction')) {
-          score += 13;
-          log(`${book.title} is non-fiction and matches preferences, +13 points`, 'books');
-        }
-      }
-      
-      if (book.title.toLowerCase().includes('mythos')) {
-        if (preferredGenres.includes('Non-Fiction')) {
-          score += 9;
-          log(`${book.title} is non-fiction and matches preferences, +9 points`, 'books');
-        }
-      }
-      
-      if (book.title.toLowerCase().includes('awe')) {
-        if (preferredGenres.includes('Self-Help')) {
-          score += 11;
-          log(`${book.title} is self-help and matches preferences, +11 points`, 'books');
         }
       }
       
