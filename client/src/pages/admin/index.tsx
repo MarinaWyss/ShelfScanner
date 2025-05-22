@@ -160,8 +160,8 @@ export default function AdminPage() {
             />
             <SystemStatusCard 
               title="SendGrid Email" 
-              status={process.env.SENDGRID_API_KEY ? "Configured" : "Not Configured"}
-              enabled={!!process.env.SENDGRID_API_KEY}
+              status="Not Available in Frontend"
+              enabled={false}
             />
           </div>
         </TabsContent>
