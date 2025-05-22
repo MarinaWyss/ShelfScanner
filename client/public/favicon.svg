@@ -1,8 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" fill="#8462f4">
-  <!-- Book with filled color to ensure visibility on tab -->
-  <path d="M12 12v40c0 2.2 1.8 4 4 4h40V8H16c-2.2 0-4 1.8-4 4z" fill="#8462f4"/>
-  <!-- Bookmark accent -->
-  <path d="M46 8v14l-4-4-4 4V8" fill="#6f48d8"/>
-  <!-- Page texture lines -->
-  <path d="M20 16h24M20 24h24M20 32h24M20 40h24M20 48h24" stroke="#ffffff" stroke-width="2"/>
-</svg>
