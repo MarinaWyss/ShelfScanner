@@ -191,14 +191,14 @@ export default function UploadStep({ onBooksDetected, detectedBooks }: UploadSte
   return (
     <div>
       <h3 className="text-lg font-semibold mb-4">Upload a photo of books</h3>
-      <p className="text-slate-400 mb-4">
+      <p className="text-gray-500 mb-4">
         Take a photo of books at a store, library, or friend's bookshelf. 
         We'll identify the books and recommend which ones match your reading preferences.
       </p>
       
       <div 
-        className={`border-2 border-dashed border-slate-600 rounded-lg p-6 text-center ${
-          isUploading || isProcessing ? 'bg-slate-800' : ''
+        className={`border-2 border-dashed border-violet-300 rounded-lg p-6 text-center ${
+          isUploading || isProcessing ? 'bg-violet-100' : ''
         }`}
         onDragOver={handleDragOver}
         onDrop={handleDrop}
@@ -221,7 +221,7 @@ export default function UploadStep({ onBooksDetected, detectedBooks }: UploadSte
               <polyline points="17 8 12 3 7 8" />
               <line x1="12" x2="12" y1="3" y2="15" />
             </svg>
-            <p className="text-slate-400 mb-4">
+            <p className="text-gray-500 mb-4">
               Drag and drop a photo of your bookshelf here, or click to browse
             </p>
             <div className="relative cursor-pointer">
@@ -285,7 +285,7 @@ export default function UploadStep({ onBooksDetected, detectedBooks }: UploadSte
           <h4 className="font-medium mb-3">Detected Books</h4>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
             {detectedBooks.map((book, index) => (
-              <div key={index} className="bg-slate-800 border border-slate-700 rounded-lg overflow-hidden shadow-lg">
+              <div key={index} className="bg-violet-900 border border-violet-800 rounded-lg overflow-hidden shadow-lg">
                 {book.coverUrl ? (
                   <img 
                     src={book.coverUrl} 
@@ -293,7 +293,7 @@ export default function UploadStep({ onBooksDetected, detectedBooks }: UploadSte
                     className="w-full h-40 object-cover" 
                   />
                 ) : (
-                  <div className="w-full h-40 bg-slate-700 flex items-center justify-center">
+                  <div className="w-full h-40 bg-violet-800 flex items-center justify-center">
                     <svg 
                       xmlns="http://www.w3.org/2000/svg" 
                       width="24" 
@@ -346,7 +346,7 @@ export default function UploadStep({ onBooksDetected, detectedBooks }: UploadSte
           adSize="728x90"
           adFormat="horizontal"
           style={{ height: '90px', width: '100%', maxWidth: '728px' }}
-          className="mx-auto bg-slate-900 border border-slate-800 rounded-md overflow-hidden"
+          className="mx-auto bg-gray-100 border border-gray-200 rounded-md overflow-hidden"
         />
       </div>
     </div>
