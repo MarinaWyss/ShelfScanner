@@ -1,5 +1,6 @@
 import express, { type Request, Response, NextFunction } from "express";
 import cookieParser from "cookie-parser";
+import path from "path";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { ensureDeviceId } from "./middleware/deviceId";
@@ -10,6 +11,11 @@ app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: false, limit: '50mb' }));
 app.use(cookieParser());
 app.use(ensureDeviceId);
+
+// Serve ads.txt file for Google AdSense verification
+app.get('/ads.txt', (req: Request, res: Response) => {
+  res.sendFile(path.join(process.cwd(), 'ads.txt'));
+});
 
 app.use((req, res, next) => {
   const start = Date.now();
