@@ -21,7 +21,7 @@ import TechImplementation from "@/pages/tech-implementation";
 
 function Router() {
   return (
-    <WouterRouter base="">
+    <WouterRouter base="" hashMode={true}>
       <Switch>
         <Route path="/" component={Home} />
         <Route path="/books" component={Books} />
