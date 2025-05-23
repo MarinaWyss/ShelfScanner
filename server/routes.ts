@@ -532,7 +532,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 publisher: book.publisher || null,
                 categories: book.categories || null
               },
-              expiresAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000) // 90 days cache
+              expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) // 365 days cache
             });
             console.log(`Cached OpenAI data for "${book.title}"`);
           }
@@ -623,7 +623,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 publisher: recommendation.publisher || null,
                 categories: recommendation.categories || null
               },
-              expiresAt: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000) // 90 days cache
+              expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) // 365 days cache
             });
             console.log(`Cached OpenAI data for recommendation "${recommendation.title}" - ${needsCaching ? "new or updated data" : "already in cache"}`);
           } else {

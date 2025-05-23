@@ -15,9 +15,9 @@ const openai = new OpenAI({
 
 // Cache expiration duration in milliseconds
 const CACHE_DURATION = {
-  GOOGLE: 30 * 24 * 60 * 60 * 1000, // 30 days for Google Books (more stable)
-  AMAZON: 7 * 24 * 60 * 60 * 1000,  // 7 days for Amazon (pricing changes)
-  OPENAI: 90 * 24 * 60 * 60 * 1000, // 90 days for OpenAI summaries (content doesn't change)
+  GOOGLE: 365 * 24 * 60 * 60 * 1000, // 365 days for Google Books (very stable)
+  AMAZON: 7 * 24 * 60 * 60 * 1000,   // 7 days for Amazon (pricing changes)
+  OPENAI: 365 * 24 * 60 * 60 * 1000, // 365 days for OpenAI summaries (content doesn't change)
 };
 
 // Default cache duration
