@@ -1,7 +1,7 @@
 import { db } from './db';
 import { bookCache, type InsertBookCache, type BookCache } from '@shared/schema';
 import { eq, and, or, sql, desc, asc, lte, gte, isNotNull, not, isNull } from 'drizzle-orm';
-import { getAmazonBookRating, getEstimatedBookRating } from './amazon';
+import { getEstimatedBookRating } from './utils/book-utils';
 import { log } from './vite';
 import OpenAI from "openai";
 import { rateLimiter } from './rate-limiter';

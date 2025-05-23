@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { log } from './vite';
-import { getEstimatedBookRating, getAmazonBookRating } from './amazon';
+import { getEstimatedBookRating } from './utils/book-utils';
 import { rateLimiter } from './rate-limiter';
 import { bookCacheService } from './book-cache-service';
 import { getOpenAIRecommendations } from './openai-recommendations';

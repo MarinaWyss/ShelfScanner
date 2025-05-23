@@ -1,46 +1,10 @@
-import axios from 'axios';
-import { log } from './vite';
-
 /**
- * Interface for Amazon book rating response
+ * Utility functions for book-related operations
+ * Moved from amazon.ts during code cleanup
  */
-interface AmazonRatingResponse {
-  asin?: string;
-  product?: {
-    rating?: string;
-    totalRatings?: number;
-  };
-  ratingSummary?: {
-    averageRating: number;
-    totalRatings: number;
-  };
-}
 
 /**
- * Gets a book's rating using an optimized approach without external API calls
- * 
- * @param title Book title
- * @param author Book author
- * @param isbn Book ISBN (optional)
- * @returns Promise with the book rating
- */
-export async function getAmazonBookRating(title: string, author: string, isbn?: string): Promise<string | null> {
-  // This function now uses a combination of deterministic rating generation and a local database
-  // of popular book ratings to provide realistic ratings without API costs
-  
-  // First check our popular books database for known ratings
-  const popularBookRating = getPopularBookRating(title, author);
-  if (popularBookRating) {
-    log(`Found popular book rating for "${title}": ${popularBookRating}`, 'amazon');
-    return popularBookRating;
-  }
-  
-  // Otherwise use our deterministic approach for a consistent rating
-  return getEstimatedBookRating(title, author);
-}
-
-/**
- * Local database of popular book ratings to provide accurate ratings without API calls
+ * Local database of popular book ratings
  */
 function getPopularBookRating(title: string, author: string): string | null {
   // Normalize inputs for better matching
@@ -105,13 +69,19 @@ function getPopularBookRating(title: string, author: string): string | null {
 
 /**
  * Fallback function to get an estimated book rating 
- * This is used when the API call fails or when the API key is not available
+ * This is used when no rating data is available
  * 
  * @param title Book title
  * @param author Book author
  * @returns A reasonable rating string between 3.0 and 4.9
  */
 export function getEstimatedBookRating(title: string, author: string): string {
+  // First check our popular books database for known ratings
+  const popularBookRating = getPopularBookRating(title, author);
+  if (popularBookRating) {
+    return popularBookRating;
+  }
+
   // Use a deterministic approach based on the book details
   const combinedString = `${title}${author}`.toLowerCase();
   
