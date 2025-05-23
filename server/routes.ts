@@ -24,12 +24,10 @@ const upload = multer({
 });
 
 import { registerEnvRoutes } from './env-routes';
-import { authRoutes } from './auth-routes';
 import { adminMonitoringRoutes } from './admin-monitoring';
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Register auth routes
-  app.use('/api/auth', authRoutes);
+  // Auth routes have been removed
   
   // Register admin monitoring routes (protected by authentication)
   app.use('/api/admin', adminMonitoringRoutes);
