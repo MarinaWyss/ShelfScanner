@@ -39,7 +39,7 @@ async function fetchPublisherId() {
 }
 
 export default function GoogleAdSense({ 
-  adSlot = '1234567890', 
+  adSlot, 
   adFormat = 'auto',
   adSize,
   style = {}, 
@@ -115,9 +115,9 @@ export default function GoogleAdSense({
     ...style
   };
 
-  // In development mode, we'll show a placeholder instead of real ads
-  // This helps with testing the UI layout without needing to load actual ads
-  if (import.meta.env.MODE === 'development') {
+  // Show placeholder only if we don't have a valid publisher ID or if explicitly in dev mode with no publisher ID
+  // This ensures that real ads show in production when properly configured
+  if (import.meta.env.MODE === 'development' && (!publisherId || publisherId === 'ca-pub-1234567890123456')) {
     return (
       <div 
         className={`ad-container ${className} bg-gray-100 border border-gray-200 flex items-center justify-center`} 

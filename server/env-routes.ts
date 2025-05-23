@@ -20,7 +20,7 @@ export function registerEnvRoutes(app: Express) {
       },
       // AdSense configuration (for web)
       adsense: {
-        publisherId: process.env.ADSENSE_PUBLISHER_ID || ''
+        publisherId: process.env.ADSENSE_PUBLISHER_ID || 'ca-pub-3650836896715592'
       }
     });
   });
