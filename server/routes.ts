@@ -344,23 +344,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Save user preferences
   app.post('/api/preferences', async (req: Request, res: Response) => {
     try {
-      const userId = 1; // Default user ID
+      // Extract deviceId from request
+      const deviceId = req.deviceId;
+      
+      if (!deviceId) {
+        return res.status(400).json({ message: 'Device ID is required' });
+      }
+      
+      // For backward compatibility we still include userId but use deviceId as primary identifier
+      const userId = 1;
       
       // Validate request body
       const validatedData = insertPreferenceSchema.parse({
         ...req.body,
-        userId
+        userId,
+        deviceId
       });
       
-      // Check if preferences already exist for this user
-      const existingPreferences = await storage.getPreferencesByUserId(userId);
+      // First check if preferences already exist for this device
+      let existingPreferences = await storage.getPreferencesByDeviceId(deviceId);
+      
+      // If not found by device ID, fall back to user ID (for backward compatibility)
+      if (!existingPreferences) {
+        existingPreferences = await storage.getPreferencesByUserId(userId);
+      }
       
       let preferences;
       if (existingPreferences) {
-        // Update existing preferences
-        preferences = await storage.updatePreference(existingPreferences.id, validatedData);
+        // Update existing preferences but ensure deviceId is set
+        preferences = await storage.updatePreference(existingPreferences.id, {
+          ...validatedData,
+          deviceId
+        });
       } else {
-        // Create new preferences
+        // Create new preferences with deviceId
         preferences = await storage.createPreference(validatedData);
       }
       
@@ -377,9 +394,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get user preferences
   app.get('/api/preferences', async (req: Request, res: Response) => {
     try {
-      const userId = 1; // Default user ID
+      // Extract deviceId from request
+      const deviceId = req.deviceId;
       
-      const preferences = await storage.getPreferencesByUserId(userId);
+      if (!deviceId) {
+        return res.status(400).json({ message: 'Device ID is required' });
+      }
+      
+      // First try to get preferences by device ID
+      let preferences = await storage.getPreferencesByDeviceId(deviceId);
+      
+      // For backward compatibility, if no device-specific preferences found, try user ID
+      if (!preferences) {
+        const userId = 1; // Default user ID
+        preferences = await storage.getPreferencesByUserId(userId);
+      }
       
       if (!preferences) {
         return res.status(404).json({ message: 'Preferences not found' });
