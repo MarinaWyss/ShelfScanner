@@ -30,12 +30,21 @@ export function ensureDeviceId(req: Request, res: Response, next: NextFunction) 
     // Set as cookie with 1 year expiration
     res.cookie(DEVICE_ID_COOKIE, deviceId, {
       maxAge: COOKIE_MAX_AGE,
-      httpOnly: true,
-      sameSite: 'lax',
+      httpOnly: false, // Changed to false to allow client-side access
+      sameSite: 'strict',
       secure: process.env.NODE_ENV === 'production'
     });
     
     console.log(`Generated new device ID: ${deviceId}`);
+  } else {
+    // Always update the cookie to ensure it doesn't expire
+    // This prevents issues with cookie expiration across devices
+    res.cookie(DEVICE_ID_COOKIE, deviceId, {
+      maxAge: COOKIE_MAX_AGE,
+      httpOnly: false, // Changed to false to allow client-side access
+      sameSite: 'strict',
+      secure: process.env.NODE_ENV === 'production'
+    });
   }
   
   // Add deviceId to request object for easy access in routes

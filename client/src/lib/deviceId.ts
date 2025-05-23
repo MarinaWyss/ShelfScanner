@@ -33,15 +33,28 @@ export function getDeviceId(): string {
 export function syncDeviceIdCookie(): void {
   const deviceId = getDeviceId();
   
-  // Check if cookie already contains this device ID
-  if (!document.cookie.includes(`${DEVICE_ID_COOKIE}=${deviceId}`)) {
-    // Set cookie with 1 year expiration
-    const expiryDate = new Date();
-    expiryDate.setFullYear(expiryDate.getFullYear() + 1);
+  // Check for existing cookies
+  const existingCookie = document.cookie
+    .split('; ')
+    .find(row => row.startsWith(`${DEVICE_ID_COOKIE}=`));
     
-    document.cookie = `${DEVICE_ID_COOKIE}=${deviceId}; expires=${expiryDate.toUTCString()}; path=/; SameSite=Strict`;
-    console.log('Device ID synced to cookie');
+  if (existingCookie) {
+    const serverDeviceId = existingCookie.split('=')[1];
+    
+    // If server has a different device ID, update our localStorage to match it
+    if (serverDeviceId && serverDeviceId !== deviceId) {
+      localStorage.setItem(DEVICE_ID_KEY, serverDeviceId);
+      console.log('Updated local device ID to match server cookie:', serverDeviceId);
+      return;
+    }
   }
+  
+  // If no server cookie or IDs match, set the cookie with our device ID
+  const expiryDate = new Date();
+  expiryDate.setFullYear(expiryDate.getFullYear() + 1);
+  
+  document.cookie = `${DEVICE_ID_COOKIE}=${deviceId}; expires=${expiryDate.toUTCString()}; path=/; SameSite=Strict`;
+  console.log('Device ID synced to cookie');
 }
 
 /**
