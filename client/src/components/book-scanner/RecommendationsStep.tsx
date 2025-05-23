@@ -98,54 +98,63 @@ export default function RecommendationsStep({ recommendations, isLoading, goodre
         }
         const savedBooks = await response.json();
         
-        // Find the saved book that matches this recommendation
-        const savedBook = savedBooks.find((saved: any) => 
+        // Find the book to remove by title and author
+        const bookToRemove = savedBooks.find((saved: {title: string, author: string}) => 
           saved.title === book.title && saved.author === book.author
         );
         
-        if (savedBook) {
-          // Delete the book using its ID
-          await apiRequest('DELETE', `/api/saved-books/${savedBook.id}`);
+        if (bookToRemove) {
+          const deleteResponse = await apiRequest(`/api/saved-books/${bookToRemove.id}`, {
+            method: 'DELETE'
+          });
           
-          // Remove from saved books state
+          if (!deleteResponse.ok) {
+            throw new Error('Failed to remove book');
+          }
+          
+          // Update local state
           setSavedBookIds(prev => prev.filter(id => id !== index));
           
-          // Show success message
           toast({
             title: "Book removed",
-            description: `${book.title} has been removed from your reading list`,
+            description: `"${book.title}" has been removed from your reading list.`,
             variant: "default",
           });
         }
       } else {
-        // Save book to the list
-        await apiRequest(
-          'POST',
-          '/api/saved-books',
-          {
+        // Save book to reading list
+        const saveResponse = await apiRequest('/api/saved-books', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
             title: book.title,
             author: book.author,
             coverUrl: book.coverUrl,
             rating: book.rating,
-            summary: book.summary || 'No summary available'
-          }
-        );
-        
-        // Add to saved books state
+            summary: book.summary,
+          }),
+        });
+
+        if (!saveResponse.ok) {
+          throw new Error('Failed to save book');
+        }
+
+        // Update local state
         setSavedBookIds(prev => [...prev, index]);
         
-        // Show success message with link to reading list
         toast({
-          title: "Book saved",
+          title: "Book saved!",
           description: (
             <div>
-              {`${book.title} has been added to your reading list. `}
+              <p className="mb-2">"{book.title}" has been added to your reading list.</p>
               <a 
-                href="/reading-list" 
-                className="font-medium text-primary hover:underline"
-                onClick={(e) => {
-                  e.preventDefault();
-                  window.location.href = "/reading-list";
+                href="/saved-books" 
+                className="text-blue-600 hover:text-blue-800 underline"
+                onClick={() => {
+                  // Close the toast when clicking the link
+                  toast({ title: "", description: "", variant: "default" });
                 }}
               >
                 View reading list
@@ -286,305 +295,165 @@ export default function RecommendationsStep({ recommendations, isLoading, goodre
       
       {!isLoading && recommendations.length > 0 && (
         <div className="space-y-12">
-          {/* New recommendations section */}
-          <div>
-            <h3 className="text-xl font-semibold mb-4 text-primary-700">Recommended for You</h3>
-            <div className="grid grid-cols-1 gap-6">
-              {recommendations
-                .filter(book => !isBookAlreadyRead(book))
-                .slice(0, 3)
-                .map((book, index) => (
-                <div 
-                  key={index} 
-                  className="bg-gray-100 border border-slate-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
-                >
-                  <div className="md:flex">
-                    <div className="p-5 flex md:flex-col md:items-center md:w-1/4 md:border-r border-slate-200">
-                      {book.coverUrl ? (
-                        <div className="relative">
-                          <img 
-                            src={book.coverUrl} 
-                            alt={book.title}
-                            className="w-24 h-36 md:w-32 md:h-48 object-cover rounded-md shadow-sm"
-                            onError={(e) => {
-                              // If image fails to load, replace with a secure proxy URL or fallback
-                              const target = e.target as HTMLImageElement;
-                              // Try using a CORS proxy if the original URL fails
-                              if (target.src === book.coverUrl) {
-                                // Create a fallback URL that uses HTTPS
-                                const fallbackUrl = book.coverUrl.replace('http://', 'https://');
-                                target.src = fallbackUrl;
-                              }
-                            }}
-                          />
-                          <div className="absolute inset-0 rounded-md shadow-inner"></div>
-                        </div>
-                      ) : (
-                        <div className="w-24 h-36 md:w-32 md:h-48 bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center rounded-md shadow-sm">
-                          <svg 
-                            xmlns="http://www.w3.org/2000/svg" 
-                            width="24" 
-                            height="24" 
-                            viewBox="0 0 24 24" 
-                            fill="none" 
-                            stroke="currentColor" 
-                            strokeWidth="2" 
-                            strokeLinecap="round" 
-                            strokeLinejoin="round" 
-                            className="h-8 w-8 text-slate-400"
-                          >
-                            <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
-                          </svg>
-                        </div>
-                      )}
-                      
-                      <div className="ml-5 md:ml-0 md:mt-4 md:text-center md:w-full flex flex-col md:items-center">
-                        <div className="mt-3 flex items-center">
-                          {renderRating(book.rating)}
-                        </div>
-                        
-                        {book.matchScore !== undefined && (
-                          <span className="mt-2 bg-green-100 text-green-800 text-xs font-medium px-2 py-0.5 rounded">
-                            {book.matchScore > 8 ? "Perfect match!" : 
-                             book.matchScore > 5 ? "Great match" : 
-                             book.matchScore > 3 ? "Good match" : "Possible match"}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                    
-                    <div className="md:w-3/4 flex flex-col">
-                      <div className="p-5 pb-3">
-                        <h4 className="font-semibold text-black text-xl mb-1">{book.title}</h4>
-                        <p className="text-black text-sm mb-3">by {book.author}</p>
-                        <div className="text-sm text-black">
-                          <p className={expandedBooks.includes(index) ? '' : 'line-clamp-3'}>
-                            {book.summary}
-                          </p>
-                          {book.summary && book.summary.length > 240 && (
-                            <button 
-                              onClick={() => toggleExpand(index)}
-                              className="mt-2 text-indigo-600 hover:text-indigo-800 text-sm flex items-center font-medium"
-                            >
-                              {expandedBooks.includes(index) ? (
-                                <>
-                                  <ChevronUp className="h-4 w-4 mr-1" /> 
-                                  Read Less
-                                </>
-                              ) : (
-                                <>
-                                  <ChevronDown className="h-4 w-4 mr-1" /> 
-                                  Read More
-                                </>
-                              )}
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                      
-                      <div className="mt-auto p-5 pt-3 border-t border-slate-200">
-                        <div className="flex justify-between gap-3">
-                          <button 
-                            className={`
-                              ${savedBookIds.includes(index) 
-                                ? 'bg-indigo-100 border border-indigo-300 text-indigo-700 hover:bg-indigo-200' 
-                                : 'bg-white border border-slate-300 hover:bg-slate-50 text-slate-800'} 
-                              text-sm font-medium flex items-center px-3 py-1.5 rounded-md ${savingBookIds.includes(index) ? 'opacity-50 cursor-not-allowed' : ''}
-                            `}
-                            onClick={() => toggleBookSave(book, index)}
-                            disabled={savingBookIds.includes(index)}
-                          >
-                            {savingBookIds.includes(index) ? (
-                              <svg className="animate-spin h-4 w-4 mr-1.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                              </svg>
-                            ) : (
-                              <svg 
-                                xmlns="http://www.w3.org/2000/svg" 
-                                className="h-4 w-4 mr-1.5" 
-                                fill={savedBookIds.includes(index) ? "currentColor" : "none"}
-                                viewBox="0 0 24 24" 
-                                stroke="currentColor"
-                              >
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 3H7a2 2 0 0 0-2 2v16l7-3 7 3V5a2 2 0 0 0-2-2z" />
-                              </svg>
-                            )}
-                            {savedBookIds.includes(index) ? 'Saved to List' : 'Save for Later'}
-                          </button>
-                          <a 
-                            href={`https://www.amazon.com/s?k=${encodeURIComponent(book.title + ' ' + book.author)}&tag=gratitudedriv-20`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="bg-amber-400 hover:bg-amber-500 text-black px-3 py-1.5 rounded-md text-sm font-medium"
-                          >
-                            Buy on Amazon
-                          </a>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
+          {/* Check if all books have been read */}
+          {recommendations.every(book => isBookAlreadyRead(book)) ? (
+            <div className="text-center py-16 bg-gradient-to-br from-purple-50 to-indigo-50 rounded-lg p-8 shadow-sm border border-purple-200">
+              <div className="h-20 w-20 mx-auto mb-4 text-purple-400">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="w-full h-full">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-semibold mb-2 text-purple-800">You've read all these books!</h3>
+              <p className="text-purple-600 mb-6">Great job! All the books we detected in your photo are already in your reading history. Try scanning a different bookshelf or ask friends for their recommendations.</p>
+              <Button 
+                className="bg-purple-600 hover:bg-purple-700 text-white"
+                onClick={() => window.location.reload()}
+              >
+                Scan More Books
+              </Button>
             </div>
-          </div>
-          
-          {/* Google AdSense Banner at the bottom of recommendations */}
-          <div className="my-8">
-            <GoogleAdSense 
-              adSlot="3456789012"
-              adSize="728x90"
-              adFormat="horizontal"
-              style={{ height: '90px', width: '100%', maxWidth: '728px' }}
-              className="mx-auto"
-            />
-          </div>
-          
-          {/* Books you've already read section - with proper spacing */}
-          {recommendations.some(book => isBookAlreadyRead(book)) && (
-            <div className="mt-8 pt-6 border-t border-slate-200">
+          ) : (
+            <div>
+              {/* New recommendations section */}
               <div>
-                <h3 className="text-xl font-semibold mb-4 text-purple-700">Books You've Already Read</h3>
-                <p className="text-slate-400 mb-4">
-                  We found these books in your photo that match your reading history from Goodreads.
-                </p>
+                <h3 className="text-xl font-semibold mb-4 text-primary-700">Recommended for You</h3>
                 <div className="grid grid-cols-1 gap-6">
                   {recommendations
-                    .filter(book => isBookAlreadyRead(book))
-                    .map((book, index) => {
-                      // Calculate a unique index for books you've already read
-                      const alreadyReadIndex = recommendations.length + index;
-                      
-                      return (
-                        <div 
-                          key={index} 
-                          className="bg-gray-100 border border-purple-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
-                        >
-                          <div className="md:flex">
-                            <div className="p-5 flex md:flex-col md:items-center md:w-1/4 md:border-r border-slate-200">
-                              {book.coverUrl ? (
-                                <div className="relative">
-                                  <img 
-                                    src={book.coverUrl} 
-                                    alt={book.title}
-                                    className="w-24 h-36 md:w-32 md:h-48 object-cover rounded-md shadow-sm"
-                                    onError={(e) => {
-                                      // If image fails to load, replace with a secure proxy URL or fallback
-                                      const target = e.target as HTMLImageElement;
-                                      // Try using a CORS proxy if the original URL fails
-                                      if (target.src === book.coverUrl) {
-                                        // Create a fallback URL that uses HTTPS
-                                        const fallbackUrl = book.coverUrl.replace('http://', 'https://');
-                                        target.src = fallbackUrl;
-                                      }
-                                    }}
-                                  />
-                                  <div className="absolute inset-0 rounded-md shadow-inner"></div>
-                                </div>
-                              ) : (
-                                <div className="w-24 h-36 md:w-32 md:h-48 bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center rounded-md shadow-sm">
-                                  <svg 
-                                    xmlns="http://www.w3.org/2000/svg" 
-                                    width="24" 
-                                    height="24" 
-                                    viewBox="0 0 24 24" 
-                                    fill="none" 
-                                    stroke="currentColor" 
-                                    strokeWidth="2" 
-                                    strokeLinecap="round" 
-                                    strokeLinejoin="round" 
-                                    className="h-8 w-8 text-slate-400"
-                                  >
-                                    <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
-                                  </svg>
-                                </div>
-                              )}
+                    .filter(book => !isBookAlreadyRead(book))
+                    .slice(0, 3)
+                    .map((book, index) => (
+                      <div 
+                        key={index} 
+                        className="bg-gray-100 border border-slate-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                      >
+                        <div className="md:flex">
+                          <div className="p-5 flex md:flex-col md:items-center md:w-1/4 md:border-r border-slate-200">
+                            {book.coverUrl ? (
+                              <div className="relative">
+                                <img 
+                                  src={book.coverUrl} 
+                                  alt={book.title}
+                                  className="w-24 h-36 md:w-32 md:h-48 object-cover rounded-md shadow-sm"
+                                  onError={(e) => {
+                                    // If image fails to load, replace with a secure proxy URL or fallback
+                                    const target = e.target as HTMLImageElement;
+                                    // Try using a CORS proxy if the original URL fails
+                                    if (target.src === book.coverUrl) {
+                                      // Create a fallback URL that uses HTTPS
+                                      const fallbackUrl = book.coverUrl.replace('http://', 'https://');
+                                      target.src = fallbackUrl;
+                                    }
+                                  }}
+                                />
+                                <div className="absolute inset-0 rounded-md shadow-inner"></div>
+                              </div>
+                            ) : (
+                              <div className="w-24 h-36 md:w-32 md:h-48 bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center rounded-md shadow-sm">
+                                <svg 
+                                  xmlns="http://www.w3.org/2000/svg" 
+                                  width="24" 
+                                  height="24" 
+                                  viewBox="0 0 24 24" 
+                                  fill="none" 
+                                  stroke="currentColor" 
+                                  strokeWidth="2" 
+                                  strokeLinecap="round" 
+                                  strokeLinejoin="round" 
+                                  className="h-8 w-8 text-slate-400"
+                                >
+                                  <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
+                                </svg>
+                              </div>
+                            )}
+                            
+                            <div className="ml-5 md:ml-0 md:mt-4 md:text-center md:w-full flex flex-col md:items-center">
+                              <div className="mt-3 flex items-center">
+                                {renderRating(book.rating)}
+                              </div>
                               
-                              <div className="ml-5 md:ml-0 md:mt-4 md:text-center md:w-full flex flex-col md:items-center">
-                                <div className="mt-3 flex items-center">
-                                  {renderRating(book.rating)}
-                                </div>
-                                
-                                <div className="mt-2 bg-purple-100 text-purple-800 text-xs font-medium px-2 py-0.5 rounded">
-                                  Already Read
-                                </div>
+                              {book.matchScore !== undefined && (
+                                <span className="mt-2 bg-green-100 text-green-800 text-xs font-medium px-2 py-0.5 rounded">
+                                  {book.matchScore > 8 ? "Perfect match!" : 
+                                   book.matchScore > 5 ? "Great match" : 
+                                   book.matchScore > 3 ? "Good match" : "Possible match"}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          
+                          <div className="md:w-3/4 flex flex-col">
+                            <div className="p-5 pb-3">
+                              <h4 className="font-semibold text-black text-xl mb-1">{book.title}</h4>
+                              <p className="text-black text-sm mb-3">by {book.author}</p>
+                              <div className="text-sm text-black">
+                                <p className={expandedBooks.includes(index) ? '' : 'line-clamp-3'}>
+                                  {book.summary}
+                                </p>
+                                {book.summary && book.summary.length > 240 && (
+                                  <button 
+                                    onClick={() => toggleExpand(index)}
+                                    className="mt-2 text-indigo-600 hover:text-indigo-800 text-sm flex items-center font-medium"
+                                  >
+                                    {expandedBooks.includes(index) ? (
+                                      <>
+                                        <ChevronUp className="h-4 w-4 mr-1" /> 
+                                        Read Less
+                                      </>
+                                    ) : (
+                                      <>
+                                        <ChevronDown className="h-4 w-4 mr-1" /> 
+                                        Read More
+                                      </>
+                                    )}
+                                  </button>
+                                )}
                               </div>
                             </div>
                             
-                            <div className="md:w-3/4 flex flex-col">
-                              <div className="p-5 pb-3">
-                                <h4 className="font-semibold text-black text-xl mb-1">{book.title}</h4>
-                                <p className="text-black text-sm mb-3">by {book.author}</p>
-                                <div className="text-sm text-black">
-                                  <p className={expandedBooks.includes(alreadyReadIndex) ? '' : 'line-clamp-3'}>
-                                    {book.summary}
-                                  </p>
-                                  {book.summary && book.summary.length > 240 && (
-                                    <button 
-                                      onClick={() => toggleExpand(alreadyReadIndex)}
-                                      className="mt-2 text-indigo-600 hover:text-indigo-800 text-sm flex items-center font-medium"
+                            <div className="mt-auto p-5 pt-3 border-t border-slate-200">
+                              <div className="flex justify-between gap-3">
+                                <button 
+                                  className={`
+                                    ${savedBookIds.includes(index) 
+                                      ? 'bg-indigo-100 border border-indigo-300 text-indigo-700 hover:bg-indigo-200' 
+                                      : 'bg-white border border-slate-300 hover:bg-slate-50 text-slate-800'} 
+                                    text-sm font-medium flex items-center px-3 py-1 rounded ${savingBookIds.includes(index) ? 'opacity-50 cursor-not-allowed' : ''}
+                                  `}
+                                  onClick={() => toggleBookSave(book, index)}
+                                  disabled={savingBookIds.includes(index)}
+                                >
+                                  {savingBookIds.includes(index) ? (
+                                    <svg className="animate-spin h-4 w-4 mr-1.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                  ) : (
+                                    <svg 
+                                      xmlns="http://www.w3.org/2000/svg" 
+                                      className="h-4 w-4 mr-1.5" 
+                                      fill={savedBookIds.includes(index) ? "currentColor" : "none"}
+                                      viewBox="0 0 24 24" 
+                                      stroke="currentColor"
                                     >
-                                      {expandedBooks.includes(alreadyReadIndex) ? (
-                                        <>
-                                          <ChevronUp className="h-4 w-4 mr-1" /> 
-                                          Read Less
-                                        </>
-                                      ) : (
-                                        <>
-                                          <ChevronDown className="h-4 w-4 mr-1" /> 
-                                          Read More
-                                        </>
-                                      )}
-                                    </button>
+                                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 3H7a2 2 0 0 0-2 2v16l7-3 7 3V5a2 2 0 0 0-2-2z" />
+                                    </svg>
                                   )}
-                                </div>
-                              </div>
-                              
-                              <div className="mt-auto p-5 pt-3 border-t border-slate-200">
-                                <div className="flex justify-between gap-3">
-                                  <button 
-                                    className={`
-                                      ${savedBookIds.includes(alreadyReadIndex) 
-                                        ? 'bg-indigo-100 border border-indigo-300 text-indigo-700 hover:bg-indigo-200' 
-                                        : 'bg-white border border-slate-300 hover:bg-slate-50 text-slate-800'} 
-                                      text-sm font-medium flex items-center px-3 py-1 rounded ${savingBookIds.includes(alreadyReadIndex) ? 'opacity-50 cursor-not-allowed' : ''}
-                                    `}
-                                    onClick={() => toggleBookSave(book, alreadyReadIndex)}
-                                    disabled={savingBookIds.includes(alreadyReadIndex)}
-                                  >
-                                    {savingBookIds.includes(alreadyReadIndex) ? (
-                                      <svg className="animate-spin h-4 w-4 mr-1.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                      </svg>
-                                    ) : (
-                                      <svg 
-                                        xmlns="http://www.w3.org/2000/svg" 
-                                        className="h-4 w-4 mr-1.5" 
-                                        fill={savedBookIds.includes(alreadyReadIndex) ? "currentColor" : "none"}
-                                        viewBox="0 0 24 24" 
-                                        stroke="currentColor"
-                                      >
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 3H7a2 2 0 0 0-2 2v16l7-3 7 3V5a2 2 0 0 0-2-2z" />
-                                      </svg>
-                                    )}
-                                    {savedBookIds.includes(alreadyReadIndex) ? 'Saved to List' : 'Save for Later'}
-                                  </button>
-                                  <a 
-                                    href={`https://www.amazon.com/s?k=${encodeURIComponent(book.title + ' ' + book.author)}&tag=gratitudedriv-20`}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="bg-amber-400 hover:bg-amber-500 text-black px-3 py-1 rounded text-sm font-medium"
-                                  >
-                                    Buy on Amazon
-                                  </a>
-                                </div>
+                                  {savedBookIds.includes(index) ? 'Saved to List' : 'Save for Later'}
+                                </button>
+                                <a 
+                                  href={`https://www.amazon.com/s?k=${encodeURIComponent(book.title + ' ' + book.author)}&tag=gratitudedriv-20`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="bg-amber-400 hover:bg-amber-500 text-black px-3 py-1 rounded text-sm font-medium"
+                                >
+                                  Buy on Amazon
+                                </a>
                               </div>
                             </div>
                           </div>
                         </div>
-                      );
-                    })}
+                      </div>
+                    ))}
                 </div>
               </div>
             </div>
