@@ -224,19 +224,69 @@ export default function UploadStep({ onBooksDetected, detectedBooks }: UploadSte
             <p className="text-gray-500 mb-4">
               Drag and drop a photo of your bookshelf here, or click to browse
             </p>
-            <div className="relative cursor-pointer">
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Button 
-                className="bg-primary hover:bg-primary/90 text-white"
+                className="bg-primary hover:bg-primary/90 text-white flex items-center gap-2"
                 onClick={() => {
-                  // Find the input element and trigger a click
+                  // Find the camera input element and trigger a click
+                  const cameraInput = document.getElementById('camera-capture');
+                  if (cameraInput) {
+                    cameraInput.click();
+                  }
+                }}
+              >
+                <svg 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  width="16" 
+                  height="16" 
+                  viewBox="0 0 24 24" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  strokeWidth="2" 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round"
+                >
+                  <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/>
+                  <circle cx="12" cy="13" r="3"/>
+                </svg>
+                Take Photo
+              </Button>
+              <Button 
+                variant="outline"
+                className="flex items-center gap-2"
+                onClick={() => {
+                  // Find the file input element and trigger a click
                   const fileInput = document.getElementById('photo-upload');
                   if (fileInput) {
                     fileInput.click();
                   }
                 }}
               >
-                Upload Photo
+                <svg 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  width="16" 
+                  height="16" 
+                  viewBox="0 0 24 24" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  strokeWidth="2" 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round"
+                >
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                  <polyline points="17 8 12 3 7 8"/>
+                  <line x1="12" x2="12" y1="3" y2="15"/>
+                </svg>
+                Choose From Gallery
               </Button>
+              <input 
+                id="camera-capture"
+                type="file" 
+                className="sr-only" 
+                accept="image/*" 
+                capture="environment"
+                onChange={handleFileChange}
+              />
               <input 
                 id="photo-upload"
                 type="file" 
