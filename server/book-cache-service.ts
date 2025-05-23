@@ -212,6 +212,10 @@ export class BookCacheService {
       }
       
       // Insert new cache entry
+      const bookId = bookData.bookId || 
+        bookData.isbn || 
+        `${normalizedTitle}-${normalizedAuthor}`.toLowerCase().replace(/[^a-z0-9]/g, '-');
+      
       const insertData: InsertBookCache = {
         title: normalizedTitle,
         author: normalizedAuthor,
@@ -220,6 +224,7 @@ export class BookCacheService {
         rating: bookData.rating || null,
         summary: bookData.summary || null,
         source: source,
+        bookId, // Add required bookId field
         metadata: bookData.metadata || null,
         expiresAt: expiresAt
       };

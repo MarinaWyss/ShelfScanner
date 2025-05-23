@@ -410,12 +410,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       for (const bookData of booksToSave) {
         // Cache the book data in book_cache to ensure consistent IDs
+        const bookId = `${bookData.title}-${bookData.author || "Unknown"}`.toLowerCase().replace(/[^a-z0-9]/g, '-');
         const cachedBook = await storage.cacheBook({
           title: bookData.title,
           author: bookData.author || "Unknown",
           isbn: bookData.isbn || null,
           coverUrl: bookData.coverUrl || null,
           source: "saved", // Mark as saved by user
+          bookId, // Add required bookId field
           expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) // 1 year expiration
         });
         
@@ -516,6 +518,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Ensure everything we got from OpenAI is cached for future use
         try {
           if (book.rating || book.summary) {
+            const bookId = book.isbn || `${book.title}-${book.author}`.toLowerCase().replace(/[^a-z0-9]/g, '-');
             await storage.cacheBook({
               title: book.title,
               author: book.author,
@@ -524,6 +527,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               rating: book.rating || null,
               summary: book.summary || null,
               source: 'openai',
+              bookId,
               metadata: {
                 publisher: book.publisher || null,
                 categories: book.categories || null
@@ -603,6 +607,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
                               ));
           
           if (needsCaching && (recommendation.rating || recommendation.summary)) {
+            const bookId = recommendation.isbn || 
+              `${recommendation.title}-${recommendation.author}`.toLowerCase().replace(/[^a-z0-9]/g, '-');
+            
             await storage.cacheBook({
               title: recommendation.title,
               author: recommendation.author,
@@ -611,6 +618,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               rating: recommendation.rating || null,
               summary: recommendation.summary || null,
               source: 'openai',
+              bookId, // Add required bookId field
               metadata: {
                 publisher: recommendation.publisher || null,
                 categories: recommendation.categories || null
@@ -748,6 +756,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Create an expiration date (90 days)
         const expiresAt = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
         
+        // Generate a unique book ID
+        const bookId = req.body.isbn || `${title}-${author}`.toLowerCase().replace(/[^a-z0-9]/g, '-');
+        
         bookCacheEntry = await storage.cacheBook({
           title,
           author,
@@ -756,6 +767,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           rating: rating || null,
           summary: summary || null,
           source: 'saved', // Source is 'saved' for user-saved books
+          bookId, // Add required bookId field
           metadata: req.body.metadata || null,
           expiresAt
         });
