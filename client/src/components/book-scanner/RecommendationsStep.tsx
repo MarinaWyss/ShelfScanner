@@ -5,6 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import StarRating from "@/components/ui/star-rating";
 import GoogleAdSense from "@/components/ads/GoogleAdSense";
+import AffiliateDisclosure from "@/components/ui/affiliate-disclosure";
 import { ChevronDown, ChevronUp } from "lucide-react";
 
 interface Recommendation {
@@ -224,6 +225,9 @@ export default function RecommendationsStep({ recommendations, isLoading, goodre
           className="mx-auto"
         />
       </div>
+
+      {/* Affiliate Disclosure */}
+      <AffiliateDisclosure />
       
       <h3 className="text-lg font-semibold mb-4">Book Matches Based on Your Preferences</h3>
       <p className="text-slate-400 mb-4">

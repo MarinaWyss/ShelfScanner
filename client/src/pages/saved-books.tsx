@@ -7,6 +7,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { Trash2, ChevronDown, ChevronUp } from "lucide-react";
 import StarRating from "@/components/ui/star-rating";
 import GoogleAdSense from "@/components/ads/GoogleAdSense";
+import AffiliateDisclosure from "@/components/ui/affiliate-disclosure";
 
 interface SavedBook {
   id: number;
@@ -103,6 +104,9 @@ export default function SavedBooks() {
             <Button variant="outline" className="border-gray-200 text-gray-700 hover:bg-gray-50">Scan More Books</Button>
           </Link>
         </div>
+
+        {/* Affiliate Disclosure */}
+        <AffiliateDisclosure />
 
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md mb-6" role="alert">

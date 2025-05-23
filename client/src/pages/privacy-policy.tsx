@@ -33,6 +33,11 @@ export default function PrivacyPolicy() {
             <li>To deliver relevant content and advertisements to you</li>
           </ul>
           
+          <h2 className="text-xl font-semibold mt-6 mb-3">Affiliate Disclosure</h2>
+          <p>This website contains affiliate links. We may earn a small commission if you purchase through these links at no additional cost to you. This helps us pay to keep the site up and free for users.</p>
+          <p>We are a participant in the Amazon Services LLC Associates Program, an affiliate advertising program designed to provide a means for sites to earn advertising fees by advertising and linking to Amazon.com. When you click on links to Amazon or other retailers on our site and make a purchase, we may receive a commission.</p>
+          <p>Our affiliate relationships do not influence our editorial content or book recommendations. We only recommend books that we believe will be valuable to our users based on our recommendation algorithms and data.</p>
+          
           <h2 className="text-xl font-semibold mt-6 mb-3">Data security</h2>
           <p>We have put in place appropriate security measures to prevent your personal data from being accidentally lost, used, or accessed in an unauthorized way, altered, or disclosed. In addition, we limit access to your personal data to those employees, agents, contractors, and other third parties who have a business need to know.</p>
           

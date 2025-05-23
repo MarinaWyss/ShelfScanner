@@ -29,6 +29,12 @@ export default function TermsConditions() {
           <p>In these terms and conditions, "User Content" means material (including without limitation text, images, audio material, video material, and audio-visual material) that you submit to this website, for whatever purpose.</p>
           <p>You grant to ShelfScanner a worldwide, irrevocable, non-exclusive, royalty-free license to use, reproduce, adapt, publish, translate, and distribute your User Content in any existing or future media. You also grant to ShelfScanner the right to sub-license these rights, and the right to bring an action for infringement of these rights.</p>
           
+          <h2 className="text-xl font-semibold mt-6 mb-3">Affiliate Links and Advertising</h2>
+          <p>This website contains affiliate links and advertising partnerships. We may earn a commission when you purchase products through affiliate links on our site at no additional cost to you.</p>
+          <p>We are a participant in the Amazon Services LLC Associates Program and other affiliate advertising programs designed to provide a means for sites to earn advertising fees by advertising and linking to retailers.</p>
+          <p>Our affiliate relationships do not influence our editorial content, book recommendations, or user experience. All book recommendations are generated through our proprietary algorithms and AI systems based on your preferences and reading history.</p>
+          <p>By using this website, you acknowledge and agree to the presence of affiliate links and understand that we may receive compensation for purchases made through these links.</p>
+          
           <h2 className="text-xl font-semibold mt-6 mb-3">Limitation of Liability</h2>
           <p>In no event shall ShelfScanner, nor any of its officers, directors, and employees, be held liable for anything arising out of or in any way connected with your use of this website whether such liability is under contract. ShelfScanner, including its officers, directors, and employees, shall not be held liable for any indirect, consequential, or special liability arising out of or in any way related to your use of this website.</p>
           
