@@ -216,7 +216,7 @@ export default function RecommendationsStep({ recommendations, isLoading, goodre
   return (
     <div className="pb-12">
       {/* Google AdSense Banner at the Top */}
-      <div className="mb-6">
+      <div className="mb-3">
         <GoogleAdSense 
           adSlot="1234567890"
           adSize="728x90"
@@ -227,7 +227,9 @@ export default function RecommendationsStep({ recommendations, isLoading, goodre
       </div>
 
       {/* Affiliate Disclosure */}
-      <AffiliateDisclosure />
+      <div className="mb-4">
+        <AffiliateDisclosure className="mb-0" />
+      </div>
       
       <h3 className="text-lg font-semibold mb-4">Book Matches Based on Your Preferences</h3>
       <p className="text-slate-400 mb-4">
