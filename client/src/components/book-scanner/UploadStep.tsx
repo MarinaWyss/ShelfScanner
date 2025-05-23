@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { LoaderPinwheel } from "lucide-react";
@@ -22,7 +22,20 @@ export default function UploadStep({ onBooksDetected, detectedBooks }: UploadSte
   const [isUploading, setIsUploading] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [uploadedImage, setUploadedImage] = useState<string>("");
+  const [isMobile, setIsMobile] = useState(false);
   const { toast } = useToast();
+
+  // Check if device is mobile on component mount
+  useEffect(() => {
+    const checkIfMobile = () => {
+      const userAgent = navigator.userAgent;
+      const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+      const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+      setIsMobile(isMobileDevice || isTouchDevice);
+    };
+    
+    checkIfMobile();
+  }, []);
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -225,35 +238,37 @@ export default function UploadStep({ onBooksDetected, detectedBooks }: UploadSte
               Drag and drop a photo of your bookshelf here, or click to browse
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Button 
-                className="bg-primary hover:bg-primary/90 text-white flex items-center gap-2"
-                onClick={() => {
-                  // Find the camera input element and trigger a click
-                  const cameraInput = document.getElementById('camera-capture');
-                  if (cameraInput) {
-                    cameraInput.click();
-                  }
-                }}
-              >
-                <svg 
-                  xmlns="http://www.w3.org/2000/svg" 
-                  width="16" 
-                  height="16" 
-                  viewBox="0 0 24 24" 
-                  fill="none" 
-                  stroke="currentColor" 
-                  strokeWidth="2" 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round"
+              {isMobile && (
+                <Button 
+                  className="bg-primary hover:bg-primary/90 text-white flex items-center gap-2"
+                  onClick={() => {
+                    // Find the camera input element and trigger a click
+                    const cameraInput = document.getElementById('camera-capture');
+                    if (cameraInput) {
+                      cameraInput.click();
+                    }
+                  }}
                 >
-                  <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/>
-                  <circle cx="12" cy="13" r="3"/>
-                </svg>
-                Take Photo
-              </Button>
+                  <svg 
+                    xmlns="http://www.w3.org/2000/svg" 
+                    width="16" 
+                    height="16" 
+                    viewBox="0 0 24 24" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    strokeWidth="2" 
+                    strokeLinecap="round" 
+                    strokeLinejoin="round"
+                  >
+                    <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/>
+                    <circle cx="12" cy="13" r="3"/>
+                  </svg>
+                  Take Photo
+                </Button>
+              )}
               <Button 
-                variant="outline"
-                className="flex items-center gap-2"
+                variant={isMobile ? "outline" : "default"}
+                className={`flex items-center gap-2 ${!isMobile ? 'bg-primary hover:bg-primary/90 text-white' : ''}`}
                 onClick={() => {
                   // Find the file input element and trigger a click
                   const fileInput = document.getElementById('photo-upload');
@@ -277,16 +292,18 @@ export default function UploadStep({ onBooksDetected, detectedBooks }: UploadSte
                   <polyline points="17 8 12 3 7 8"/>
                   <line x1="12" x2="12" y1="3" y2="15"/>
                 </svg>
-                Choose From Gallery
+                {isMobile ? 'Choose From Gallery' : 'Upload Photo'}
               </Button>
-              <input 
-                id="camera-capture"
-                type="file" 
-                className="sr-only" 
-                accept="image/*" 
-                capture="environment"
-                onChange={handleFileChange}
-              />
+              {isMobile && (
+                <input 
+                  id="camera-capture"
+                  type="file" 
+                  className="sr-only" 
+                  accept="image/*" 
+                  capture="environment"
+                  onChange={handleFileChange}
+                />
+              )}
               <input 
                 id="photo-upload"
                 type="file" 
