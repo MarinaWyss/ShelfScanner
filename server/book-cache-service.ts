@@ -341,11 +341,15 @@ export class BookCacheService {
           log(`Updated summary for "${title}" in cache ID ${updated.id}`, 'cache');
         } else {
           // No existing entry - create a new one
+          // Generate a unique book ID
+          const bookId = `${title.trim()}-${author.trim()}`.toLowerCase().replace(/[^a-z0-9]/g, '-');
+          
           const cacheData: InsertBookCache = {
             title: title.trim(),
             author: author.trim(),
             summary,
             source: 'openai',
+            bookId, // Add required bookId field
             isbn: null,
             coverUrl: null,
             rating: null,
@@ -486,12 +490,16 @@ export class BookCacheService {
         log(`Updated rating for "${title}" in cache ID ${updated.id}`, 'cache');
       } else {
         // No existing entry - create a new one
+        // Generate a unique book ID
+        const bookId = isbn || `${title.trim()}-${author.trim()}`.toLowerCase().replace(/[^a-z0-9]/g, '-');
+        
         const cacheData: InsertBookCache = {
           title: title.trim(),
           author: author.trim(),
           isbn: isbn || undefined,
           rating: rating,
           source: 'openai',
+          bookId, // Add required bookId field
           coverUrl: undefined,
           summary: undefined,
           metadata: undefined,
