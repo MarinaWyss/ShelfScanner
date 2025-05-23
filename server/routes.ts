@@ -407,7 +407,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // For backward compatibility, if no device-specific preferences found, try user ID
       if (!preferences) {
         const userId = 1; // Default user ID
-        preferences = await storage.getPreferencesByUserId(userId);
+        const existingPreferences = await storage.getPreferencesByUserId(userId);
+        
+        // If there's an existing generic preference, create a device-specific copy
+        if (existingPreferences) {
+          console.log(`Creating device-specific preferences for device ${deviceId} from generic preferences`);
+          
+          // Create a new preference entry for this specific device based on the generic one
+          preferences = await storage.createPreference({
+            userId,
+            deviceId,
+            genres: existingPreferences.genres,
+            authors: existingPreferences.authors,
+            goodreadsData: existingPreferences.goodreadsData
+          });
+        }
       }
       
       if (!preferences) {
