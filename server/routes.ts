@@ -361,23 +361,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         deviceId
       });
       
-      // First check if preferences already exist for this device
-      let existingPreferences = await storage.getPreferencesByDeviceId(deviceId);
-      
-      // If not found by device ID, fall back to user ID (for backward compatibility)
-      if (!existingPreferences) {
-        existingPreferences = await storage.getPreferencesByUserId(userId);
-      }
+      // Check if preferences already exist for this specific device
+      const existingPreferences = await storage.getPreferencesByDeviceId(deviceId);
       
       let preferences;
       if (existingPreferences) {
-        // Update existing preferences but ensure deviceId is set
-        preferences = await storage.updatePreference(existingPreferences.id, {
-          ...validatedData,
-          deviceId
-        });
+        // Update existing preferences
+        preferences = await storage.updatePreference(existingPreferences.id, validatedData);
       } else {
-        // Create new preferences with deviceId
+        // Create brand new preferences for this device
         preferences = await storage.createPreference(validatedData);
       }
       
@@ -401,28 +393,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Device ID is required' });
       }
       
-      // First try to get preferences by device ID
+      // Only get preferences specific to this device ID
       let preferences = await storage.getPreferencesByDeviceId(deviceId);
       
-      // For backward compatibility, if no device-specific preferences found, try user ID
-      if (!preferences) {
-        const userId = 1; // Default user ID
-        const existingPreferences = await storage.getPreferencesByUserId(userId);
-        
-        // If there's an existing generic preference, create a device-specific copy
-        if (existingPreferences) {
-          console.log(`Creating device-specific preferences for device ${deviceId} from generic preferences`);
-          
-          // Create a new preference entry for this specific device based on the generic one
-          preferences = await storage.createPreference({
-            userId,
-            deviceId,
-            genres: existingPreferences.genres,
-            authors: existingPreferences.authors,
-            goodreadsData: existingPreferences.goodreadsData
-          });
-        }
-      }
+      // If no preferences, don't fall back to shared ones
+      // New devices should start fresh with their own preferences
       
       if (!preferences) {
         return res.status(404).json({ message: 'Preferences not found' });
