@@ -60,7 +60,8 @@ export default function GoogleAdSense({
       
       if (!isMounted) return;
       
-      const existingScript = document.getElementById('google-adsense-script');
+      // Check if AdSense script is already loaded (either by our component or in HTML head)
+      const existingScript = document.querySelector('script[src*="adsbygoogle.js"]');
       if (!existingScript) {
         const script = document.createElement('script');
         script.id = 'google-adsense-script';
@@ -79,7 +80,8 @@ export default function GoogleAdSense({
         };
         document.head.appendChild(script);
       } else {
-        // If script already exists, just initialize the ad
+        // If script already exists (from HTML head), just initialize the ad
+        console.log('Google AdSense script already loaded from HTML head');
         initializeAd();
       }
     };
@@ -87,11 +89,19 @@ export default function GoogleAdSense({
     // Function to initialize the ad after script is loaded
     const initializeAd = () => {
       try {
-        if (typeof window.adsbygoogle !== 'undefined' && adRef.current) {
-          // Push the ad to AdSense
-          (window.adsbygoogle = window.adsbygoogle || []).push({});
-          setAdLoaded(true);
-          console.log('AdSense ad initialized');
+        if (typeof window !== 'undefined' && window.adsbygoogle && adRef.current) {
+          // Check if this specific ad element is already initialized
+          const adElement = adRef.current.querySelector('.adsbygoogle');
+          if (adElement && !adElement.hasAttribute('data-adsbygoogle-status')) {
+            // Only push if the ad hasn't been initialized yet
+            (window.adsbygoogle = window.adsbygoogle || []).push({});
+            setAdLoaded(true);
+            console.log('AdSense ad initialized');
+          } else if (adElement && adElement.hasAttribute('data-adsbygoogle-status')) {
+            // Ad is already initialized
+            setAdLoaded(true);
+            console.log('AdSense ad already initialized');
+          }
         }
       } catch (err) {
         if (!isMounted) return;
