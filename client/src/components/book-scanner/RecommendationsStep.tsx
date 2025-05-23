@@ -52,14 +52,22 @@ export default function RecommendationsStep({ recommendations, isLoading, goodre
         }
         const savedBooks = await response.json();
         
+        // Create a map of title+author -> unique ID for recommendations
+        const titleAuthorToId = new Map();
+        recommendations.forEach((rec, index) => {
+          const key = `${rec.title}-${rec.author}`;
+          titleAuthorToId.set(key, index);
+        });
+        
         // Check which of the current recommendations are already saved
-        // We compare by title and author since the IDs might not match
-        const alreadySavedIds = recommendations
-          .filter(rec => savedBooks.some((saved: {title: string, author: string}) => 
-            saved.title === rec.title && saved.author === rec.author
-          ))
-          .map(rec => rec.id || 0)
-          .filter(id => id !== 0);
+        // We use the title+author composite key instead of just the ID
+        const alreadySavedIds = [];
+        savedBooks.forEach((saved: {title: string, author: string}) => {
+          const key = `${saved.title}-${saved.author}`;
+          if (titleAuthorToId.has(key)) {
+            alreadySavedIds.push(titleAuthorToId.get(key));
+          }
+        });
         
         setSavedBookIds(alreadySavedIds);
       } catch (error) {
@@ -73,9 +81,9 @@ export default function RecommendationsStep({ recommendations, isLoading, goodre
   }, [recommendations]);
 
   // Function to save a book to the reading list
-  const saveBookForLater = async (book: Recommendation) => {
+  const saveBookForLater = async (book: Recommendation, index: number) => {
     // Don't do anything if book is already saved
-    if (savedBookIds.includes(book.id || 0)) {
+    if (savedBookIds.includes(index)) {
       toast({
         title: "Already saved",
         description: `${book.title} is already in your reading list`,
@@ -86,7 +94,7 @@ export default function RecommendationsStep({ recommendations, isLoading, goodre
     
     try {
       // Add book ID to loading state
-      setSavingBookIds(prev => [...prev, book.id || 0]);
+      setSavingBookIds(prev => [...prev, index]);
       
       // Send request to save book
       await apiRequest(
@@ -102,7 +110,7 @@ export default function RecommendationsStep({ recommendations, isLoading, goodre
       );
       
       // Add to saved books state
-      setSavedBookIds(prev => [...prev, book.id || 0]);
+      setSavedBookIds(prev => [...prev, index]);
       
       // Show success message with link to reading list
       toast({
@@ -133,7 +141,7 @@ export default function RecommendationsStep({ recommendations, isLoading, goodre
       });
     } finally {
       // Remove book ID from loading state
-      setSavingBookIds(prev => prev.filter(id => id !== (book.id || 0)));
+      setSavingBookIds(prev => prev.filter(id => id !== index));
     }
   };
 
@@ -350,13 +358,13 @@ export default function RecommendationsStep({ recommendations, isLoading, goodre
                         <div className="flex justify-between gap-3">
                           <button 
                             className={`
-                              ${savedBookIds.includes(book.id || 0) 
+                              ${savedBookIds.includes(index) 
                                 ? 'bg-indigo-100 border border-indigo-300 text-indigo-700 hover:bg-indigo-200' 
                                 : 'bg-white border border-slate-300 hover:bg-slate-50 text-slate-800'} 
-                              text-sm font-medium flex items-center px-3 py-1.5 rounded-md ${savingBookIds.includes(book.id || 0) ? 'opacity-50 cursor-not-allowed' : ''}
+                              text-sm font-medium flex items-center px-3 py-1.5 rounded-md ${savingBookIds.includes(index) ? 'opacity-50 cursor-not-allowed' : ''}
                             `}
-                            onClick={() => saveBookForLater(book)}
-                            disabled={savingBookIds.includes(book.id || 0)}
+                            onClick={() => saveBookForLater(book, index)}
+                            disabled={savingBookIds.includes(index)}
                           >
                             {savingBookIds.includes(book.id || 0) ? (
                               <svg className="animate-spin h-4 w-4 mr-1.5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
