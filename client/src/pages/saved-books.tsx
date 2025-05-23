@@ -105,8 +105,8 @@ export default function SavedBooks() {
           </Link>
         </div>
 
-        {/* Affiliate Disclosure */}
-        <AffiliateDisclosure />
+        {/* Affiliate Disclosure - only show when books are present */}
+        {!isLoading && savedBooks.length > 0 && <AffiliateDisclosure />}
 
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-md mb-6" role="alert">
