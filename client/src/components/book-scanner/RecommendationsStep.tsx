@@ -80,63 +80,85 @@ export default function RecommendationsStep({ recommendations, isLoading, goodre
     }
   }, [recommendations]);
 
-  // Function to save a book to the reading list
-  const saveBookForLater = async (book: Recommendation, index: number) => {
-    // Don't do anything if book is already saved
-    if (savedBookIds.includes(index)) {
-      toast({
-        title: "Already saved",
-        description: `${book.title} is already in your reading list`,
-        variant: "default",
-      });
-      return;
-    }
+  // Function to toggle saving/removing a book from the reading list
+  const toggleBookSave = async (book: Recommendation, index: number) => {
+    const isCurrentlySaved = savedBookIds.includes(index);
     
     try {
       // Add book ID to loading state
       setSavingBookIds(prev => [...prev, index]);
       
-      // Send request to save book
-      await apiRequest(
-        'POST',
-        '/api/saved-books',
-        {
-          title: book.title,
-          author: book.author,
-          coverUrl: book.coverUrl,
-          rating: book.rating,
-          summary: book.summary || 'No summary available'
+      if (isCurrentlySaved) {
+        // Remove book from saved list
+        // First, get all saved books to find the correct ID
+        const response = await fetch('/api/saved-books');
+        if (!response.ok) {
+          throw new Error('Failed to fetch saved books');
         }
-      );
-      
-      // Add to saved books state
-      setSavedBookIds(prev => [...prev, index]);
-      
-      // Show success message with link to reading list
-      toast({
-        title: "Book saved",
-        description: (
-          <div>
-            {`${book.title} has been added to your reading list. `}
-            <a 
-              href="/reading-list" 
-              className="font-medium text-primary hover:underline"
-              onClick={(e) => {
-                e.preventDefault();
-                window.location.href = "/reading-list";
-              }}
-            >
-              View reading list
-            </a>
-          </div>
-        ),
-        variant: "default",
-      });
+        const savedBooks = await response.json();
+        
+        // Find the saved book that matches this recommendation
+        const savedBook = savedBooks.find((saved: any) => 
+          saved.title === book.title && saved.author === book.author
+        );
+        
+        if (savedBook) {
+          // Delete the book using its ID
+          await apiRequest('DELETE', `/api/saved-books/${savedBook.id}`);
+          
+          // Remove from saved books state
+          setSavedBookIds(prev => prev.filter(id => id !== index));
+          
+          // Show success message
+          toast({
+            title: "Book removed",
+            description: `${book.title} has been removed from your reading list`,
+            variant: "default",
+          });
+        }
+      } else {
+        // Save book to the list
+        await apiRequest(
+          'POST',
+          '/api/saved-books',
+          {
+            title: book.title,
+            author: book.author,
+            coverUrl: book.coverUrl,
+            rating: book.rating,
+            summary: book.summary || 'No summary available'
+          }
+        );
+        
+        // Add to saved books state
+        setSavedBookIds(prev => [...prev, index]);
+        
+        // Show success message with link to reading list
+        toast({
+          title: "Book saved",
+          description: (
+            <div>
+              {`${book.title} has been added to your reading list. `}
+              <a 
+                href="/reading-list" 
+                className="font-medium text-primary hover:underline"
+                onClick={(e) => {
+                  e.preventDefault();
+                  window.location.href = "/reading-list";
+                }}
+              >
+                View reading list
+              </a>
+            </div>
+          ),
+          variant: "default",
+        });
+      }
     } catch (error) {
-      console.error("Error saving book:", error);
+      console.error("Error toggling book save:", error);
       toast({
         title: "Error",
-        description: "Failed to save book. Please try again.",
+        description: `Failed to ${isCurrentlySaved ? 'remove' : 'save'} book. Please try again.`,
         variant: "destructive",
       });
     } finally {
@@ -363,7 +385,7 @@ export default function RecommendationsStep({ recommendations, isLoading, goodre
                                 : 'bg-white border border-slate-300 hover:bg-slate-50 text-slate-800'} 
                               text-sm font-medium flex items-center px-3 py-1.5 rounded-md ${savingBookIds.includes(index) ? 'opacity-50 cursor-not-allowed' : ''}
                             `}
-                            onClick={() => saveBookForLater(book, index)}
+                            onClick={() => toggleBookSave(book, index)}
                             disabled={savingBookIds.includes(index)}
                           >
                             {savingBookIds.includes(index) ? (
@@ -521,7 +543,7 @@ export default function RecommendationsStep({ recommendations, isLoading, goodre
                                         : 'bg-white border border-slate-300 hover:bg-slate-50 text-slate-800'} 
                                       text-sm font-medium flex items-center px-3 py-1 rounded ${savingBookIds.includes(alreadyReadIndex) ? 'opacity-50 cursor-not-allowed' : ''}
                                     `}
-                                    onClick={() => saveBookForLater(book, alreadyReadIndex)}
+                                    onClick={() => toggleBookSave(book, alreadyReadIndex)}
                                     disabled={savingBookIds.includes(alreadyReadIndex)}
                                   >
                                     {savingBookIds.includes(alreadyReadIndex) ? (
