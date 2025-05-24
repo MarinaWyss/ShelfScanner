@@ -50,8 +50,11 @@ router.post("/recommendations", async (req: Request, res: Response) => {
     const openaiUsageStats = rateLimiter.getUsageStats();
     log(`Current OpenAI usage: ${JSON.stringify(openaiUsageStats)}`, "test");
 
-    // Get recommendations
-    const recommendations = await getOpenAIRecommendations(books, userPreferences);
+    // Get device ID from request if available
+    const deviceId = req.cookies?.deviceId || 'test-user';
+    
+    // Get recommendations with device ID for tracking
+    const recommendations = await getOpenAIRecommendations(books, userPreferences, deviceId);
 
     return res.json({
       success: true,

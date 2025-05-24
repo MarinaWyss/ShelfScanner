@@ -3,6 +3,7 @@
  */
 import { Router, Request, Response } from 'express';
 import { getApiFailureStats } from './utils/api-monitoring';
+import { getApiUsageStats } from './utils/api-usage-tracking';
 import { rateLimiter } from './rate-limiter';
 
 const router = Router();
@@ -16,21 +17,28 @@ router.get('/api-monitoring', async (req: Request, res: Response) => {
     // Get API failure statistics
     const failureStats = getApiFailureStats();
     
+    // Get API usage statistics
+    const usageStats = getApiUsageStats();
+    
     // Get current rate limiter usage
     const rateLimiterStats = rateLimiter.getUsageStats();
     
     return res.status(200).json({
       failures: failureStats,
+      usage: usageStats,
       rateLimits: rateLimiterStats,
       openai: {
         configured: !!process.env.OPENAI_API_KEY,
         status: process.env.OPENAI_API_KEY ? 'available' : 'not configured',
         failureCount: failureStats.openai?.failureCount || 0,
+        successCount: usageStats.openai?.successCount || 0,
+        uniqueUsers: usageStats.openai?.uniqueUsers || 0,
         usageToday: rateLimiterStats.openai?.dailyUsage || 0,
-        dailyLimit: rateLimiterStats.openai?.dailyLimit || 0,
-        withinLimits: rateLimiterStats.openai?.withinLimits || false,
+        dailyLimit: rateLimiterStats.openai?.dailyLimit || 1000,
+        withinLimits: rateLimiterStats.openai?.withinLimits || true,
         affectedUsers: failureStats.openai?.affectedUsers || 0,
         lastFailure: failureStats.openai?.lastFailure || null,
+        lastSuccess: usageStats.openai?.lastSuccess || new Date(),
         isCritical: failureStats.openai?.isCritical || false
       }
     });

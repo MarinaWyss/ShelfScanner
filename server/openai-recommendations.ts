@@ -2,6 +2,7 @@ import OpenAI from "openai";
 import { log } from './vite';
 import { rateLimiter } from './rate-limiter';
 import { trackApiFailure } from './utils/api-monitoring';
+import { trackApiSuccess } from './utils/api-usage-tracking';
 
 // Configure OpenAI client
 const openai = new OpenAI({ 
@@ -60,7 +61,8 @@ interface EnhancedBookInfo extends BookInfo {
  */
 export async function getOpenAIRecommendations(
   books: BookInfo[],
-  preferences: UserPreferences
+  preferences: UserPreferences,
+  deviceId?: string
 ): Promise<BookInfo[]> {
   try {
     log(`Using OpenAI to analyze ${books.length} books for recommendations`, 'recommendations');
@@ -172,6 +174,9 @@ IMPORTANT: Return your recommendations in this exact JSON format with no text be
     
     try {
       log(`OpenAI response received`, 'recommendations');
+      
+      // Track successful API call
+      trackApiSuccess('openai', deviceId);
       
       // Parse the JSON response
       const recommendationsData = JSON.parse(responseContent);
