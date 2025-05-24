@@ -99,7 +99,7 @@ export default function Books() {
     }
   });
 
-  // Generate recommendations - now directly store and use the returned data
+  // Generate recommendations using direct OpenAI integration for high-quality descriptions
   const recommendationsMutation = useMutation({
     mutationFn: async () => {
       if (!detectedBooks || detectedBooks.length === 0) {
@@ -108,10 +108,18 @@ export default function Books() {
         return [];
       }
       
-      // Include the detected books in the request
-      console.log("Sending books for recommendations:", detectedBooks.length);
-      const response = await apiRequest('POST', '/api/recommendations', {
-        books: detectedBooks
+      // Collect user preferences to personalize recommendations
+      const userPreferences = {
+        genres: selectedGenres,
+        authors: [], // Could be populated from user profile in the future
+        goodreadsData: parsedCsvData // Include Goodreads data if available
+      };
+      
+      // Include the detected books and preferences in the request
+      console.log("Sending books for OpenAI recommendations:", detectedBooks.length);
+      const response = await apiRequest('POST', '/api/direct/recommendations', {
+        books: detectedBooks,
+        preferences: userPreferences
       });
       return response.json();
     },

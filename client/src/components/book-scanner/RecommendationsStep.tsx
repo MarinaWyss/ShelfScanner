@@ -393,8 +393,9 @@ export default function RecommendationsStep({ recommendations, isLoading, goodre
                               
                               {/* Display match reason in second person format only when available */}
                               {book.matchReason && book.matchReason.trim() !== "" && book.matchReason !== "using fallback algo" && (
-                                <div className="mt-2 text-sm bg-blue-50 p-3 rounded-md border border-blue-100">
-                                  <p className="text-blue-800">
+                                <div className="mt-2 mb-3 text-sm bg-gradient-to-r from-blue-50 to-indigo-50 p-3 rounded-md border border-blue-100">
+                                  <p className="text-blue-800 font-medium mb-1">Why This Matches You:</p>
+                                  <p className="text-blue-700">
                                     {book.matchReason.replace(/the user's/gi, "your")
                                       .replace(/user has/gi, "you have")
                                       .replace(/user likes/gi, "you like")
