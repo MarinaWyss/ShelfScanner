@@ -105,9 +105,9 @@ export default function RecommendationsStep({ recommendations, isLoading, goodre
         );
         
         if (bookToRemove) {
-          const deleteResponse = await apiRequest(`/api/saved-books/${bookToRemove.id}`, {
+          const deleteResponse = await fetch(`/api/saved-books/${bookToRemove.id}`, {
             method: 'DELETE'
-          });
+          } as RequestInit);
           
           if (!deleteResponse.ok) {
             throw new Error('Failed to remove book');
@@ -124,7 +124,7 @@ export default function RecommendationsStep({ recommendations, isLoading, goodre
         }
       } else {
         // Save book to reading list
-        const saveResponse = await apiRequest('/api/saved-books', {
+        const saveResponse = await fetch('/api/saved-books', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -320,7 +320,7 @@ export default function RecommendationsStep({ recommendations, isLoading, goodre
                 <h3 className="text-xl font-semibold mb-4 text-primary-700">Recommended for You</h3>
                 <div className="grid grid-cols-1 gap-6">
                   {recommendations
-                    .filter(book => !isBookAlreadyRead(book))
+                    .filter(book => !isBookAlreadyRead(book) && !book.isBookYouveRead)
                     .slice(0, 3)
                     .map((book, index) => (
                       <div 
@@ -477,6 +477,104 @@ export default function RecommendationsStep({ recommendations, isLoading, goodre
                     ))}
                 </div>
               </div>
+              
+              {/* Books You've Already Read section */}
+              {goodreadsData && goodreadsData.length > 0 && recommendations.some(book => isBookAlreadyRead(book)) && (
+                <div className="mt-12">
+                  <h3 className="text-xl font-semibold mb-4 text-purple-700">Books You've Already Read</h3>
+                  <p className="text-slate-400 mb-4">
+                    We detected these books in your photo, but it looks like you've already read them according to your Goodreads data.
+                  </p>
+                  <div className="grid grid-cols-1 gap-6">
+                    {recommendations
+                      .filter(book => isBookAlreadyRead(book))
+                      .map((book, index) => (
+                        <div 
+                          key={`read-${index}`} 
+                          className="bg-purple-50 border border-purple-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                        >
+                          <div className="md:flex">
+                            <div className="p-5 flex md:flex-col md:items-center md:w-1/4 md:border-r border-purple-200">
+                              {book.coverUrl ? (
+                                <div className="relative">
+                                  <img 
+                                    src={book.coverUrl} 
+                                    alt={book.title}
+                                    className="w-24 h-36 md:w-32 md:h-48 object-cover rounded-md shadow-sm"
+                                    onError={(e) => {
+                                      const target = e.target as HTMLImageElement;
+                                      if (target.src === book.coverUrl) {
+                                        const fallbackUrl = book.coverUrl.replace('http://', 'https://');
+                                        target.src = fallbackUrl;
+                                      }
+                                    }}
+                                  />
+                                  <div className="absolute inset-0 rounded-md shadow-inner"></div>
+                                </div>
+                              ) : (
+                                <div className="w-24 h-36 md:w-32 md:h-48 bg-gradient-to-br from-purple-100 to-purple-200 flex items-center justify-center rounded-md shadow-sm">
+                                  <svg 
+                                    xmlns="http://www.w3.org/2000/svg" 
+                                    width="24" 
+                                    height="24" 
+                                    viewBox="0 0 24 24" 
+                                    fill="none" 
+                                    stroke="currentColor" 
+                                    strokeWidth="2" 
+                                    strokeLinecap="round" 
+                                    strokeLinejoin="round" 
+                                    className="h-8 w-8 text-purple-400"
+                                  >
+                                    <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
+                                  </svg>
+                                </div>
+                              )}
+                              
+                              <div className="ml-5 md:ml-0 md:mt-4 md:text-center md:w-full flex flex-col md:items-center">
+                                <div className="mt-3 flex items-center">
+                                  {renderRating(book.rating)}
+                                </div>
+                                <span className="mt-2 text-xs font-medium px-2 py-0.5 rounded bg-purple-200 text-purple-800">
+                                  Already Read
+                                </span>
+                              </div>
+                            </div>
+                            
+                            <div className="md:w-3/4 flex flex-col">
+                              <div className="p-5 pb-3">
+                                <h4 className="font-semibold text-black text-xl mb-1">{book.title}</h4>
+                                <p className="text-black text-sm mb-3">by {book.author}</p>
+                                <div className="text-sm text-black">
+                                  <p className={expandedBooks.includes(index + 1000) ? '' : 'line-clamp-3'}>
+                                    {book.summary}
+                                  </p>
+                                  {book.summary && book.summary.length > 240 && (
+                                    <button 
+                                      onClick={() => toggleExpand(index + 1000)}
+                                      className="mt-2 text-purple-600 hover:text-purple-800 text-sm flex items-center font-medium"
+                                    >
+                                      {expandedBooks.includes(index + 1000) ? (
+                                        <>
+                                          <ChevronUp className="h-4 w-4 mr-1" /> 
+                                          Read Less
+                                        </>
+                                      ) : (
+                                        <>
+                                          <ChevronDown className="h-4 w-4 mr-1" /> 
+                                          Read More
+                                        </>
+                                      )}
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>
