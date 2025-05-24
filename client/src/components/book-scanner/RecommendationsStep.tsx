@@ -151,8 +151,8 @@ export default function RecommendationsStep({ recommendations, isLoading, goodre
             <div>
               <p className="mb-2">"{book.title}" has been added to your reading list.</p>
               <a 
-                href="/saved-books" 
-                className="text-blue-600 hover:text-blue-800 underline"
+                href="/reading-list" 
+                className="text-purple-600 hover:text-purple-800 underline"
                 onClick={() => {
                   // Close the toast when clicking the link
                   toast({ title: "", description: "", variant: "default" });
