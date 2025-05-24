@@ -58,37 +58,10 @@ export async function getOpenAIRecommendations(
     // Generate recommendations using OpenAI
     log(`Generating recommendations based on ${userBooks.length} books`, 'openai');
     
-    // For our first implementation, let's create a simpler fallback solution
-    // This will ensure users get recommendations even if OpenAI API has issues
-    
-    // Create default recommendations based on the user's interests
-    const defaultRecommendations = [
-      {
-        title: "Creativity: Flow and the Psychology of Discovery and Invention",
-        author: "Mihaly Csikszentmihalyi",
-        matchScore: 92,
-      },
-      {
-        title: "Building a StoryBrand",
-        author: "Donald Miller",
-        matchScore: 87,
-      },
-      {
-        title: "Deep Work",
-        author: "Cal Newport",
-        matchScore: 85,
-      },
-      {
-        title: "The Innovator's Dilemma",
-        author: "Clayton Christensen",
-        matchScore: 83,
-      },
-      {
-        title: "Atomic Habits",
-        author: "James Clear",
-        matchScore: 81,
-      }
-    ];
+    // We will never use fallback recommendations
+    // All recommendations must be derived from the user's actual scanned books
+    // If OpenAI doesn't provide valid recommendations, we'll throw an error
+    // This ensures we only show genuine personalized recommendations
     
     try {
       // Attempt to get recommendations from OpenAI
@@ -101,7 +74,8 @@ export async function getOpenAIRecommendations(
             Your task is to recommend books based on a user's reading history and preferences.
             Provide diverse, thoughtful recommendations that match the user's taste.
             For each recommendation, include the full title and author name.
-            Your recommendations should be specific books, not series or authors.`
+            Your recommendations should be specific books, not series or authors.
+            IMPORTANT: Your recommendations must be real books that actually exist and can be found in bookstores or libraries.`
           },
           {
             role: "user",
@@ -109,14 +83,30 @@ export async function getOpenAIRecommendations(
             ${genres ? `And my interest in these genres: ${genres}` : ''}
             ${authors ? `And my interest in these authors: ${authors}` : ''}
             
-            Please recommend 5 books I might enjoy.
+            Please recommend 5 books I might enjoy. Choose books that are similar in theme, style, or subject matter to the ones I've read.
             
-            Format your response as a JSON array with objects containing exactly these fields:
+            Format your response as a JSON object with a "recommendations" array containing objects with these fields:
             - title: The book title
             - author: The book author
             - matchScore: A number between 1-100 indicating how well this matches my preferences
             
-            Only return the JSON array with no additional text.`
+            Example format:
+            {
+              "recommendations": [
+                {
+                  "title": "Book Title 1",
+                  "author": "Author Name 1",
+                  "matchScore": 95
+                },
+                {
+                  "title": "Book Title 2",
+                  "author": "Author Name 2",
+                  "matchScore": 90
+                }
+              ]
+            }
+            
+            Only return the JSON object with no additional text.`
           }
         ],
         response_format: { type: "json_object" },
@@ -130,34 +120,45 @@ export async function getOpenAIRecommendations(
       // Parse the recommendations
       const content = response.choices[0].message.content;
       if (!content) {
-        log("Empty response from OpenAI, using default recommendations", 'openai');
-        return defaultRecommendations;
+        log("Empty response from OpenAI API", 'openai');
+        throw new Error("OpenAI API returned an empty response");
       }
       
-      let recommendations;
       try {
+        // Log the raw response for debugging
+        log(`Raw OpenAI response: ${content.substring(0, 200)}...`, 'openai');
+        
         const parsed = JSON.parse(content);
-        recommendations = parsed.recommendations || [];
         
-        if (!Array.isArray(recommendations) || recommendations.length === 0) {
-          // If the format doesn't match exactly, try to extract from the overall response
-          recommendations = parsed;
+        // Check if we have recommendations in the expected format
+        if (parsed.recommendations && Array.isArray(parsed.recommendations) && parsed.recommendations.length > 0) {
+          log(`Successfully parsed ${parsed.recommendations.length} recommendations from OpenAI`, 'openai');
+          return parsed.recommendations;
         }
         
-        // Verify we have valid recommendations
-        if (!Array.isArray(recommendations) || recommendations.length === 0) {
-          log("No valid recommendations received from OpenAI, using defaults", 'openai');
-          return defaultRecommendations;
+        // If not in the expected format but we have an array, try to use that
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          log(`Found ${parsed.length} recommendations in array format from OpenAI`, 'openai');
+          return parsed;
         }
         
-        return recommendations;
+        // Last attempt - look for any array in the response
+        const possibleArrays = Object.values(parsed).filter(value => Array.isArray(value) && value.length > 0);
+        if (possibleArrays.length > 0) {
+          const validRecommendations = possibleArrays[0] as Array<{title: string, author: string, matchScore?: number}>;
+          log(`Found ${validRecommendations.length} recommendations in nested format from OpenAI`, 'openai');
+          return validRecommendations;
+        }
+        
+        log("No valid recommendations structure found in OpenAI response", 'openai');
+        throw new Error("Could not extract valid book recommendations from OpenAI response");
       } catch (error) {
         log(`Error parsing OpenAI recommendations: ${error instanceof Error ? error.message : String(error)}`, 'openai');
-        return defaultRecommendations;
+        throw new Error("Failed to parse OpenAI book recommendations");
       }
     } catch (error) {
       log(`Error from OpenAI API: ${error instanceof Error ? error.message : String(error)}`, 'openai');
-      return defaultRecommendations;
+      throw new Error(`Failed to generate book recommendations: ${error instanceof Error ? error.message : String(error)}`);
     }
     
     // The code has been restructured to handle this better with proper returns
