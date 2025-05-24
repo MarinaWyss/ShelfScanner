@@ -17,6 +17,7 @@ import { syncDeviceIdCookie } from "./lib/deviceId";
 import AdminPage from "@/pages/admin";
 import TechImplementation from "@/pages/tech-implementation";
 import TestRecommendations from "@/pages/test-recommendations";
+import AdminStatsPage from "./pages/admin/StatsPage";
 
 // Google script loading removed
 
@@ -31,6 +32,7 @@ function Router() {
         <Route path="/terms-conditions" component={TermsConditions} />
         <Route path="/tech-implementation" component={TechImplementation} />
         <Route path="/admin" component={AdminPage} />
+        <Route path="/admin/stats" component={AdminStatsPage} />
         <Route path="/test-recommendations" component={TestRecommendations} />
         <Route component={NotFound} />
       </Switch>

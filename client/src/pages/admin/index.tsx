@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Link } from 'wouter';
+import { Link, useLocation } from 'wouter';
 import { 
   Card, 
   CardContent, 
@@ -17,6 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AlertCircle, Clock, AlertTriangle, CheckCircle, Info, Activity } from "lucide-react";
 // Import the LoginForm component 
 import LoginForm from '../../components/admin/LoginForm';
+
 
 interface ApiStats {
   windowUsage: number;
