@@ -57,19 +57,46 @@ router.post("/recommendations", async (req: Request, res: Response) => {
       // Enhance each recommendation with fresh OpenAI descriptions and match reasons
       const enhancedRecommendations = await Promise.all(baseRecommendations.map(async (book) => {
         try {
-          // Generate a fresh description using OpenAI (not from Google Books)
+          // Get fresh OpenAI-generated description
           const description = await getOpenAIDescription(book.title, book.author);
+          
+          // Get fresh OpenAI-generated rating - we don't want to use fallbacks
+          const bookCacheService = (await import('./book-cache-service')).bookCacheService;
+          const rating = await bookCacheService.getEnhancedRating(book.title, book.author, book.isbn);
           
           // Generate a personalized match reason explaining why this book matches preferences
           const matchReason = await getOpenAIMatchReason(book.title, book.author, preferences || {});
           
-          // Return the enhanced recommendation
+          // Cache this book with OpenAI data for future use
+          if (description || rating) {
+            // Create unique book ID
+            const bookId = book.isbn || 
+              `${book.title}-${book.author}`.toLowerCase().replace(/[^a-z0-9]/g, '-');
+              
+            await bookCacheService.cacheBook({
+              title: book.title,
+              author: book.author,
+              isbn: book.isbn,
+              coverUrl: book.coverUrl,
+              rating: rating, 
+              summary: description,
+              source: 'openai',
+              bookId,
+              metadata: {
+                categories: book.categories
+              },
+              expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) // 365 days cache
+            });
+            log(`Cached OpenAI data for recommendation "${book.title}"`, "openai");
+          }
+          
+          // Return the enhanced recommendation with fresh OpenAI data
           return {
             title: book.title,
             author: book.author,
             coverUrl: book.coverUrl || '',
             summary: description || "A compelling book that explores important themes and ideas.", // Always use our fresh OpenAI description
-            rating: book.rating || '4.0',
+            rating: rating || '4.0', // Use our fresh OpenAI rating
             isbn: book.isbn || '',
             categories: book.categories || [],
             matchScore: (book as any).matchScore || 75, // Default to 75 if no score available

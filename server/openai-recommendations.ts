@@ -71,17 +71,19 @@ export async function getOpenAIRecommendations(
           {
             role: "system",
             content: `You are a literary recommendation expert with deep knowledge of books across all genres.
-            Your task is to recommend books based on a user's reading history and preferences.
-            Provide diverse, thoughtful recommendations that match the user's taste.
+            Your task is to recommend ONLY books that are SIMILAR to the specific books in the user's photo.
+            VERY IMPORTANT: You must ONLY recommend books that are DIRECTLY related to the books shown in the user's scan.
+            NEVER recommend books outside the themes and styles represented in the user's scanned books.
+            Each recommendation must share significant thematic, stylistic, or subject matter with the books in the user's scan.
             For each recommendation, include the full title and author name.
             Your recommendations should be specific books, not series or authors.
             IMPORTANT: Your recommendations must be real books that actually exist and can be found in bookstores or libraries.`
           },
           {
             role: "user",
-            content: `Based on the following books I've read: ${formattedBooks}
-            ${genres ? `And my interest in these genres: ${genres}` : ''}
-            ${authors ? `And my interest in these authors: ${authors}` : ''}
+            content: `These are the books I scanned from my bookshelf: ${formattedBooks}
+            ${genres ? `I'm particularly interested in these genres: ${genres}` : ''}
+            ${authors ? `I enjoy books by these authors: ${authors}` : ''}
             
             Please recommend 5 books I might enjoy. Choose books that are similar in theme, style, or subject matter to the ones I've read.
             
@@ -165,8 +167,8 @@ export async function getOpenAIRecommendations(
     // in the try/catch blocks above
     
     // We should never reach this point, but just in case
-    log("Reached unexpected code path - using default recommendations", 'openai');
-    return defaultRecommendations;
+    log("Reached unexpected code path in recommendations", 'openai');
+    throw new Error("Failed to generate recommendations from scanned books");
   } catch (error) {
     log(`Error generating OpenAI recommendations: ${error instanceof Error ? error.message : String(error)}`, 'openai');
     throw error;
