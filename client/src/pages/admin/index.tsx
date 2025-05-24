@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { Link } from 'wouter';
 import { 
   Card, 
   CardContent, 
@@ -13,7 +14,7 @@ import { Progress } from "@/components/ui/progress";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertCircle, Clock, AlertTriangle, CheckCircle, Info } from "lucide-react";
+import { AlertCircle, Clock, AlertTriangle, CheckCircle, Info, Activity } from "lucide-react";
 // Import the LoginForm component 
 import LoginForm from '../../components/admin/LoginForm';
 
@@ -123,9 +124,16 @@ export default function AdminPage() {
     <div className="container mx-auto py-8 px-4">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-        <Button onClick={handleRefresh} variant="outline" className="flex items-center gap-2">
-          <Clock className="h-4 w-4" /> Refresh
-        </Button>
+        <div className="flex gap-2">
+          <Link href="/admin/stats">
+            <Button variant="default" className="flex items-center gap-2">
+              <Activity className="h-4 w-4" /> View Detailed Stats
+            </Button>
+          </Link>
+          <Button onClick={handleRefresh} variant="outline" className="flex items-center gap-2">
+            <Clock className="h-4 w-4" /> Refresh
+          </Button>
+        </div>
       </div>
 
       {error && (

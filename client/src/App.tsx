@@ -31,6 +31,7 @@ function Router() {
         <Route path="/terms-conditions" component={TermsConditions} />
         <Route path="/tech-implementation" component={TechImplementation} />
         <Route path="/admin" component={AdminPage} />
+        <Route path="/admin/stats" component={require('@/pages/admin/stats').default} />
         <Route path="/test-recommendations" component={TestRecommendations} />
         <Route component={NotFound} />
       </Switch>
