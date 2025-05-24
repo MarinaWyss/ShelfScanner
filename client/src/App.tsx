@@ -22,7 +22,7 @@ import TestRecommendations from "@/pages/test-recommendations";
 
 function Router() {
   return (
-    <WouterRouter base="" hashMode={true}>
+    <WouterRouter>
       <Switch>
         <Route path="/" component={Home} />
         <Route path="/books" component={Books} />
