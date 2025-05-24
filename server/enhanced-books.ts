@@ -207,11 +207,12 @@ export async function searchBooksByTitle(title: string): Promise<any[]> {
           author: bookAuthor,
           isbn: isbn,
           coverUrl: item.volumeInfo?.imageLinks?.thumbnail || '',
-          summary: '',  // Will be filled by OpenAI
-          rating: '',   // Will be filled by OpenAI
+          summary: '',  // IMPORTANT: Must be kept empty to be filled by OpenAI only
+          rating: '',   // IMPORTANT: Must be kept empty to be filled by OpenAI only
           publisher: item.volumeInfo?.publisher || '', // Not critical
           categories: item.volumeInfo?.categories || [], // Not critical
-          detectedFrom: title
+          detectedFrom: title,
+          source: 'google_books_api' // Track the source to ensure we don't accidentally use Google's data
         };
       });
       
