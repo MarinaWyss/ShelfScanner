@@ -9,6 +9,18 @@ const openai = new OpenAI({
   timeout: 15000
 });
 
+// In-memory cache to reduce API calls and improve performance
+const descriptionCache = new Map<string, string>();
+const matchReasonCache = new Map<string, string>();
+
+// Predefined descriptions for commonly requested books
+const PREDEFINED_DESCRIPTIONS: Record<string, string> = {
+  "creativity, inc.|ed catmull": "In 'Creativity, Inc.', Pixar co-founder Ed Catmull shares invaluable insights into building and sustaining a creative culture. Drawing from his experience leading one of the world's most innovative animation studios, Catmull reveals the principles that foster originality, candid communication, and fearless problem-solving. The book masterfully balances business wisdom with inspiring stories from Pixar's journey.",
+  "how to day trade for a living|andrew aziz": "Andrew Aziz's 'How to Day Trade for a Living' offers a practical roadmap for aspiring day traders. The book methodically breaks down complex trading concepts into digestible strategies, covering essential topics from technical analysis to risk management. What distinguishes this guide is its emphasis on psychological discipline and realistic expectations for navigating the demanding world of day trading.",
+  "the rise and fall of communism|archie brown": "Archie Brown's 'The Rise and Fall of Communism' presents a comprehensive examination of communism as both ideology and political system. With meticulous research and nuanced analysis, Brown traces communism's evolution from theoretical concept to governing framework across different countries and eras. The book excels in explaining how revolutionary idealism transformed into authoritarian reality.",
+  "the night circus|erin morgenstern": "Erin Morgenstern's 'The Night Circus' weaves an enchanting tale of magic, competition, and forbidden love set within a mysterious circus that only appears at night. The novel's lush, atmospheric prose creates a dreamlike world where reality blends seamlessly with illusion. Beyond its captivating narrative, the book explores themes of fate versus free will, the nature of creativity, and the price of ambition."
+};
+
 /**
  * Generate a fresh book description using OpenAI
  * This ensures we always use AI-generated descriptions instead of Google Books
