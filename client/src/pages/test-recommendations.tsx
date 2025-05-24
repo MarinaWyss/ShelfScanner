@@ -191,6 +191,7 @@ export default function TestRecommendations() {
                       <TableHead>Title</TableHead>
                       <TableHead>Author</TableHead>
                       <TableHead>Categories</TableHead>
+                      <TableHead>Match Reason</TableHead>
                       <TableHead className="text-right">Match Score</TableHead>
                     </TableRow>
                   </TableHeader>
@@ -200,6 +201,7 @@ export default function TestRecommendations() {
                         <TableCell className="font-medium">{book.title}</TableCell>
                         <TableCell>{book.author}</TableCell>
                         <TableCell>{book.categories?.join(", ") || "—"}</TableCell>
+                        <TableCell>{book.matchReason || "—"}</TableCell>
                         <TableCell className="text-right">
                           {book.matchScore !== undefined ? book.matchScore : "—"}
                         </TableCell>

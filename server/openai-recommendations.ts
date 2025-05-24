@@ -38,7 +38,7 @@ interface RecommendationResponse {
   bookTitle: string;
   bookAuthor: string;
   matchScore: number;
-  // Removed matchReason as we don't display it
+  matchReason?: string;
 }
 
 /**
@@ -46,7 +46,7 @@ interface RecommendationResponse {
  */
 interface EnhancedBookInfo extends BookInfo {
   matchScore?: number;
-  // Removed matchReason as we don't display it
+  matchReason?: string;
 }
 
 /**
@@ -147,7 +147,8 @@ IMPORTANT: Return your recommendations in this exact JSON format with no text be
     {
       "bookTitle": "Book Title",
       "bookAuthor": "Author Name",
-      "matchScore": 85
+      "matchScore": 85,
+      "matchReason": "Brief explanation of why this book matches the user's preferences (1-2 sentences)"
     }
   ]
 }`
@@ -208,10 +209,11 @@ IMPORTANT: Return your recommendations in this exact JSON format with no text be
           continue;
         }
         
-        // Add the match score to the original book (removed matchReason)
+        // Add the match score and reason to the original book
         enhancedBooks.push({
           ...originalBook,
-          matchScore: rec.matchScore
+          matchScore: rec.matchScore,
+          matchReason: rec.matchReason
         });
       }
       
