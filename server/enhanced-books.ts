@@ -525,6 +525,10 @@ export async function getRecommendations(
             // Log each recommendation with its match reason to debug
             console.log(`Recommendation: "${book.title}" - Match Score: ${(book as any).matchScore} - Match Reason: ${(book as any).matchReason || 'None provided'}`);
             
+            // Make sure matchReason is passed through properly
+            const matchReason = (book as any).matchReason || '';
+            console.log(`DEBUG - Full match reason for "${book.title}": ${matchReason}`);
+            
             return {
               title: book.title,
               author: book.author,
@@ -534,7 +538,7 @@ export async function getRecommendations(
               isbn: book.isbn || '',
               categories: book.categories || [],
               score: (book as any).matchScore || 0,
-              matchReason: (book as any).matchReason || '',
+              matchReason: matchReason,
               alreadyRead: false,
               isBookRecommendation: true,
               fromAI: true
