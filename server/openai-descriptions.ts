@@ -31,6 +31,24 @@ const PREDEFINED_DESCRIPTIONS: Record<string, string> = {
  */
 export async function getOpenAIDescription(title: string, author: string): Promise<string> {
   try {
+    // Create a cache key
+    const cacheKey = `${title}|${author}`.toLowerCase();
+    
+    // Check if we have this description cached in memory
+    if (descriptionCache.has(cacheKey)) {
+      const cachedDescription = descriptionCache.get(cacheKey);
+      log(`Using cached description for "${title}" by ${author}`, 'openai');
+      return cachedDescription!;
+    }
+    
+    // Check if we have a predefined description
+    if (PREDEFINED_DESCRIPTIONS[cacheKey]) {
+      const predefinedDescription = PREDEFINED_DESCRIPTIONS[cacheKey];
+      descriptionCache.set(cacheKey, predefinedDescription); // Cache it for future use
+      log(`Using predefined description for "${title}" by ${author}`, 'openai');
+      return predefinedDescription;
+    }
+    
     log(`Generating fresh OpenAI description for "${title}" by ${author}`, 'openai');
     
     // Check if OpenAI is configured
@@ -75,6 +93,9 @@ export async function getOpenAIDescription(title: string, author: string): Promi
     const description = response.choices[0].message.content?.trim() || "No description available";
     log(`Generated OpenAI description for "${title}" (${description.length} chars)`, 'openai');
     
+    // Cache the description for future use
+    descriptionCache.set(cacheKey, description);
+    
     return description;
   } catch (error) {
     log(`Error generating OpenAI description: ${error instanceof Error ? error.message : String(error)}`, 'openai');
@@ -91,12 +112,43 @@ export async function getOpenAIDescription(title: string, author: string): Promi
  * @param userPreferences User preferences (genres, authors, etc.)
  * @returns A personalized match reason
  */
+// Predefined match reasons for popular books
+const PREDEFINED_MATCH_REASONS: Record<string, string> = {
+  "creativity, inc.|ed catmull|business,creativity": "This book directly addresses your interest in business and creativity, offering valuable insights into fostering innovation from Pixar's co-founder.",
+  "how to day trade for a living|andrew aziz|business,finance": "This practical guide matches your interest in business and finance, providing actionable trading strategies and psychological insights.",
+  "the night circus|erin morgenstern|fantasy,fiction": "This magical realism masterpiece aligns perfectly with your interest in fantasy fiction, offering an enchanting world of competition and illusion.",
+  "creativity, inc.|ed catmull|": "This insightful book offers valuable perspectives on creative leadership and innovation from Pixar's co-founder, with lessons that apply across many fields.",
+  "how to day trade for a living|andrew aziz|": "This practical guide provides clear, actionable strategies for day trading, suitable for both beginners and those looking to refine their trading approach.",
+  "the night circus|erin morgenstern|": "This enchanting novel creates a captivating world of magic and competition, with beautiful prose and intricate storytelling that appeals to readers who enjoy immersive fiction."
+};
+
 export async function getOpenAIMatchReason(
   title: string, 
   author: string, 
   userPreferences: { genres?: string[], authors?: string[] }
 ): Promise<string> {
   try {
+    // Create a simpler preference key for matching
+    const preferencesKey = userPreferences.genres?.join(',').toLowerCase() || '';
+    
+    // Create a cache key for the match reason
+    const cacheKey = `${title}|${author}|${preferencesKey}`.toLowerCase();
+    
+    // Check if we have this match reason cached in memory
+    if (matchReasonCache.has(cacheKey)) {
+      const cachedReason = matchReasonCache.get(cacheKey);
+      log(`Using cached match reason for "${title}" by ${author}`, 'openai');
+      return cachedReason!;
+    }
+    
+    // Check if we have a predefined match reason
+    if (PREDEFINED_MATCH_REASONS[cacheKey]) {
+      const predefinedReason = PREDEFINED_MATCH_REASONS[cacheKey];
+      matchReasonCache.set(cacheKey, predefinedReason); // Cache it for future use
+      log(`Using predefined match reason for "${title}" by ${author}`, 'openai');
+      return predefinedReason;
+    }
+    
     log(`Generating match reason for "${title}" by ${author}`, 'openai');
     
     // Check if OpenAI is configured
@@ -112,8 +164,8 @@ export async function getOpenAIMatchReason(
     }
     
     // Format user preferences for the prompt
-    const genres = userPreferences.genres?.join(', ') || 'various genres';
-    const authors = userPreferences.authors?.join(', ') || 'various authors';
+    const genresList = userPreferences.genres?.join(', ') || 'various genres';
+    const authorsList = userPreferences.authors?.join(', ') || 'various authors';
     
     // Generate a personalized match reason using OpenAI
     const response = await openai.chat.completions.create({
@@ -128,7 +180,7 @@ export async function getOpenAIMatchReason(
         },
         {
           role: "user",
-          content: `Write a personalized explanation of why the book "${title}" by ${author} would appeal to a reader who enjoys ${genres} and authors like ${authors}.
+          content: `Write a personalized explanation of why the book "${title}" by ${author} would appeal to a reader who enjoys ${genresList} and authors like ${authorsList}.
           Write in second person (using "you" and "your").
           Be specific about why this book matches their interests.
           Keep your response under 100 words and focus only on the match reason.`
@@ -146,6 +198,9 @@ export async function getOpenAIMatchReason(
       "This book aligns with your reading preferences based on its themes and style.";
     
     log(`Generated match reason for "${title}" (${matchReason.length} chars)`, 'openai');
+    
+    // Cache the match reason for future use
+    matchReasonCache.set(cacheKey, matchReason);
     
     return matchReason;
   } catch (error) {
