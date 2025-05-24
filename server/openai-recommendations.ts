@@ -155,7 +155,7 @@ IMPORTANT: Return your recommendations in this exact JSON format with no text be
       ],
       response_format: { type: "json_object" },
       max_tokens: 1000,
-      temperature: 0.5 // Lower temperature for more consistent recommendations
+      temperature: 0.2 // Set to 0.2 for more deterministic recommendations
     });
     
     // Increment OpenAI API counter

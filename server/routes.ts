@@ -25,12 +25,16 @@ const upload = multer({
 
 import { registerEnvRoutes } from './env-routes';
 import { adminMonitoringRoutes } from './admin-monitoring';
+import { testRecommendationsRoutes } from './test-recommendations';
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth routes have been removed
   
   // Register admin monitoring routes (protected by authentication)
   app.use('/api/admin', adminMonitoringRoutes);
+  
+  // Register test routes for OpenAI recommendations
+  app.use('/api/test', testRecommendationsRoutes);
   // Clean up non-OpenAI ratings to ensure consistent OpenAI-generated content
   try {
     const cleanedCount = await bookCacheService.cleanupNonOpenAIRatings();
