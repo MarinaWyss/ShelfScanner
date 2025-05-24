@@ -14,7 +14,9 @@ import { Progress } from "@/components/ui/progress";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertCircle, Clock, AlertTriangle, CheckCircle, Info, Activity } from "lucide-react";
+import { AlertCircle, Clock, AlertTriangle, CheckCircle, Info, Activity, Server } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 // Import the LoginForm component 
 import LoginForm from '../../components/admin/LoginForm';
 
@@ -151,6 +153,7 @@ export default function AdminPage() {
         <TabsList className="mb-6">
           <TabsTrigger value="system">System Status</TabsTrigger>
           <TabsTrigger value="api">API Usage</TabsTrigger>
+          <TabsTrigger value="monitoring">API Monitoring</TabsTrigger>
           <TabsTrigger value="logs">Logs</TabsTrigger>
         </TabsList>
 
@@ -209,6 +212,198 @@ export default function AdminPage() {
           </div>
         </TabsContent>
 
+        {/* API Monitoring Tab */}
+        <TabsContent value="monitoring">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            {/* OpenAI API Status Card */}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Server className="h-5 w-5" />
+                  OpenAI API Status
+                </CardTitle>
+                <CardDescription>
+                  Current status and monitoring
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {data?.apiMonitoring?.openai && (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium">Status:</span>
+                      <Badge 
+                        variant={data.apiMonitoring.openai.configured ? "outline" : "destructive"}
+                        className={data.apiMonitoring.openai.configured ? "bg-green-100 text-green-800" : ""}
+                      >
+                        {data.apiMonitoring.openai.configured ? "Available" : "Not Configured"}
+                      </Badge>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span>Daily Usage:</span>
+                        <span className="font-medium">
+                          {data.apiMonitoring.openai.usageToday} / {data.apiMonitoring.openai.dailyLimit}
+                        </span>
+                      </div>
+                      <Progress 
+                        value={data.apiMonitoring.openai.dailyLimit 
+                          ? (data.apiMonitoring.openai.usageToday / data.apiMonitoring.openai.dailyLimit) * 100 
+                          : 0} 
+                        className="h-2" 
+                      />
+                    </div>
+                    
+                    <div className="pt-2">
+                      <h4 className="font-semibold mb-2">Failure Monitoring</h4>
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <span>Failure Count:</span>
+                          <Badge variant={data.apiMonitoring.openai.failureCount > 0 ? "destructive" : "outline"}>
+                            {data.apiMonitoring.openai.failureCount}
+                          </Badge>
+                        </div>
+                        
+                        <div className="flex justify-between">
+                          <span>Affected Users:</span>
+                          <span>{data.apiMonitoring.openai.affectedUsers}</span>
+                        </div>
+                        
+                        {data.apiMonitoring.openai.isCritical && (
+                          <Alert variant="destructive" className="mt-2">
+                            <AlertTriangle className="h-4 w-4" />
+                            <AlertTitle>Critical Issue Detected</AlertTitle>
+                            <AlertDescription>
+                              Multiple failures affecting several users. This requires immediate attention.
+                            </AlertDescription>
+                          </Alert>
+                        )}
+                        
+                        {data.apiMonitoring.openai.lastFailure && (
+                          <div className="flex justify-between text-sm text-muted-foreground">
+                            <span>Last failure:</span>
+                            <span>{new Date(data.apiMonitoring.openai.lastFailure).toLocaleString()}</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+            
+            {/* System Health Card */}
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <Activity className="h-5 w-5" />
+                  System Health
+                </CardTitle>
+                <CardDescription>
+                  Overall system health metrics
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {data?.health && (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium">Status:</span>
+                      <Badge 
+                        variant={data.health.status === 'healthy' ? "outline" : "destructive"}
+                        className={data.health.status === 'healthy' ? "bg-green-100 text-green-800" : ""}
+                      >
+                        {data.health.status === 'healthy' ? "Healthy" : "Issues Detected"}
+                      </Badge>
+                    </div>
+                    
+                    <Separator />
+                    
+                    <div className="space-y-2">
+                      <h4 className="font-semibold">Memory Usage</h4>
+                      <div className="flex justify-between items-center text-sm">
+                        <span>Used / Total:</span>
+                        <span>
+                          {Math.round(data.health.memory?.used / 1024 / 1024)} MB / 
+                          {Math.round(data.health.memory?.total / 1024 / 1024)} MB
+                        </span>
+                      </div>
+                      <Progress 
+                        value={data.health.memory?.usedPercentage || 0} 
+                        className="h-2" 
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <h4 className="font-semibold">CPU Load</h4>
+                      <div className="flex justify-between items-center text-sm">
+                        <span>Current Load:</span>
+                        <span>{data.health.cpu?.loadPercentage.toFixed(1)}%</span>
+                      </div>
+                      <Progress 
+                        value={data.health.cpu?.loadPercentage || 0} 
+                        className="h-2" 
+                      />
+                    </div>
+                    
+                    <div className="flex justify-between text-sm text-muted-foreground pt-2">
+                      <span>Last updated:</span>
+                      <span>{new Date(data.timestamp).toLocaleString()}</span>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+          
+          <Card>
+            <CardHeader>
+              <CardTitle>API Failure Details</CardTitle>
+              <CardDescription>
+                Details of API failures by endpoint
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {data?.apiMonitoring?.failures && Object.keys(data.apiMonitoring.failures).length > 0 ? (
+                <div className="space-y-6">
+                  {Object.entries(data.apiMonitoring.failures).map(([endpoint, details]: [string, any]) => (
+                    <div key={endpoint} className="p-4 border rounded-lg">
+                      <h3 className="text-lg font-semibold mb-2">{endpoint}</h3>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <span className="text-sm text-muted-foreground">Failure Count:</span>
+                          <p className="font-medium">{details.count}</p>
+                        </div>
+                        <div>
+                          <span className="text-sm text-muted-foreground">Affected Users:</span>
+                          <p className="font-medium">{details.users?.length || 0}</p>
+                        </div>
+                        <div className="col-span-2">
+                          <span className="text-sm text-muted-foreground">Last Error:</span>
+                          <p className="text-sm font-mono bg-gray-100 dark:bg-gray-800 p-2 rounded mt-1 overflow-x-auto">
+                            {details.lastError || "No error details available"}
+                          </p>
+                        </div>
+                        <div className="col-span-2">
+                          <span className="text-sm text-muted-foreground">Last Occurrence:</span>
+                          <p>{details.lastFailure ? new Date(details.lastFailure).toLocaleString() : "Unknown"}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <CheckCircle className="h-12 w-12 text-green-500 mx-auto mb-4" />
+                  <h3 className="text-xl font-medium mb-2">No API Failures</h3>
+                  <p className="text-muted-foreground">
+                    All APIs are functioning correctly. No failures have been detected.
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
         {/* Logs Tab */}
         <TabsContent value="logs">
           <Card>
