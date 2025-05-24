@@ -151,7 +151,8 @@ Only return the JSON object with no additional text.`
           });
           
           // Validate that each recommendation is from the user's book list
-          const validatedRecommendations = parsed.recommendations.filter(rec => {
+          // And enhance with original properties (like coverUrl, isbn) from the user's book
+          const validatedRecommendations = parsed.recommendations.filter((rec: any) => {
             if (!rec.title || !rec.author) return false;
             
             const key = `${rec.title.toLowerCase()}|${rec.author.toLowerCase()}`;
@@ -162,6 +163,17 @@ Only return the JSON object with no additional text.`
             }
             
             return isInUserBooks;
+          }).map((rec: any) => {
+            // Enhance the recommendation with original properties from the user's book
+            const key = `${rec.title.toLowerCase()}|${rec.author.toLowerCase()}`;
+            const originalBook = userBooksMap.get(key);
+            
+            // Preserve important properties from the original book like coverUrl and ISBN
+            return {
+              ...rec,
+              coverUrl: originalBook.coverUrl || rec.coverUrl,
+              isbn: originalBook.isbn || rec.isbn
+            };
           });
           
           log(`Validated ${validatedRecommendations.length} recommendations are from the user's book list`, 'openai');
@@ -180,11 +192,23 @@ Only return the JSON object with no additional text.`
           });
           
           // Validate that each recommendation is from the user's book list
-          const validatedRecommendations = parsed.filter(rec => {
+          // And enhance with original properties (like coverUrl, isbn) from the user's book
+          const validatedRecommendations = parsed.filter((rec: any) => {
             if (!rec.title || !rec.author) return false;
             
             const key = `${rec.title.toLowerCase()}|${rec.author.toLowerCase()}`;
             return userBooksMap.has(key);
+          }).map((rec: any) => {
+            // Enhance the recommendation with original properties from the user's book
+            const key = `${rec.title.toLowerCase()}|${rec.author.toLowerCase()}`;
+            const originalBook = userBooksMap.get(key);
+            
+            // Preserve important properties from the original book like coverUrl and ISBN
+            return {
+              ...rec,
+              coverUrl: originalBook.coverUrl || rec.coverUrl,
+              isbn: originalBook.isbn || rec.isbn
+            };
           });
           
           log(`Validated ${validatedRecommendations.length} recommendations are from the user's book list`, 'openai');
