@@ -57,6 +57,15 @@ router.post("/recommendations", async (req: Request, res: Response) => {
       // Enhance each recommendation with fresh OpenAI descriptions and match reasons
       const enhancedRecommendations = await Promise.all(baseRecommendations.map(async (book) => {
         try {
+          // Find the original book from the user's list to get the cover URL
+          const originalBook = books.find(b => 
+            b.title.toLowerCase() === book.title.toLowerCase() && 
+            b.author.toLowerCase() === book.author.toLowerCase()
+          );
+          
+          // Ensure we have a cover URL from the original scanned book if available
+          const coverUrl = originalBook?.coverUrl || book.coverUrl || '';
+          
           // Get fresh OpenAI-generated description
           const description = await getOpenAIDescription(book.title, book.author);
           
@@ -67,21 +76,21 @@ router.post("/recommendations", async (req: Request, res: Response) => {
           // Generate a personalized match reason explaining why this book matches preferences
           const matchReason = await getOpenAIMatchReason(book.title, book.author, preferences || {});
           
+          // Make sure we have an ISBN if it's available in the original book
+          const isbn = originalBook?.isbn || book.isbn || '';
+          
           // Cache this book with OpenAI data for future use
           if (description || rating) {
-            // Create unique book ID
-            const bookId = book.isbn || 
-              `${book.title}-${book.author}`.toLowerCase().replace(/[^a-z0-9]/g, '-');
-              
+            // Let the BookCacheService handle generating the bookId
+            // It will be created automatically based on ISBN or title+author
             await bookCacheService.cacheBook({
               title: book.title,
               author: book.author,
-              isbn: book.isbn,
-              coverUrl: book.coverUrl,
+              isbn: isbn,
+              coverUrl: coverUrl,
               rating: rating, 
               summary: description,
               source: 'openai',
-              bookId,
               metadata: {
                 categories: book.categories
               },
@@ -94,10 +103,10 @@ router.post("/recommendations", async (req: Request, res: Response) => {
           return {
             title: book.title,
             author: book.author,
-            coverUrl: book.coverUrl || '',
+            coverUrl: coverUrl,
             summary: description || "A compelling book that explores important themes and ideas.", // Always use our fresh OpenAI description
             rating: rating || '4.0', // Use our fresh OpenAI rating
-            isbn: book.isbn || '',
+            isbn: isbn,
             categories: book.categories || [],
             matchScore: (book as any).matchScore || 75, // Default to 75 if no score available
             matchReason: matchReason || "This book aligns with your reading preferences.", // Always use our fresh match reason
@@ -106,13 +115,26 @@ router.post("/recommendations", async (req: Request, res: Response) => {
         } catch (error) {
           // If there's an error with OpenAI for this specific book, return basic info
           log(`Error enhancing book ${book.title}: ${error instanceof Error ? error.message : String(error)}`, "openai");
+          
+          // Find the original book from the user's list to get the cover URL (even in error case)
+          const originalBook = books.find(b => 
+            b.title.toLowerCase() === book.title.toLowerCase() && 
+            b.author.toLowerCase() === book.author.toLowerCase()
+          );
+          
+          // Ensure we have a cover URL from the original scanned book if available
+          const coverUrl = originalBook?.coverUrl || book.coverUrl || '';
+          
+          // Make sure we have an ISBN if it's available in the original book
+          const isbn = originalBook?.isbn || book.isbn || '';
+          
           return {
             title: book.title,
             author: book.author,
-            coverUrl: book.coverUrl || '',
+            coverUrl: coverUrl,
             summary: "A compelling book that explores important themes and ideas.",
             rating: book.rating || '4.0',
-            isbn: book.isbn || '',
+            isbn: isbn,
             categories: book.categories || [],
             matchScore: (book as any).matchScore || 75,
             matchReason: "This book appears to align with your reading preferences.",
