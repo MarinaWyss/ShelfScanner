@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 import { log } from './vite';
 import { rateLimiter } from './rate-limiter';
+import { trackApiFailure } from './utils/api-monitoring';
 
 // Configure OpenAI client
 const openai = new OpenAI({ 
@@ -228,7 +229,12 @@ IMPORTANT: Return your recommendations in this exact JSON format with no text be
       return [];
     }
   } catch (error) {
-    log(`Error getting OpenAI recommendations: ${error instanceof Error ? error.message : String(error)}`, 'recommendations');
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    log(`Error getting OpenAI recommendations: ${errorMessage}`, 'recommendations');
+    
+    // Track API failure for monitoring and alerting
+    trackApiFailure('openai', errorMessage);
+    
     return [];
   }
 }
