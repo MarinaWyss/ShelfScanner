@@ -321,7 +321,6 @@ export default function RecommendationsStep({ recommendations, isLoading, goodre
                 <div className="grid grid-cols-1 gap-6">
                   {recommendations
                     .filter(book => !isBookAlreadyRead(book) && !book.isBookYouveRead)
-                    .slice(0, 3)
                     .map((book, index) => (
                       <div 
                         key={index} 
