@@ -108,12 +108,8 @@ export default function Books() {
         return [];
       }
       
-      // Collect user preferences to personalize recommendations
-      const userPreferences = {
-        genres: selectedGenres,
-        authors: [], // Could be populated from user profile in the future
-        goodreadsData: parsedCsvData // Include Goodreads data if available
-      };
+      // Use the existing userPreferences from state
+      // This includes genres, authors, and goodreadsData that were collected in the preferences step
       
       // Include the detected books and preferences in the request
       console.log("Sending books for OpenAI recommendations:", detectedBooks.length);
