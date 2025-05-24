@@ -173,21 +173,27 @@ export async function getOpenAIMatchReason(
       messages: [
         {
           role: "system",
-          content: `You are a literary recommendation expert that explains why books match a reader's preferences.
-          Create personalized explanations written in second person (using "you" and "your").
-          Be specific about why the book matches their interests based on genre, themes, or writing style.
-          Keep explanations concise (2-3 sentences) and focused on what makes this a good match.`
+          content: `You are a literary recommendation expert who provides short, precise explanations for book matches.
+          
+          CRITICAL INSTRUCTIONS:
+          1. ONLY mention genres and authors the user EXPLICITLY listed in their preferences
+          2. Do NOT make assumptions about what else they might like based on their preferences
+          3. Do NOT suggest connections between genres that aren't directly related
+          4. Use ONLY 1-2 short sentences focused on DIRECT connections
+          5. Be factual and avoid flowery language or excessive enthusiasm`
         },
         {
           role: "user",
-          content: `Write a personalized explanation of why the book "${title}" by ${author} would appeal to a reader who enjoys ${genresList} and authors like ${authorsList}.
+          content: `Why would the book "${title}" by ${author} appeal to someone who enjoys ${genresList} and authors like ${authorsList}?
+          
           Write in second person (using "you" and "your").
-          Be specific about why this book matches their interests.
-          Keep your response under 100 words and focus only on the match reason.`
+          Make ONLY direct connections to the user's stated preferences.
+          Do NOT assume interests they haven't explicitly mentioned.
+          Keep your response under 40 words - be extremely concise.`
         }
       ],
-      max_tokens: 150,
-      temperature: 0.7
+      max_tokens: 60,
+      temperature: 0.6
     });
     
     // Increment the rate limiter counter
