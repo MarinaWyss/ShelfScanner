@@ -391,8 +391,8 @@ export default function RecommendationsStep({ recommendations, isLoading, goodre
                               <h4 className="font-semibold text-black text-xl mb-1">{book.title}</h4>
                               <p className="text-black text-sm mb-3">by {book.author}</p>
                               
-                              {/* Display match reason in second person format */}
-                              {book.matchReason && (
+                              {/* Display match reason in second person format only when available */}
+                              {book.matchReason && book.matchReason.trim() !== "" && (
                                 <div className="mt-2 text-sm bg-blue-50 p-3 rounded-md border border-blue-100">
                                   <p className="text-blue-800">
                                     {book.matchReason.replace(/the user's/gi, "your")
