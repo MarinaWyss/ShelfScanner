@@ -212,11 +212,15 @@ async function enhanceBookData(books: BookInfo[]): Promise<BookInfo[]> {
         
         // ALWAYS get summary from OpenAI - never use data from Google Books or other sources
         try {
-          // We're passing existing summary as null to force OpenAI to generate a new one
+          // Always discard any existing summary that might have come from Google Books
+          // This ensures we're only using fresh OpenAI-generated descriptions
+          book.summary = undefined;
+          
+          // Generate a fresh OpenAI description
           const summary = await bookCacheService.getEnhancedSummary(book.title, book.author);
           if (summary) {
             book.summary = summary;
-            log(`Enhanced summary for "${book.title}"`, 'books');
+            log(`Enhanced summary for "${book.title}" with fresh OpenAI description`, 'books');
           }
         } catch (error) {
           log(`Failed to get enhanced summary for "${book.title}": ${error instanceof Error ? error.message : String(error)}`, 'books');
@@ -227,6 +231,10 @@ async function enhanceBookData(books: BookInfo[]): Promise<BookInfo[]> {
           const now = new Date();
           const expiresAt = new Date(now.getTime() + 60 * 24 * 60 * 60 * 1000); // 60 days cache
           
+          // Generate a unique ID for this book
+          const uniqueId = book.isbn || 
+            `${book.title}-${book.author}`.toLowerCase().replace(/[^a-z0-9]/g, '-');
+            
           await storage.cacheBook({
             title: book.title,
             author: book.author,
@@ -234,7 +242,8 @@ async function enhanceBookData(books: BookInfo[]): Promise<BookInfo[]> {
             coverUrl: book.coverUrl,
             rating: book.rating,
             summary: book.summary,
-            source: 'openai',
+            source: 'openai', // Explicitly mark as OpenAI source
+            bookId: uniqueId, // Add the required bookId field
             metadata: {
               publisher: book.publisher,
               categories: book.categories

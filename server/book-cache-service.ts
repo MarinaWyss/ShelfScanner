@@ -132,7 +132,23 @@ export class BookCacheService {
     source?: 'google' | 'amazon' | 'openai' | 'saved';
     expiresAt?: Date;
   }): Promise<BookCache> {
+    // If source is not explicitly set to 'openai', we will only cache minimal data
+    // (like cover URLs) but never descriptions or ratings
     const source = bookData.source || 'google';
+    
+    // NEVER cache book descriptions that don't come from OpenAI
+    // This ensures our descriptions are always high-quality
+    if (source !== 'openai' && bookData.summary) {
+      log(`Refusing to cache non-OpenAI description for "${bookData.title}" - source: ${source}`, 'cache');
+      bookData.summary = undefined; // Use undefined instead of null to match type
+    }
+    
+    // NEVER cache ratings that don't come from OpenAI or verified sources
+    if (source !== 'openai' && bookData.rating) {
+      log(`Refusing to cache non-OpenAI rating for "${bookData.title}" - source: ${source}`, 'cache');
+      bookData.rating = undefined; // Use undefined instead of null to match type
+    }
+    
     try {
       // Normalize inputs for consistent matching
       const normalizedTitle = bookData.title.trim();
@@ -212,20 +228,21 @@ export class BookCacheService {
       }
       
       // Insert new cache entry
-      const bookId = bookData.bookId || 
+      // Generate a unique ID for this book
+      const uniqueId = 
         bookData.isbn || 
         `${normalizedTitle}-${normalizedAuthor}`.toLowerCase().replace(/[^a-z0-9]/g, '-');
       
       const insertData: InsertBookCache = {
         title: normalizedTitle,
         author: normalizedAuthor,
-        isbn: bookData.isbn || null,
-        coverUrl: bookData.coverUrl || null,
-        rating: bookData.rating || null,
-        summary: bookData.summary || null,
+        isbn: bookData.isbn || undefined,
+        coverUrl: bookData.coverUrl || undefined,
+        rating: bookData.rating || undefined,
+        summary: bookData.summary || undefined,
         source: source,
-        bookId, // Add required bookId field
-        metadata: bookData.metadata || null,
+        bookId: uniqueId, // Use our generated unique ID
+        metadata: bookData.metadata || undefined,
         expiresAt: expiresAt
       };
       
