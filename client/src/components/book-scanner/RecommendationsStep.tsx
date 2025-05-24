@@ -16,6 +16,7 @@ interface Recommendation {
   rating: string;
   summary: string;
   matchScore?: number;
+  matchReason?: string;
   alreadyRead?: boolean;
   isBookRecommendation?: boolean;
   isBookYouveRead?: boolean;
@@ -389,6 +390,21 @@ export default function RecommendationsStep({ recommendations, isLoading, goodre
                             <div className="p-5 pb-3">
                               <h4 className="font-semibold text-black text-xl mb-1">{book.title}</h4>
                               <p className="text-black text-sm mb-3">by {book.author}</p>
+                              
+                              {/* Display match reason in second person format */}
+                              {book.matchReason && (
+                                <div className="mt-2 text-sm bg-blue-50 p-3 rounded-md border border-blue-100">
+                                  <p className="text-blue-800">
+                                    {book.matchReason.replace(/the user's/gi, "your")
+                                      .replace(/user has/gi, "you have")
+                                      .replace(/user likes/gi, "you like")
+                                      .replace(/user enjoys/gi, "you enjoy")
+                                      .replace(/user is/gi, "you are")
+                                      .replace(/user will/gi, "you will")
+                                      .replace(/user/gi, "you")}
+                                  </p>
+                                </div>
+                              )}
                               <div className="text-sm text-black">
                                 <p className={expandedBooks.includes(index) ? '' : 'line-clamp-3'}>
                                   {book.summary}
