@@ -99,8 +99,25 @@ export async function getOpenAIRecommendations(
           const recentlyRead = goodreads.recentlyRead 
             ? `Recently read books: ${goodreads.recentlyRead.join(', ')}.` 
             : '';
+            
+          // Extract "Want to Read" books from Goodreads data if available
+          let wantToReadBooks = '';
+          if (preferences.goodreadsData.raw && Array.isArray(preferences.goodreadsData.raw)) {
+            const wantToReadList = preferences.goodreadsData.raw
+              .filter((entry: any) => 
+                entry["Bookshelves"] && 
+                (entry["Bookshelves"].includes("to-read") || 
+                 entry["Bookshelves"].includes("want-to-read") || 
+                 entry["Bookshelves"].includes("want to read")))
+              .map((entry: any) => `${entry["Title"]} by ${entry["Author"]}`)
+              .slice(0, 10); // Limit to 10 books to avoid very long prompts
+              
+            if (wantToReadList.length > 0) {
+              wantToReadBooks = `Books I want to read from Goodreads: ${wantToReadList.join(', ')}.`;
+            }
+          }
           
-          goodreadsInfo = [favoriteBooks, favoriteGenres, recentlyRead]
+          goodreadsInfo = [favoriteBooks, favoriteGenres, recentlyRead, wantToReadBooks]
             .filter(text => text.length > 0)
             .join(' ');
           
@@ -133,9 +150,11 @@ CRITICAL INSTRUCTIONS:
 4. The ONLY valid recommendations are books EXPLICITLY listed in the JSON array I will provide
 5. If you can't find 5 good recommendations from the list, return fewer recommendations
 6. Base your selections on how well each book aligns with the user's stated genre preferences, favorite authors, and reading history
-7. For each book, provide a SPECIFIC, CONCISE reason (1-2 sentences) explaining the match
-8. Match reasons should ONLY reference preferences the user explicitly mentioned - no assumptions
-9. Higher scoring books should have more specific, compelling match reasons`
+7. If the user has a "Want to Read" list from Goodreads, PRIORITIZE books that are similar to those on their list
+8. For each book, provide a SPECIFIC, CONCISE reason (1-2 sentences) explaining the match
+9. When a book is similar to something on their "Want to Read" list, mention this specific connection in the match reason
+10. Match reasons should ONLY reference preferences the user explicitly mentioned - no assumptions
+11. Higher scoring books should have more specific, compelling match reasons`
           },
           {
             role: "user",
