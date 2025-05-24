@@ -568,8 +568,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Generate recommendations
       const recommendationsData = await getRecommendations(books, preferences);
       
+      // Determine if we're using OpenAI or fallback algorithm for recommendations
+      const isUsingOpenAI = recommendationsData.some(rec => rec.matchReason && rec.matchReason.length > 0);
+      console.log(`Using ${isUsingOpenAI ? 'OpenAI' : 'fallback algorithm'} for recommendations`);
+      
       // Enhance each recommendation with OpenAI data and cache it for future use
       const enhancedRecommendations = await Promise.all(recommendationsData.map(async (recommendation: any) => {
+        // If this is a fallback recommendation without a match reason, add a fallback explanation
+        if (!isUsingOpenAI && (!recommendation.matchReason || recommendation.matchReason.length === 0)) {
+          recommendation.matchReason = "using fallback algo";
+        }
         console.log(`Enhancing recommendation: "${recommendation.title}" by ${recommendation.author}`);
         
         // First check if we have this recommendation in cache
