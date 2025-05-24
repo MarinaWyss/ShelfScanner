@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import { getOpenAIRecommendations } from "./openai-recommendations";
 import { log } from "./vite";
+import { rateLimiter } from "./rate-limiter";
 
 const router = Router();
 
@@ -37,6 +38,18 @@ router.post("/recommendations", async (req: Request, res: Response) => {
 
     log(`Test API: Processing recommendation request with ${books.length} books`, "test");
 
+    // Check OpenAI API key
+    if (!process.env.OPENAI_API_KEY) {
+      return res.status(400).json({
+        success: false,
+        message: "OpenAI API key is not configured. Please add it to your environment variables."
+      });
+    }
+    
+    // For the test page, we'll add the current usage stats but not block requests
+    const openaiUsageStats = rateLimiter.getUsageStats();
+    log(`Current OpenAI usage: ${JSON.stringify(openaiUsageStats)}`, "test");
+
     // Get recommendations
     const recommendations = await getOpenAIRecommendations(books, userPreferences);
 
@@ -57,4 +70,5 @@ router.post("/recommendations", async (req: Request, res: Response) => {
   }
 });
 
-export const testRecommendationsRoutes = router;
+// Export the router
+export { router as testRecommendationsRoutes };
