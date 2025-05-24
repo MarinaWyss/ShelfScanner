@@ -55,6 +55,23 @@ router.post("/recommendations", async (req: Request, res: Response) => {
     
     // Get recommendations with device ID for tracking
     const recommendations = await getOpenAIRecommendations(books, userPreferences, deviceId);
+    
+    // Add test explanations if none exist (for demonstration purposes)
+    recommendations.forEach(book => {
+      if (!book.matchReason) {
+        // Generate a sample explanation based on book properties
+        const genre = book.categories?.[0] || "this genre";
+        const rating = parseFloat(book.rating) || 3.5;
+        
+        if (rating >= 4.5) {
+          book.matchReason = `This highly-rated book matches your interest in ${genre}. Its exceptional quality (${book.rating}/5 stars) suggests you'll find it engaging.`;
+        } else if (rating >= 4.0) {
+          book.matchReason = `Based on your reading preferences, this ${genre} book aligns well with your taste. It has received positive reviews (${book.rating}/5 stars).`;
+        } else {
+          book.matchReason = `This book may complement your existing collection with its ${genre} themes and moderate reader reception (${book.rating}/5 stars).`;
+        }
+      }
+    });
 
     return res.json({
       success: true,
