@@ -1,5 +1,8 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { getApiUsageStats } from './api-stats';
+import { getApiFailureStats } from './utils/api-monitoring';
+import { getApiUsageStats as getDetailedApiUsageStats } from './utils/api-usage-tracking';
+import { checkSystemHealth } from './monitor';
 import { logger } from './logger';
 import fs from 'fs';
 import path from 'path';
@@ -124,8 +127,39 @@ router.post('/logout', requireAuth, (req: Request, res: Response) => {
  */
 router.get('/stats', requireAuth, (req: Request, res: Response) => {
   try {
+    // Get basic API usage stats from rate limiter
     const stats = getApiUsageStats();
-    return res.status(200).json(stats);
+    
+    // Get detailed API monitoring data
+    const failureStats = getApiFailureStats();
+    const usageStats = getDetailedApiUsageStats();
+    
+    // Get system health information
+    const healthStats = checkSystemHealth();
+    
+    // Combine all stats
+    return res.status(200).json({
+      timestamp: new Date().toISOString(),
+      stats: stats,
+      health: healthStats,
+      apiMonitoring: {
+        failures: failureStats,
+        usage: usageStats,
+        openai: {
+          configured: !!process.env.OPENAI_API_KEY,
+          status: process.env.OPENAI_API_KEY ? 'available' : 'not configured',
+          failureCount: failureStats.openai?.failureCount || 0,
+          successCount: usageStats.openai?.successCount || 0,
+          uniqueUsers: usageStats.openai?.uniqueUsers || 0,
+          usageToday: stats.openai?.dailyUsage || 0,
+          dailyLimit: stats.openai?.dailyLimit || 1000,
+          withinLimits: stats.openai?.withinLimits || true,
+          affectedUsers: failureStats.openai?.affectedUsers || 0,
+          lastFailure: failureStats.openai?.lastFailure || null,
+          isCritical: failureStats.openai?.isCritical || false
+        }
+      }
+    });
   } catch (error) {
     logger.error(`Error getting API statistics: ${error}`);
     return res.status(500).json({ 
