@@ -136,7 +136,7 @@ export default function RecommendationsStep({ recommendations, isLoading, goodre
             rating: book.rating,
             summary: book.summary,
           }),
-        });
+        } as RequestInit);
 
         if (!saveResponse.ok) {
           throw new Error('Failed to save book');
