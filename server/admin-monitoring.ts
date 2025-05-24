@@ -2,6 +2,7 @@ import { Router, Request, Response, NextFunction } from 'express';
 import { getApiUsageStats } from './api-stats';
 import { checkSystemHealth, getRecentEvents, getLogs, LogLevel } from './monitor';
 import { rateLimiter } from './rate-limiter';
+import { getApiFailureStats } from './utils/api-monitoring';
 import crypto from 'crypto';
 
 const router = Router();
@@ -137,10 +138,27 @@ router.get('/stats', requireAuth, (req: Request, res: Response) => {
   try {
     const stats = getApiUsageStats();
     const health = checkSystemHealth();
+    const apiFailures = getApiFailureStats();
+    
+    // Get OpenAI specific monitoring information
+    const openaiMonitoring = {
+      configured: !!process.env.OPENAI_API_KEY,
+      status: process.env.OPENAI_API_KEY ? 'available' : 'not configured',
+      failureCount: apiFailures.openai?.failureCount || 0,
+      affectedUsers: apiFailures.openai?.affectedUsers || 0,
+      lastFailure: apiFailures.openai?.lastFailure || null,
+      isCritical: apiFailures.openai?.isCritical || false,
+      usageToday: stats.openai?.dailyUsage || 0,
+      dailyLimit: stats.openai?.dailyLimit || 0
+    };
     
     return res.status(200).json({
       ...stats,
-      health
+      health,
+      apiMonitoring: {
+        openai: openaiMonitoring,
+        failures: apiFailures
+      }
     });
   } catch (error) {
     console.error(`Error getting API statistics: ${error}`);

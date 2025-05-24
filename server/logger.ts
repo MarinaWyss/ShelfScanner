@@ -23,7 +23,10 @@ const colors = {
 winston.addColors(colors);
 
 // Create logs directory if it doesn't exist
-const logsDir = path.join(__dirname, '../logs');
+// Use import.meta.url to get the current file URL in ESM
+const currentFilePath = new URL(import.meta.url).pathname;
+const currentDir = path.dirname(currentFilePath);
+const logsDir = path.join(currentDir, '../logs');
 
 // Define log formats
 const format = winston.format.combine(

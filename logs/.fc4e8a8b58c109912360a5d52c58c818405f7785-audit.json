@@ -1,0 +1,15 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 14
+    },
+    "auditLog": "/home/runner/workspace/logs/.fc4e8a8b58c109912360a5d52c58c818405f7785-audit.json",
+    "files": [
+        {
+            "date": 1748107694173,
+            "name": "/home/runner/workspace/logs/error-2025-05-24.log",
+            "hash": "98da21e8897bf8079db4b82118fef0d1d6193315f54443877a5a37d49ec756f1"
+        }
+    ],
+    "hashType": "sha256"
+}
