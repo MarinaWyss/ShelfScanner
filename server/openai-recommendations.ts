@@ -21,7 +21,7 @@ const openai = new OpenAI({
  */
 export async function getOpenAIRecommendations(
   userBooks: Array<{ title: string, author: string }>,
-  preferences: { genres?: string[], authors?: string[] } = {},
+  preferences: { genres?: string[], authors?: string[], goodreadsData?: any } = {},
   deviceId?: string
 ): Promise<Array<{ 
   title: string, 
@@ -74,19 +74,66 @@ export async function getOpenAIRecommendations(
       // Convert to JSON string for the prompt
       const bookListJSON = JSON.stringify(bookTitlesAndAuthors, null, 2);
       
+      // Format user preferences for a richer prompt
+      const formattedGenres = preferences.genres && preferences.genres.length > 0 
+        ? `Genres I enjoy: ${preferences.genres.join(', ')}.` 
+        : '';
+      
+      const formattedAuthors = preferences.authors && preferences.authors.length > 0 
+        ? `Authors I like: ${preferences.authors.join(', ')}.` 
+        : '';
+      
+      // Format any Goodreads data if available in a more readable way
+      let goodreadsInfo = '';
+      // @ts-ignore - Goodreads data may exist in the preferences object
+      if (preferences.goodreadsData) {
+        try {
+          const goodreads = preferences.goodreadsData;
+          const favoriteBooks = goodreads.favoriteBooks 
+            ? `Favorite books from Goodreads: ${goodreads.favoriteBooks.join(', ')}.` 
+            : '';
+          const favoriteGenres = goodreads.favoriteGenres 
+            ? `Favorite genres from Goodreads: ${goodreads.favoriteGenres.join(', ')}.` 
+            : '';
+          const recentlyRead = goodreads.recentlyRead 
+            ? `Recently read books: ${goodreads.recentlyRead.join(', ')}.` 
+            : '';
+          
+          goodreadsInfo = [favoriteBooks, favoriteGenres, recentlyRead]
+            .filter(text => text.length > 0)
+            .join(' ');
+          
+          // Fallback if the structure is different
+          if (!goodreadsInfo) {
+            goodreadsInfo = `Additional reading preferences from my Goodreads profile.`;
+          }
+        } catch (error) {
+          // If there's an error parsing Goodreads data, use a simpler format
+          goodreadsInfo = `I have additional reading preferences from my Goodreads profile.`;
+        }
+      }
+      
+      // Combine all preference information
+      const userPreferencesText = [formattedGenres, formattedAuthors, goodreadsInfo]
+        .filter(text => text.length > 0)
+        .join(' ');
+      
       const response = await openai.chat.completions.create({
         model: "gpt-4o", // Using the latest model
         messages: [
           {
             role: "system",
-            content: `You are a literary recommendation expert. Your task is STRICTLY LIMITED to selecting 5 books from a provided list that would interest the user.
+            content: `You are a literary recommendation expert. Your task is to select 5 books from a provided list that would best match the user's specific reading preferences.
 
 CRITICAL INSTRUCTIONS:
 1. You MUST ONLY select books from the exact list provided to you
 2. Do NOT invent or suggest books that are not in the provided list
 3. Do NOT recommend books that are similar but not on the list
 4. The ONLY valid recommendations are books EXPLICITLY listed in the JSON array I will provide
-5. If you can't find 5 good recommendations from the list, return fewer recommendations`
+5. If you can't find 5 good recommendations from the list, return fewer recommendations
+6. Base your selections on how well each book aligns with the user's stated genre preferences, favorite authors, and reading history
+7. Consider thematic elements, writing style, and subject matter when matching books to preferences
+8. For users with limited preferences data, select books with broader appeal or recognized quality`
           },
           {
             role: "user",
@@ -94,13 +141,16 @@ CRITICAL INSTRUCTIONS:
             
 ${bookListJSON}
 
-From ONLY this list above, recommend the 5 most interesting books to me.
+My reading preferences:
+${userPreferencesText || "I'm open to discovering interesting books from various genres."}
+
+From ONLY this list above, recommend the 5 books that would best match my reading preferences.
 
 Format your response as a JSON object with a "recommendations" array containing ONLY books from my list.
 Each recommendation should include:
 - title: The exact book title from my list
 - author: The exact author name from my list
-- matchScore: A number between 1-100 indicating how interesting this book is
+- matchScore: A number between 1-100 indicating how well this book matches my preferences
 
 IMPORTANT: You can ONLY recommend books from the list I provided. Do not suggest any books that aren't on this list.
 
