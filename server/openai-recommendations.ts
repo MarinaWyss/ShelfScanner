@@ -151,7 +151,7 @@ IMPORTANT: Return your recommendations in this exact JSON format with no text be
       "bookTitle": "Book Title",
       "bookAuthor": "Author Name",
       "matchScore": 85,
-      "matchReason": "Brief explanation of why this book matches the user's preferences (1-2 sentences)"
+      "matchReason": "Brief explanation in 2nd person format of why this book matches the reader's preferences (e.g., 'This book aligns with your interest in...')"
     }
   ]
 }`
