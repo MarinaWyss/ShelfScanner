@@ -22,6 +22,8 @@ interface BookInfo {
   rating?: string;
   isbn?: string;
   coverUrl?: string;
+  matchScore?: number;
+  matchReason?: string;
 }
 
 /**
@@ -143,6 +145,12 @@ Analyze these books and provide personalized recommendations from this list only
 For each recommended book, provide:
 1. The exact book title and author name as shown in the detected books list
 2. A match score from 0-100 (where higher scores indicate stronger recommendations)
+3. A detailed, personalized match reason that explains why this book matches the reader's preferences
+
+IMPORTANT: 
+- The matchReason should be 2-3 sentences and written in second person (using "you", "your")
+- Be specific about why the book matches their preferences based on genre, themes, or author preference
+- Don't use generic phrases like "this book may interest you" - be specific about WHY it's a good match
 
 IMPORTANT: Return your recommendations in this exact JSON format with no text before or after:
 {
@@ -151,7 +159,7 @@ IMPORTANT: Return your recommendations in this exact JSON format with no text be
       "bookTitle": "Book Title",
       "bookAuthor": "Author Name",
       "matchScore": 85,
-      "matchReason": "Brief explanation in 2nd person format of why this book matches the reader's preferences (e.g., 'This book aligns with your interest in...')"
+      "matchReason": "This book aligns with your interest in historical fiction with strong female leads. The themes of resilience and family dynamics match your preference for character-driven narratives."
     }
   ]
 }`

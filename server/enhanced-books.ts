@@ -511,60 +511,56 @@ export async function getRecommendations(
       try {
         console.log(`Preparing to use OpenAI for intelligent book recommendations with ${newBooks.length} books`);
         
-        // Call our test function to verify OpenAI is working properly
-        const { testOpenAI } = await import('./openai-test');
-        const testResult = await testOpenAI();
+        // Skip the test and directly use OpenAI for recommendations
+        console.log(`Using OpenAI API for recommendations directly...`);
         
-        if (testResult.success) {
-          console.log(`OpenAI API test successful! Using AI for recommendations...`);
+        // Call OpenAI to get AI-powered recommendations
+        const aiRecommendations = await getOpenAIRecommendations(newBooks, preferences);
+        
+        if (aiRecommendations && aiRecommendations.length > 0) {
+          console.log(`OpenAI returned ${aiRecommendations.length} intelligent recommendations!`);
           
-          // Call OpenAI to get AI-powered recommendations
-          const aiRecommendations = await getOpenAIRecommendations(newBooks, preferences);
-          
-          if (aiRecommendations && aiRecommendations.length > 0) {
-            console.log(`OpenAI returned ${aiRecommendations.length} intelligent recommendations!`);
+          // Format OpenAI recommendations for our system
+          const formattedRecommendations = aiRecommendations.map(book => {
+            // Log each recommendation with its match reason to debug
+            console.log(`Recommendation: "${book.title}" - Match Score: ${(book as any).matchScore} - Match Reason: ${(book as any).matchReason || 'None provided'}`);
             
-            // Format OpenAI recommendations for our system
-            const formattedRecommendations = aiRecommendations.map(book => {
+            return {
+              title: book.title,
+              author: book.author,
+              coverUrl: book.coverUrl || '',
+              summary: book.summary || 'No summary available',
+              rating: book.rating || '',
+              isbn: book.isbn || '',
+              categories: book.categories || [],
+              score: (book as any).matchScore || 0,
+              matchReason: (book as any).matchReason || '',
+              alreadyRead: false,
+              isBookRecommendation: true,
+              fromAI: true
+            };
+          });
+          
+          // If we have already read books, add them too
+          if (alreadyReadBooks2.length > 0) {
+            // Score the already read books
+            const scoredReadBooks = alreadyReadBooks2.map(book => {
               return {
-                title: book.title,
-                author: book.author,
-                coverUrl: book.coverUrl || '',
-                summary: book.summary || 'No summary available',
-                rating: book.rating || '',
-                isbn: book.isbn || '',
-                categories: book.categories || [],
-                score: (book as any).matchScore || 0,
-                matchReason: (book as any).matchReason || '',
-                alreadyRead: false,
-                isBookRecommendation: true,
-                fromAI: true
+                ...book,
+                score: 50, // Default score for books already read
+                alreadyRead: true,
+                isBookYouveRead: true
               };
             });
             
-            // If we have already read books, add them too
-            if (alreadyReadBooks2.length > 0) {
-              // Score the already read books
-              const scoredReadBooks = alreadyReadBooks2.map(book => {
-                return {
-                  ...book,
-                  score: 50, // Default score for books already read
-                  alreadyRead: true,
-                  isBookYouveRead: true
-                };
-              });
-              
-              console.log(`Combining ${formattedRecommendations.length} AI recommendations with ${scoredReadBooks.length} books you've read`);
-              return [...formattedRecommendations, ...scoredReadBooks];
-            }
-            
-            console.log(`Returning ${formattedRecommendations.length} AI-powered book recommendations`);
-            return formattedRecommendations;
-          } else {
-            console.log('OpenAI returned no recommendations, falling back to traditional algorithm');
+            console.log(`Combining ${formattedRecommendations.length} AI recommendations with ${scoredReadBooks.length} books you've read`);
+            return [...formattedRecommendations, ...scoredReadBooks];
           }
+          
+          console.log(`Returning ${formattedRecommendations.length} AI-powered book recommendations`);
+          return formattedRecommendations;
         } else {
-          console.log(`OpenAI API test failed: ${testResult.message}`);
+          console.log('OpenAI returned no recommendations, falling back to traditional algorithm');
         }
       } catch (error) {
         console.error(`Error using OpenAI: ${error instanceof Error ? error.message : String(error)}`);
