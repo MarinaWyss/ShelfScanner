@@ -31,7 +31,8 @@ export async function getOpenAIRecommendations(
   rating?: string,
   isbn?: string,
   categories?: string[],
-  matchScore?: number
+  matchScore?: number,
+  matchReason?: string
 }>> {
   try {
     // Check if OpenAI is configured
@@ -123,7 +124,7 @@ export async function getOpenAIRecommendations(
         messages: [
           {
             role: "system",
-            content: `You are a literary recommendation expert. Your task is to select 5 books from a provided list that would best match the user's specific reading preferences.
+            content: `You are a literary recommendation expert. Your task is to select books from a provided list that best match the user's specific reading preferences, and provide a brief explanation for each match.
 
 CRITICAL INSTRUCTIONS:
 1. You MUST ONLY select books from the exact list provided to you
@@ -132,8 +133,9 @@ CRITICAL INSTRUCTIONS:
 4. The ONLY valid recommendations are books EXPLICITLY listed in the JSON array I will provide
 5. If you can't find 5 good recommendations from the list, return fewer recommendations
 6. Base your selections on how well each book aligns with the user's stated genre preferences, favorite authors, and reading history
-7. Consider thematic elements, writing style, and subject matter when matching books to preferences
-8. For users with limited preferences data, select books with broader appeal or recognized quality`
+7. For each book, provide a SPECIFIC, CONCISE reason (1-2 sentences) explaining the match
+8. Match reasons should ONLY reference preferences the user explicitly mentioned - no assumptions
+9. Higher scoring books should have more specific, compelling match reasons`
           },
           {
             role: "user",
@@ -151,6 +153,7 @@ Each recommendation should include:
 - title: The exact book title from my list
 - author: The exact author name from my list
 - matchScore: A number between 1-100 indicating how well this book matches my preferences
+- matchReason: A SPECIFIC, CONCISE reason (1-2 sentences) why this book matches my preferences. DO NOT use generic phrases like "aligns with your interests" - explain exactly HOW it connects to my stated preferences. For high scores (80+), the reason should be especially clear and compelling.
 
 IMPORTANT: You can ONLY recommend books from the list I provided. Do not suggest any books that aren't on this list.
 
@@ -160,7 +163,8 @@ Example format:
     {
       "title": "Book Title From My List",
       "author": "Author From My List",
-      "matchScore": 95
+      "matchScore": 95,
+      "matchReason": "This book directly addresses your interest in [specific genre/topic] with [specific element] that connects to your preference for [specific author/style]."
     }
   ]
 }
@@ -219,10 +223,12 @@ Only return the JSON object with no additional text.`
             const originalBook = userBooksMap.get(key);
             
             // Preserve important properties from the original book like coverUrl and ISBN
+            // Also include the matchReason from the OpenAI response
             return {
               ...rec,
               coverUrl: originalBook.coverUrl || rec.coverUrl,
-              isbn: originalBook.isbn || rec.isbn
+              isbn: originalBook.isbn || rec.isbn,
+              matchReason: rec.matchReason || `This book scores ${rec.matchScore || 75}/100 for your reading preferences.`
             };
           });
           
@@ -254,10 +260,12 @@ Only return the JSON object with no additional text.`
             const originalBook = userBooksMap.get(key);
             
             // Preserve important properties from the original book like coverUrl and ISBN
+            // Also include the matchReason from the OpenAI response
             return {
               ...rec,
               coverUrl: originalBook.coverUrl || rec.coverUrl,
-              isbn: originalBook.isbn || rec.isbn
+              isbn: originalBook.isbn || rec.isbn,
+              matchReason: rec.matchReason || `This book scores ${rec.matchScore || 75}/100 for your reading preferences.`
             };
           });
           

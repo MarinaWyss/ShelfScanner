@@ -73,8 +73,9 @@ router.post("/recommendations", async (req: Request, res: Response) => {
           const bookCacheService = (await import('./book-cache-service')).bookCacheService;
           const rating = await bookCacheService.getEnhancedRating(book.title, book.author, book.isbn);
           
-          // Generate a personalized match reason explaining why this book matches preferences
-          const matchReason = await getOpenAIMatchReason(book.title, book.author, preferences || {});
+          // Use the match reason provided directly from the recommendation
+          // This is now generated within the recommendation prompt and should be more focused
+          const matchReason = book.matchReason || "This book matches elements of your reading preferences.";
           
           // Make sure we have an ISBN if it's available in the original book
           const isbn = originalBook?.isbn || book.isbn || '';
@@ -137,7 +138,7 @@ router.post("/recommendations", async (req: Request, res: Response) => {
             isbn: isbn,
             categories: book.categories || [],
             matchScore: (book as any).matchScore || 75,
-            matchReason: "This book appears to align with your reading preferences.",
+            matchReason: book.matchReason || "This book includes themes or styles that connect with your reading preferences.",
             fromAI: true
           };
         }
