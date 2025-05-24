@@ -371,20 +371,15 @@ export default function RecommendationsStep({ recommendations, isLoading, goodre
                                 {renderRating(book.rating)}
                               </div>
                               
-                              {book.matchScore !== undefined && (
+                              {book.matchScore !== undefined && book.matchScore >= 60 && (
                                 <span className={`mt-2 text-xs font-medium px-2 py-0.5 rounded ${
-                                  book.matchScore >= 85 ? "bg-purple-100 text-purple-800" :
-                                  book.matchScore >= 70 ? "bg-indigo-100 text-indigo-800" :
-                                  book.matchScore >= 55 ? "bg-blue-100 text-blue-800" :
-                                  book.matchScore >= 40 ? "bg-green-100 text-green-800" :
-                                  book.matchScore >= 25 ? "bg-yellow-100 text-yellow-800" :
-                                  "bg-gray-100 text-gray-800"
+                                  book.matchScore >= 90 ? "bg-green-100 text-green-800" :
+                                  book.matchScore >= 76 ? "bg-blue-100 text-blue-800" :
+                                  book.matchScore >= 60 ? "bg-yellow-100 text-yellow-800" : ""
                                 }`}>
-                                  {book.matchScore >= 85 ? "Perfect match!" : 
-                                   book.matchScore >= 70 ? "Excellent match" : 
-                                   book.matchScore >= 55 ? "Great match" : 
-                                   book.matchScore >= 40 ? "Good match" : 
-                                   book.matchScore >= 25 ? "Fair match" : "Possible match"}
+                                  {book.matchScore >= 90 ? "Great match" : 
+                                   book.matchScore >= 76 ? "Good match" : 
+                                   book.matchScore >= 60 ? "Fair match" : ""}
                                 </span>
                               )}
                             </div>

@@ -5,32 +5,29 @@
 /**
  * Get a descriptive match quality label based on the match score
  * @param matchScore Numeric score from OpenAI recommendations (0-100)
- * @returns User-friendly match quality label
+ * @returns User-friendly match quality label or empty string if below threshold
  */
 export function getMatchQualityLabel(matchScore: number | undefined): string {
-  if (matchScore === undefined) return "Unknown match";
+  if (matchScore === undefined) return "";
   
-  // Match quality thresholds (these determine the labels shown to users)
-  if (matchScore >= 85) return "Perfect match!";
-  if (matchScore >= 70) return "Excellent match";
-  if (matchScore >= 55) return "Great match";
-  if (matchScore >= 40) return "Good match";
-  if (matchScore >= 25) return "Fair match";
-  return "Possible match";
+  // More conservative match quality thresholds
+  if (matchScore >= 90) return "Great match";
+  if (matchScore >= 76) return "Good match";
+  if (matchScore >= 60) return "Fair match";
+  return ""; // Show nothing for scores below 60
 }
 
 /**
  * Get CSS class for match quality badge
  * @param matchScore Numeric score from OpenAI recommendations (0-100)
- * @returns CSS class for styling the match quality badge
+ * @returns CSS class for styling the match quality badge or empty string if below threshold
  */
 export function getMatchQualityClass(matchScore: number | undefined): string {
-  if (matchScore === undefined) return "bg-gray-100 text-gray-800";
+  if (matchScore === undefined) return "";
   
-  if (matchScore >= 85) return "bg-purple-100 text-purple-800";
-  if (matchScore >= 70) return "bg-indigo-100 text-indigo-800";
-  if (matchScore >= 55) return "bg-blue-100 text-blue-800";
-  if (matchScore >= 40) return "bg-green-100 text-green-800";
-  if (matchScore >= 25) return "bg-yellow-100 text-yellow-800";
-  return "bg-gray-100 text-gray-800";
+  // Updated to match the new conservative thresholds
+  if (matchScore >= 90) return "bg-green-100 text-green-800";
+  if (matchScore >= 76) return "bg-blue-100 text-blue-800";
+  if (matchScore >= 60) return "bg-yellow-100 text-yellow-800";
+  return ""; // No badge for scores below 60
 }
