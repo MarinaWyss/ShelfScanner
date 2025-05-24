@@ -65,50 +65,57 @@ export async function getOpenAIRecommendations(
     
     try {
       // Attempt to get recommendations from OpenAI
+      // Create a list of book titles and authors from the input
+      const bookTitlesAndAuthors = userBooks.map(book => ({
+        title: book.title,
+        author: book.author
+      }));
+      
+      // Convert to JSON string for the prompt
+      const bookListJSON = JSON.stringify(bookTitlesAndAuthors, null, 2);
+      
       const response = await openai.chat.completions.create({
         model: "gpt-4o", // Using the latest model
         messages: [
           {
             role: "system",
-            content: `You are a literary recommendation expert with deep knowledge of books across all genres.
-            Your task is to recommend ONLY books that are SIMILAR to the specific books in the user's photo.
-            VERY IMPORTANT: You must ONLY recommend books that are DIRECTLY related to the books shown in the user's scan.
-            NEVER recommend books outside the themes and styles represented in the user's scanned books.
-            Each recommendation must share significant thematic, stylistic, or subject matter with the books in the user's scan.
-            For each recommendation, include the full title and author name.
-            Your recommendations should be specific books, not series or authors.
-            IMPORTANT: Your recommendations must be real books that actually exist and can be found in bookstores or libraries.`
+            content: `You are a literary recommendation expert. Your task is STRICTLY LIMITED to selecting 5 books from a provided list that would interest the user.
+
+CRITICAL INSTRUCTIONS:
+1. You MUST ONLY select books from the exact list provided to you
+2. Do NOT invent or suggest books that are not in the provided list
+3. Do NOT recommend books that are similar but not on the list
+4. The ONLY valid recommendations are books EXPLICITLY listed in the JSON array I will provide
+5. If you can't find 5 good recommendations from the list, return fewer recommendations`
           },
           {
             role: "user",
-            content: `These are the books I scanned from my bookshelf: ${formattedBooks}
-            ${genres ? `I'm particularly interested in these genres: ${genres}` : ''}
-            ${authors ? `I enjoy books by these authors: ${authors}` : ''}
+            content: `Here is my list of books:
             
-            Please recommend 5 books I might enjoy. Choose books that are similar in theme, style, or subject matter to the ones I've read.
-            
-            Format your response as a JSON object with a "recommendations" array containing objects with these fields:
-            - title: The book title
-            - author: The book author
-            - matchScore: A number between 1-100 indicating how well this matches my preferences
-            
-            Example format:
-            {
-              "recommendations": [
-                {
-                  "title": "Book Title 1",
-                  "author": "Author Name 1",
-                  "matchScore": 95
-                },
-                {
-                  "title": "Book Title 2",
-                  "author": "Author Name 2",
-                  "matchScore": 90
-                }
-              ]
-            }
-            
-            Only return the JSON object with no additional text.`
+${bookListJSON}
+
+From ONLY this list above, recommend the 5 most interesting books to me.
+
+Format your response as a JSON object with a "recommendations" array containing ONLY books from my list.
+Each recommendation should include:
+- title: The exact book title from my list
+- author: The exact author name from my list
+- matchScore: A number between 1-100 indicating how interesting this book is
+
+IMPORTANT: You can ONLY recommend books from the list I provided. Do not suggest any books that aren't on this list.
+
+Example format:
+{
+  "recommendations": [
+    {
+      "title": "Book Title From My List",
+      "author": "Author From My List",
+      "matchScore": 95
+    }
+  ]
+}
+
+Only return the JSON object with no additional text.`
           }
         ],
         response_format: { type: "json_object" },
@@ -135,21 +142,53 @@ export async function getOpenAIRecommendations(
         // Check if we have recommendations in the expected format
         if (parsed.recommendations && Array.isArray(parsed.recommendations) && parsed.recommendations.length > 0) {
           log(`Successfully parsed ${parsed.recommendations.length} recommendations from OpenAI`, 'openai');
-          return parsed.recommendations;
+          
+          // Create a map of books from the user's list for easy lookup
+          const userBooksMap = new Map();
+          userBooks.forEach(book => {
+            const key = `${book.title.toLowerCase()}|${book.author.toLowerCase()}`;
+            userBooksMap.set(key, book);
+          });
+          
+          // Validate that each recommendation is from the user's book list
+          const validatedRecommendations = parsed.recommendations.filter(rec => {
+            if (!rec.title || !rec.author) return false;
+            
+            const key = `${rec.title.toLowerCase()}|${rec.author.toLowerCase()}`;
+            const isInUserBooks = userBooksMap.has(key);
+            
+            if (!isInUserBooks) {
+              log(`Filtering out recommendation "${rec.title}" as it's not in the user's book list`, 'openai');
+            }
+            
+            return isInUserBooks;
+          });
+          
+          log(`Validated ${validatedRecommendations.length} recommendations are from the user's book list`, 'openai');
+          return validatedRecommendations;
         }
         
-        // If not in the expected format but we have an array, try to use that
+        // If not in the expected format but we have an array, try to use that with validation
         if (Array.isArray(parsed) && parsed.length > 0) {
           log(`Found ${parsed.length} recommendations in array format from OpenAI`, 'openai');
-          return parsed;
-        }
-        
-        // Last attempt - look for any array in the response
-        const possibleArrays = Object.values(parsed).filter(value => Array.isArray(value) && value.length > 0);
-        if (possibleArrays.length > 0) {
-          const validRecommendations = possibleArrays[0] as Array<{title: string, author: string, matchScore?: number}>;
-          log(`Found ${validRecommendations.length} recommendations in nested format from OpenAI`, 'openai');
-          return validRecommendations;
+          
+          // Create a map of books from the user's list for easy lookup
+          const userBooksMap = new Map();
+          userBooks.forEach(book => {
+            const key = `${book.title.toLowerCase()}|${book.author.toLowerCase()}`;
+            userBooksMap.set(key, book);
+          });
+          
+          // Validate that each recommendation is from the user's book list
+          const validatedRecommendations = parsed.filter(rec => {
+            if (!rec.title || !rec.author) return false;
+            
+            const key = `${rec.title.toLowerCase()}|${rec.author.toLowerCase()}`;
+            return userBooksMap.has(key);
+          });
+          
+          log(`Validated ${validatedRecommendations.length} recommendations are from the user's book list`, 'openai');
+          return validatedRecommendations;
         }
         
         log("No valid recommendations structure found in OpenAI response", 'openai');
