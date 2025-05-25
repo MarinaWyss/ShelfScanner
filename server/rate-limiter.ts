@@ -14,15 +14,15 @@ export class RateLimiter {
   private alertsSent: Map<string, boolean> = new Map();
   
   constructor() {
-    // Set default rate limits
-    this.setLimit('openai', 10, 60); // Default: 10 requests per minute for OpenAI
-    this.setDailyLimit('openai', 1000); // Increased to 1000 requests per day for OpenAI
+    // Set rate limits based on expected usage of 100 users per day, each scanning 5 shelves
+    this.setLimit('openai', 60, 60); // Updated: 60 requests per minute for OpenAI (up from 10)
+    this.setDailyLimit('openai', 15000); // Updated: 15,000 requests per day for OpenAI (up from 1000)
     
-    this.setLimit('google-books', 100, 60); // 100 requests per minute for Google Books
-    this.setDailyLimit('google-books', 1000); // 1000 requests per day for Google Books
+    this.setLimit('google-books', 100, 60); // Maintained: 100 requests per minute for Google Books
+    this.setDailyLimit('google-books', 7500); // Updated: 7,500 requests per day for Google Books (up from 1000)
     
-    this.setLimit('google-vision', 20, 60); // 20 requests per minute for Google Vision
-    this.setDailyLimit('google-vision', 1000); // 1000 requests per day for Google Vision
+    this.setLimit('google-vision', 20, 60); // Maintained: 20 requests per minute for Google Vision
+    this.setDailyLimit('google-vision', 100); // Updated: 100 requests per day for Google Vision (down from 1000, as it's used as fallback only)
   }
   
   /**
@@ -79,7 +79,7 @@ export class RateLimiter {
     
     // Check rate limit
     const currentCount = this.requestCounts.get(key) || 0;
-    const limit = apiName === 'openai' ? 10 : 
+    const limit = apiName === 'openai' ? 60 : 
                  apiName === 'google-vision' ? 20 : 100; // Get appropriate limits
     
     // Check daily limit
@@ -174,7 +174,7 @@ export class RateLimiter {
     log(`API call to ${apiName}: ${currentCount + 1} requests in current window, daily total: ${dailyUsage + 1}`, 'rate-limiter');
     
     // Check if we need to log high usage warning
-    const limit = apiName === 'openai' ? 10 : 
+    const limit = apiName === 'openai' ? 60 : 
                  apiName === 'google-vision' ? 20 : 100;
     const dailyLimit = this.dailyLimits.get(apiName) || Infinity;
     
@@ -224,7 +224,7 @@ export class RateLimiter {
         windowSeconds: parseInt(windowSeconds),
         dailyUsage,
         dailyLimit,
-        withinLimits: count < (apiName === 'openai' ? 10 : 100) && dailyUsage < dailyLimit
+        withinLimits: count < (apiName === 'openai' ? 60 : apiName === 'google-vision' ? 20 : 100) && dailyUsage < dailyLimit
       };
     }
     
