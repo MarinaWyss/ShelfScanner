@@ -227,12 +227,13 @@ export default function RecommendationsStep({ recommendations, isLoading, goodre
     <div className="pb-12">
       {/* Google AdSense Banner at the Top */}
       <div className="mb-3">
+        <div className="text-center text-xs text-slate-500 mb-2">Advertisement</div>
         <GoogleAdSense 
           adSlot="1340441712"
           adSize="728x90"
           adFormat="horizontal"
           style={{ height: '90px', width: '100%', maxWidth: '728px' }}
-          className="mx-auto"
+          className="mx-auto bg-gray-100 border border-gray-200 rounded-md overflow-hidden"
         />
       </div>
 
@@ -582,11 +583,12 @@ export default function RecommendationsStep({ recommendations, isLoading, goodre
       {/* Google AdSense Banner at the Bottom */}
       {!isLoading && recommendations.length > 0 && (
         <div className="mt-10 mb-4">
+          <div className="text-center text-xs text-slate-500 mb-2">Advertisement</div>
           <GoogleAdSense 
             adSlot="1913564463"
             adFormat="auto"
             style={{ height: '90px', width: '100%', maxWidth: '728px' }}
-            className="mx-auto"
+            className="mx-auto bg-gray-100 border border-gray-200 rounded-md overflow-hidden"
           />
         </div>
       )}

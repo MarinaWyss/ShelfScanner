@@ -540,12 +540,13 @@ export default function PreferencesStep({ preferences, onSubmit, isLoading }: Pr
       
       {/* Google AdSense Banner at the bottom of preferences page */}
       <div className="mt-10">
+        <div className="text-center text-xs text-slate-500 mb-2">Advertisement</div>
         <GoogleAdSense 
           adSlot="3038943875"
           adSize="728x90"
           adFormat="horizontal"
           style={{ height: '90px', width: '100%', maxWidth: '728px' }}
-          className="mx-auto"
+          className="mx-auto bg-gray-100 border border-gray-200 rounded-md overflow-hidden"
         />
       </div>
     </div>

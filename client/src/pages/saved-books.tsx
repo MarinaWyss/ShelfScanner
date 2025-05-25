@@ -251,16 +251,15 @@ export default function SavedBooks() {
         )}
         
         {/* Google AdSense Banner under the reading list - always display */}
-        {!isLoading && (
-          <div className="mt-8">
-            <GoogleAdSense 
-              adSlot="3226646138"
-              adFormat="auto"
-              style={{ height: '90px', width: '100%', maxWidth: '728px' }}
-              className="mx-auto"
-            />
-          </div>
-        )}
+        <div className="mt-8">
+          <div className="text-center text-xs text-slate-500 mb-2">Advertisement</div>
+          <GoogleAdSense 
+            adSlot="3226646138"
+            adFormat="auto"
+            style={{ height: '90px', width: '100%', maxWidth: '728px' }}
+            className="mx-auto bg-gray-100 border border-gray-200 rounded-md overflow-hidden"
+          />
+        </div>
       </div>
     </div>
   );
