@@ -22,7 +22,7 @@ export class RateLimiter {
     this.setDailyLimit('google-books', 7500); // Updated: 7,500 requests per day for Google Books (up from 1000)
     
     this.setLimit('google-vision', 20, 60); // Maintained: 20 requests per minute for Google Vision
-    this.setDailyLimit('google-vision', 100); // Updated: 100 requests per day for Google Vision (down from 1000, as it's used as fallback only)
+    this.setDailyLimit('google-vision', 1000); // Restored to original 1000 requests per day for Google Vision
   }
   
   /**
