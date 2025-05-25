@@ -254,6 +254,7 @@ export default function SavedBooks() {
         {!isLoading && (
           <div className="mt-8">
             <GoogleAdSense 
+              adSlot="3226646138"
               adFormat="auto"
               style={{ height: '90px', width: '100%', maxWidth: '728px' }}
               className="mx-auto"
