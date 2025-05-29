@@ -225,18 +225,6 @@ export default function RecommendationsStep({ recommendations, isLoading, goodre
 
   return (
     <div className="pb-12">
-      {/* Google AdSense Banner at the Top */}
-      <div className="mb-3">
-        <div className="text-center text-xs text-slate-500 mb-2">Advertisement</div>
-        <GoogleAdSense 
-          adSlot="1340441712"
-          adSize="728x90"
-          adFormat="horizontal"
-          style={{ height: '90px', width: '100%', maxWidth: '728px' }}
-          className="mx-auto bg-gray-100 border border-gray-200 rounded-md overflow-hidden"
-        />
-      </div>
-
       {/* Affiliate Disclosure */}
       <div className="mb-4">
         <AffiliateDisclosure className="mb-0" />
