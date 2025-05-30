@@ -10,10 +10,14 @@ const router = Router();
 // In-memory session store (will reset on server restart)
 const sessions = new Map<string, { username: string, expires: Date }>();
 
-// Admin credentials (in production, use environment variables)
-const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
-// Simple default password (should be changed in production)
-const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH || 'b404b0649d2405209b6f0e6fd4c0b0e1c9bd3ec83db6cbb5228e2441c9ca7521'; // Hash of 'BookScan@2025'
+// Admin credentials - MUST be set via environment variables
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME;
+const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH;
+
+// Validate that admin credentials are configured
+if (!ADMIN_USERNAME || !ADMIN_PASSWORD_HASH) {
+  throw new Error('Admin credentials not configured. Please set ADMIN_USERNAME and ADMIN_PASSWORD_HASH environment variables.');
+}
 
 /**
  * Hash a password using SHA-256
@@ -65,20 +69,8 @@ function requireAuth(req: Request, res: Response, next: NextFunction) {
 router.post('/login', (req: Request, res: Response) => {
   const { username, password } = req.body;
   
-  // Check if environment variables are set
-  const envUsername = process.env.ADMIN_USERNAME;
-  const envPassword = process.env.ADMIN_PASSWORD;
-  
-  // If environment variables aren't set, return a configuration error
-  if (!envUsername || !envPassword) {
-    console.error('Admin credentials not configured in environment variables');
-    return res.status(500).json({ 
-      message: 'Admin dashboard is not properly configured. Please set ADMIN_USERNAME and ADMIN_PASSWORD environment variables.'
-    });
-  }
-  
-  // Check credentials against environment variables
-  if (username !== envUsername || password !== envPassword) {
+  // Check credentials against environment variables (using hashed password)
+  if (username !== ADMIN_USERNAME || hashPassword(password) !== ADMIN_PASSWORD_HASH) {
     // Log failed login attempt
     console.warn(`Failed admin login attempt for username: ${username}`);
     return res.status(401).json({ message: 'Invalid username or password' });

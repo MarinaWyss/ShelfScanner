@@ -14,10 +14,14 @@ const router = Router();
 // In a production app, you should use Redis or another session store
 const sessions = new Map<string, { username: string, expires: Date }>();
 
-// Admin credentials (in production, these should be environment variables or in a database)
-// The password is hashed for security
-const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
-const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH || hashPassword('admin1234');
+// Admin credentials - MUST be set via environment variables
+const ADMIN_USERNAME = process.env.ADMIN_USERNAME;
+const ADMIN_PASSWORD_HASH = process.env.ADMIN_PASSWORD_HASH;
+
+// Validate that admin credentials are configured
+if (!ADMIN_USERNAME || !ADMIN_PASSWORD_HASH) {
+  throw new Error('Admin credentials not configured. Please set ADMIN_USERNAME and ADMIN_PASSWORD_HASH environment variables.');
+}
 
 /**
  * Hash a password using SHA-256

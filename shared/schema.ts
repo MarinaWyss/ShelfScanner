@@ -32,15 +32,9 @@ export const insertPreferenceSchema = createInsertSchema(preferences).pick({
   goodreadsData: true,
 });
 
-// Books table has been removed in favor of using book_cache as the primary storage
-
-// NOTE: Recommendations are now generated on-demand and not stored in the database
-// We've removed the recommendations table in favor of an ephemeral approach
-
 // Book cache schema for storing book metadata to reduce external API calls
 // We'll create a unique book identifier from ISBN if available, or title+author if not
 export const bookCache = pgTable("book_cache", {
-  // Keep the numeric ID for now as we transition
   id: serial("id").primaryKey(),
   // Make title and author required for all books
   title: text("title").notNull(),
