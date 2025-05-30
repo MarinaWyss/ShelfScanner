@@ -72,57 +72,13 @@ Ever find yourself at a bookstore or friend's house, staring at a shelf of books
 └── package.json              # Dependencies and scripts
 ```
 
-## 🚀 Getting Started
+## 🚀 How It Works
 
-### Prerequisites
-- Node.js 20 or higher
-- PostgreSQL database
-- OpenAI API key
-
-### Installation
-
-1. **Clone the repository**
-   ```bash
-   git clone <repository-url>
-   cd book-discovery-app
-   ```
-
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
-
-3. **Set up environment variables**
-   Create a `.env` file in the root directory:
-   ```env
-   DATABASE_URL=postgresql://username:password@localhost:5432/bookdb
-   OPENAI_API_KEY=your_openai_api_key_here
-   NODE_ENV=development
-   ```
-
-4. **Set up the database**
-   ```bash
-   npm run db:push
-   ```
-
-5. **Start the development server**
-   ```bash
-   npm run dev
-   ```
-
-The application will be available at `http://localhost:5000`
-
-### Production Deployment
-
-1. **Build the application**
-   ```bash
-   npm run build
-   ```
-
-2. **Start the production server**
-   ```bash
-   npm start
-   ```
+1. **Browse Physical Books**: When you're at a bookstore, library, or friend's house, open the app on your phone
+2. **Scan or Search**: Use the book scanner to capture covers or manually search for titles you see
+3. **Get AI Recommendations**: Receive intelligent suggestions based on your preferences and reading history
+4. **Personalize**: Input your favorite genres, authors, and Goodreads data for better recommendations
+5. **Save Discoveries**: Build your reading list with books that interest you
 
 ## 📚 API Documentation
 
