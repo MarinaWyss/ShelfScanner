@@ -6,7 +6,7 @@ import { Link } from "wouter";
 import { apiRequest } from "@/lib/queryClient";
 import { Trash2, ChevronDown, ChevronUp } from "lucide-react";
 import StarRating from "@/components/ui/star-rating";
-import GoogleAdSense from "@/components/ads/GoogleAdSense";
+
 import AffiliateDisclosure from "@/components/ui/affiliate-disclosure";
 
 interface SavedBook {
@@ -250,18 +250,7 @@ export default function SavedBooks() {
           </div>
         )}
         
-        {/* Google AdSense Banner - only show when there are saved books */}
-        {!isLoading && savedBooks.length > 0 && (
-          <div className="mt-8">
-            <div className="text-center text-xs text-slate-500 mb-2">Advertisement</div>
-            <GoogleAdSense 
-              adSlot="3226646138"
-              adFormat="auto"
-              style={{ height: '90px', width: '100%', maxWidth: '728px' }}
-              className="mx-auto bg-gray-100 border border-gray-200 rounded-md overflow-hidden"
-            />
-          </div>
-        )}
+
       </div>
     </div>
   );
