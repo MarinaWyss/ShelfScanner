@@ -58,7 +58,7 @@ export default function AdminPage() {
           setIsAuthenticated(true);
         }
       } catch (error) {
-        log('Error checking authentication:', error);
+        console.log('Error checking authentication:', error);
       }
       setAuthChecked(true);
     };
@@ -547,7 +547,7 @@ function LogViewer() {
           setLogs(data.logs || []);
         }
       } catch (error) {
-        log('Error fetching logs:', error);
+        console.log('Error fetching logs:', error);
       }
     };
 

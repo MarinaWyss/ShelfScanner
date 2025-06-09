@@ -103,7 +103,7 @@ export default function Books() {
     mutationFn: async () => {
       if (!detectedBooks || detectedBooks.length === 0) {
         // If no books were detected, don't make the API call at all
-        log("No books to send for recommendations");
+        console.log("No books to send for recommendations");
         return [];
       }
       
@@ -111,7 +111,7 @@ export default function Books() {
       // This includes genres, authors, and goodreadsData that were collected in the preferences step
       
       // Include the detected books and preferences in the request
-      log("Sending books for OpenAI recommendations:", detectedBooks.length);
+      console.log("Sending books for OpenAI recommendations:", detectedBooks.length);
       const response = await apiRequest('POST', '/api/direct/recommendations', {
         books: detectedBooks,
         preferences: userPreferences
@@ -119,7 +119,7 @@ export default function Books() {
       return response.json();
     },
     onSuccess: (data) => {
-      log("Successfully created recommendations:", data);
+      console.log("Successfully created recommendations:", data);
       
       // Store the recommendations directly instead of relying on a GET request
       setCurrentRecommendations(data);
@@ -136,7 +136,7 @@ export default function Books() {
     },
     onError: (error) => {
       // Handle the error silently without showing the "No books provided" error to user
-      log("Recommendation error details:", error);
+      console.log("Recommendation error details:", error);
       
       // Only show errors that are not the "No books provided" error
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -158,7 +158,7 @@ export default function Books() {
   };
 
   const handleBooksDetected = (books: Book[], _imageBase64: string) => {
-    log("Books detected:", books.length, "books");
+    console.log("Books detected:", books.length, "books");
     if (books && books.length > 0) {
       setDetectedBooks(books);
       saveBooksMutation.mutate(books);

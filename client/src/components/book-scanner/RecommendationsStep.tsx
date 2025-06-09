@@ -72,7 +72,7 @@ export default function RecommendationsStep({ recommendations, isLoading, goodre
         
         setSavedBookIds(alreadySavedIds);
       } catch (error) {
-        log("Error fetching saved books:", error);
+        console.log("Error fetching saved books:", error);
       }
     };
 
@@ -165,7 +165,7 @@ export default function RecommendationsStep({ recommendations, isLoading, goodre
         });
       }
     } catch (error) {
-      log("Error toggling book save:", error);
+      console.log("Error toggling book save:", error);
       toast({
         title: "Error",
         description: `Failed to ${isCurrentlySaved ? 'remove' : 'save'} book. Please try again.`,

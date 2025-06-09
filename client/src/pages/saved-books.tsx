@@ -44,17 +44,17 @@ export default function SavedBooks() {
         }
         
         const books = await response.json();
-        log("Retrieved saved books:", books);
+        console.log("Retrieved saved books:", books);
         
         if (Array.isArray(books)) {
           setSavedBooks(books);
           // No error message needed for empty arrays - it's valid to have no saved books
         } else {
-          log("Unexpected response format:", books);
+          console.log("Unexpected response format:", books);
           setError("Received invalid data format from server");
         }
       } catch (err) {
-        log("Error fetching saved books:", err);
+        console.log("Error fetching saved books:", err);
         setError("Failed to load your reading list. Please try again later.");
       } finally {
         setIsLoading(false);
@@ -78,7 +78,7 @@ export default function SavedBooks() {
       // Update UI by removing the deleted book
       setSavedBooks((prevBooks) => prevBooks.filter((book) => book.id !== id));
     } catch (err) {
-      log("Error removing book:", err);
+      console.log("Error removing book:", err);
       setError("Failed to remove book. Please try again.");
     }
   };

@@ -193,10 +193,14 @@ export default function PreferencesStep({ preferences, onSubmit, isLoading }: Pr
         }
       }
       
-      log(`Processed ${result.length} books from Goodreads data`);
+      if (process.env.NODE_ENV === 'development') {
+        console.console.log(`Processed ${result.length} books from Goodreads data`);
+      }
       return result;
     } catch (error) {
-      log("Error parsing CSV:", error);
+              if (process.env.NODE_ENV === 'development') {
+          console.console.log("Error parsing CSV:", error);
+        }
       return [];
     }
   };
@@ -279,7 +283,9 @@ export default function PreferencesStep({ preferences, onSubmit, isLoading }: Pr
       author.avgRating >= 4 || author.count >= 2
     );
     
-    log("Top authors from Goodreads:", qualifiedAuthors.slice(0, 10));
+    if (process.env.NODE_ENV === 'development') {
+      console.console.log("Top authors from Goodreads:", qualifiedAuthors.slice(0, 10));
+    }
     
     // Return names of top 10 authors
     return qualifiedAuthors.slice(0, 10).map(author => author.name);
