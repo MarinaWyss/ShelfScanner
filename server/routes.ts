@@ -159,7 +159,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Use the titles identified by OpenAI Vision
       const bookTitles = visionAnalysis.bookTitles;
       
-      console.log("OpenAI identified book titles:", bookTitles);
+      if (process.env.NODE_ENV === 'development') {
+        console.log("OpenAI identified book titles:", bookTitles);
+      }
       
       if (bookTitles.length === 0) {
         return res.status(200).json({

@@ -20,7 +20,9 @@ export async function getOpenAIBookRating(title: string, author: string): Promis
   try {
     // Check if we have an API key
     if (!process.env.OPENAI_API_KEY) {
-      console.log("OpenAI API key not found. Using fallback rating system.");
+      if (process.env.NODE_ENV === 'development') {
+        console.log("OpenAI API key not found. Using fallback rating system.");
+      }
       // Return a reasonable fallback rating
       return "4.3";
     }
@@ -80,7 +82,9 @@ export async function getOpenAIBookSummary(title: string, author: string): Promi
   try {
     // Check if we have an API key
     if (!process.env.OPENAI_API_KEY) {
-      console.log("OpenAI API key not found. Using fallback summary.");
+      if (process.env.NODE_ENV === 'development') {
+        console.log("OpenAI API key not found. Using fallback summary.");
+      }
       return `This is a book titled "${title}" by ${author}. No summary is available at this time.`;
     }
     

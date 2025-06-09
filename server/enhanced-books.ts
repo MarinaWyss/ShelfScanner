@@ -572,7 +572,9 @@ export async function getRecommendations(
         console.log('Falling back to traditional algorithm');
       }
     } else {
-      console.log('OpenAI API key not configured, using traditional algorithm');
+      if (process.env.NODE_ENV === 'development') {
+    console.log('OpenAI API key not configured, using traditional algorithm');
+  }
     }
     
     // Fallback: Use traditional algorithm if OpenAI failed or is not available

@@ -14,8 +14,6 @@ const openai = new OpenAI({
 export async function testOpenAI(): Promise<{ success: boolean; message: string }> {
   try {
     console.log("Testing OpenAI connection...");
-    console.log(`API key exists: ${Boolean(process.env.OPENAI_API_KEY)}`);
-    console.log(`API key starts with: ${process.env.OPENAI_API_KEY?.substring(0, 5)}...`);
     
     // Make a simple request to OpenAI
     const response = await openai.chat.completions.create({

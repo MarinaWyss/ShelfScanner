@@ -1,9 +1,28 @@
-import { pgTable, text, serial, integer, boolean, jsonb, timestamp, varchar } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, jsonb, timestamp, varchar, pgSchema } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Get the schema name based on environment
+const getSchemaName = () => {
+  if (process.env.NODE_ENV === 'production') {
+    return 'public';
+  }
+  return 'development';
+};
+
+// Create the schema object
+const currentSchemaName = getSchemaName();
+export const appSchema = currentSchemaName === 'public' 
+  ? undefined  // Use default (public) schema
+  : pgSchema(currentSchemaName);
+
+// Helper function to create table in the correct schema
+const createTable = (name: string, columns: any) => {
+  return appSchema ? appSchema.table(name, columns) : pgTable(name, columns);
+};
+
 // User schema
-export const users = pgTable("users", {
+export const users = createTable("users", {
   id: serial("id").primaryKey(),
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
@@ -15,7 +34,7 @@ export const insertUserSchema = createInsertSchema(users).pick({
 });
 
 // Book preferences schema
-export const preferences = pgTable("preferences", {
+export const preferences = createTable("preferences", {
   id: serial("id").primaryKey(),
   userId: integer("user_id").notNull(),
   deviceId: text("device_id"),
@@ -34,7 +53,7 @@ export const insertPreferenceSchema = createInsertSchema(preferences).pick({
 
 // Book cache schema for storing book metadata to reduce external API calls
 // We'll create a unique book identifier from ISBN if available, or title+author if not
-export const bookCache = pgTable("book_cache", {
+export const bookCache = createTable("book_cache", {
   id: serial("id").primaryKey(),
   // Make title and author required for all books
   title: text("title").notNull(),
@@ -69,7 +88,7 @@ export type BookCache = typeof bookCache.$inferSelect;
 export type InsertBookCache = z.infer<typeof insertBookCacheSchema>;
 
 // Saved books schema - now with reference to book_cache table
-export const savedBooks = pgTable("saved_books", {
+export const savedBooks = createTable("saved_books", {
   id: serial("id").primaryKey(),
   deviceId: text("device_id").notNull(),
   bookCacheId: integer("book_cache_id").references(() => bookCache.id),
