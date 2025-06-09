@@ -297,7 +297,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: `Found ${detectedBooks.length} books in your photo: ${bookTitlesFound}. These have been ranked based on your preferences.`
       });
     } catch (error) {
-      log('Error processing image:', error);
+      log(`Error processing image: ${error instanceof Error ? error.message : String(error)}`);
       return res.status(500).json({ 
         message: 'Error processing image',
         error: error instanceof Error ? error.message : String(error)
@@ -381,7 +381,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       return res.status(201).json(preferences);
     } catch (error) {
-      log('Error saving preferences:', error);
+      log(`Error saving preferences: ${error instanceof Error ? error.message : String(error)}`);
       return res.status(400).json({ 
         message: 'Error saving preferences',
         error: error instanceof Error ? error.message : String(error)
@@ -411,7 +411,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       return res.status(200).json(preferences);
     } catch (error) {
-      log('Error getting preferences:', error);
+      log(`Error getting preferences: ${error instanceof Error ? error.message : String(error)}`);
       return res.status(500).json({ 
         message: 'Error getting preferences',
         error: error instanceof Error ? error.message : String(error)
@@ -458,7 +458,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       return res.status(200).json(savedBooks);
     } catch (error) {
-      log('Error saving books:', error);
+      log(`Error saving books: ${error instanceof Error ? error.message : String(error)}`);
       return res.status(400).json({ 
         message: 'Error saving books',
         error: error instanceof Error ? error.message : String(error)
@@ -611,7 +611,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               log(`Got fresh OpenAI rating for recommendation "${recommendation.title}": ${rating}`);
             }
           } catch (error) {
-            log(`Error getting OpenAI rating for recommendation "${recommendation.title}":`, error);
+            log(`Error getting OpenAI rating for recommendation "${recommendation.title}": ${error instanceof Error ? error.message : String(error)}`);
           }
         }
         
@@ -624,7 +624,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               log(`Got fresh OpenAI summary for recommendation "${recommendation.title}"`);
             }
           } catch (error) {
-            log(`Error getting OpenAI summary for recommendation "${recommendation.title}":`, error);
+            log(`Error getting OpenAI summary for recommendation "${recommendation.title}": ${error instanceof Error ? error.message : String(error)}`);
           }
         }
         
@@ -662,7 +662,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             log(`Skipping cache for "${recommendation.title}" - already in cache with same data`);
           }
         } catch (cacheError) {
-          log(`Error caching recommendation data for "${recommendation.title}":`, cacheError);
+          log(`Error caching recommendation data for "${recommendation.title}": ${cacheError instanceof Error ? cacheError.message : String(cacheError)}`);
         }
         
         return recommendation;
@@ -672,7 +672,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       log(`Returning ${enhancedRecommendations.length} recommendations directly to client`);
       return res.status(200).json(enhancedRecommendations);
     } catch (error) {
-      log('Error generating recommendations:', error);
+      log(`Error generating recommendations: ${error instanceof Error ? error.message : String(error)}`);
       return res.status(500).json({ 
         message: 'Error generating recommendations',
         error: error instanceof Error ? error.message : String(error)
@@ -692,7 +692,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         recommendations: [] 
       });
     } catch (error) {
-      log('Error with recommendations endpoint:', error);
+      log(`Error with recommendations endpoint: ${error instanceof Error ? error.message : String(error)}`);
       return res.status(500).json({ 
         message: 'Error with recommendations endpoint',
         error: error instanceof Error ? error.message : String(error)
@@ -739,7 +739,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 };
               }
             } catch (error) {
-              log(`Error fetching cache data for book ID ${book.id}:`, error);
+              log(`Error fetching cache data for book ID ${book.id}: ${error instanceof Error ? error.message : String(error)}`);
             }
           }
           
@@ -751,7 +751,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Return empty array instead of 404 for no books
       return res.status(200).json(enhancedSavedBooks);
     } catch (error) {
-      log('Error getting saved books:', error);
+      log(`Error getting saved books: ${error instanceof Error ? error.message : String(error)}`);
       return res.status(500).json({ 
         message: 'Error getting saved books',
         error: error instanceof Error ? error.message : String(error)
@@ -830,7 +830,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       return res.status(201).json(savedBook);
     } catch (error) {
-      log('Error saving book:', error);
+      log(`Error saving book: ${error instanceof Error ? error.message : String(error)}`);
       return res.status(400).json({ 
         message: 'Error saving book',
         error: error instanceof Error ? error.message : String(error)
@@ -856,7 +856,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       return res.status(200).json({ message: 'Book deleted successfully' });
     } catch (error) {
-      log('Error deleting saved book:', error);
+      log(`Error deleting saved book: ${error instanceof Error ? error.message : String(error)}`);
       return res.status(500).json({ 
         message: 'Error deleting saved book',
         error: error instanceof Error ? error.message : String(error)
@@ -870,7 +870,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const stats = getApiUsageStats();
       return res.status(200).json(stats);
     } catch (error) {
-      log('Error getting API statistics:', error);
+      log(`Error getting API statistics: ${error instanceof Error ? error.message : String(error)}`);
       return res.status(500).json({ 
         message: 'Error getting API statistics',
         error: error instanceof Error ? error.message : String(error)
@@ -901,7 +901,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         books: savedBooks
       });
     } catch (error) {
-      log('Error enhancing saved books:', error);
+      log(`Error enhancing saved books: ${error instanceof Error ? error.message : String(error)}`);
       return res.status(500).json({ 
         message: 'Error enhancing saved books',
         error: error instanceof Error ? error.message : String(error)
@@ -929,7 +929,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       return res.status(200).json(enhancedBook);
     } catch (error) {
-      log('Error enhancing book:', error);
+      log(`Error enhancing book: ${error instanceof Error ? error.message : String(error)}`);
       return res.status(500).json({ 
         message: 'Error enhancing book data',
         error: error instanceof Error ? error.message : String(error)
@@ -963,7 +963,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         timestamp: new Date().toISOString()
       });
     } catch (error) {
-      log('Error in OpenAI book demo:', error);
+      log(`Error in OpenAI book demo: ${error instanceof Error ? error.message : String(error)}`);
       return res.status(500).json({ 
         message: 'Error getting OpenAI book data',
         error: error instanceof Error ? error.message : String(error)
@@ -990,7 +990,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         requestedAt: new Date().toISOString()
       });
     } catch (error) {
-      log('Error getting OpenAI book details:', error);
+      log(`Error getting OpenAI book details: ${error instanceof Error ? error.message : String(error)}`);
       return res.status(500).json({ 
         message: 'Error getting book details from OpenAI',
         error: error instanceof Error ? error.message : String(error)
@@ -1034,7 +1034,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Return the result
       res.json(result);
     } catch (error) {
-      log('Error testing OpenAI:', error);
+      log(`Error testing OpenAI: ${error instanceof Error ? error.message : String(error)}`);
       res.status(500).json({ 
         message: 'Error testing OpenAI',
         error: error instanceof Error ? error.message : String(error)
@@ -1067,7 +1067,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         recommendations
       });
     } catch (error) {
-      log('Error generating AI recommendations:', error);
+      log(`Error generating AI recommendations: ${error instanceof Error ? error.message : String(error)}`);
       res.status(500).json({ 
         message: 'Error generating AI recommendations',
         error: error instanceof Error ? error.message : String(error)

@@ -359,18 +359,17 @@ export class BookCacheService {
         } else {
           // No existing entry - create a new one
           // Generate a unique book ID
-          const bookId = `${title.trim()}-${author.trim()}`.toLowerCase().replace(/[^a-z0-9]/g, '-');
+          const _bookId = `${title.trim()}-${author.trim()}`.toLowerCase().replace(/[^a-z0-9]/g, '-');
           
-          const cacheData: InsertBookCache = {
+          const cacheData = {
             title: title.trim(),
             author: author.trim(),
             summary,
-            source: 'openai',
-            bookId, // Add required bookId field
-            isbn: null,
-            coverUrl: null,
-            rating: null,
-            metadata: null,
+            source: 'openai' as const,
+            isbn: undefined,
+            coverUrl: undefined,
+            rating: undefined,
+            metadata: undefined,
             expiresAt
           };
           
@@ -508,15 +507,14 @@ export class BookCacheService {
       } else {
         // No existing entry - create a new one
         // Generate a unique book ID
-        const bookId = isbn || `${title.trim()}-${author.trim()}`.toLowerCase().replace(/[^a-z0-9]/g, '-');
+        const _bookId = isbn || `${title.trim()}-${author.trim()}`.toLowerCase().replace(/[^a-z0-9]/g, '-');
         
-        const cacheData: InsertBookCache = {
+        const cacheData = {
           title: title.trim(),
           author: author.trim(),
           isbn: isbn || undefined,
           rating: rating,
-          source: 'openai',
-          bookId, // Add required bookId field
+          source: 'openai' as const,
           coverUrl: undefined,
           summary: undefined,
           metadata: undefined,
@@ -609,11 +607,10 @@ export class BookCacheService {
       // If we need to preserve descriptions or filter by title, we need a more selective approach
       if (preserveDescriptions || titleFilter) {
         // First, get the entries that match our criteria
-        let query = db.select().from(bookCache);
-        
-        if (titleFilter) {
-          query = query.where(sql`LOWER(${bookCache.title}) LIKE ${`%${titleFilter.toLowerCase()}%`}`);
-        }
+        const baseQuery = db.select().from(bookCache);
+        const query = titleFilter 
+          ? baseQuery.where(sql`LOWER(${bookCache.title}) LIKE ${`%${titleFilter.toLowerCase()}%`}`)
+          : baseQuery;
         
         const entries = await query;
         const count = entries.length;

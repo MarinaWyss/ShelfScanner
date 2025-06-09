@@ -225,7 +225,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async cacheBook(bookData: InsertBookCache): Promise<BookCache> {
+  async cacheBook(bookData: any): Promise<BookCache> {
     try {
       // Generate a unique bookId from ISBN or title+author
       let bookId = '';

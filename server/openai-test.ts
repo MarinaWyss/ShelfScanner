@@ -40,10 +40,7 @@ export async function testOpenAI(): Promise<{ success: boolean; message: string 
       message: `OpenAI test successful: ${result}`
     };
   } catch (error) {
-    log("OpenAI test error:", error);
-    return {
-      success: false,
-      message: `OpenAI test failed: ${error instanceof Error ? error.message : String(error)}`
-    };
+    log(`OpenAI test error: ${error instanceof Error ? error.message : String(error)}`);
+    throw error;
   }
 }

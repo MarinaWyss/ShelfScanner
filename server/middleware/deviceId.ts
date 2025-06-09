@@ -5,7 +5,7 @@
 
 import { Request, Response, NextFunction } from 'express';
 import { v4 as uuidv4 } from 'uuid';
-import { log } from './vite';
+import { log } from '../vite';
 
 // Cookie name for storing device ID
 const DEVICE_ID_COOKIE = 'deviceId';

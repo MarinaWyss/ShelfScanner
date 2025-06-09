@@ -90,7 +90,7 @@ describe('Database Operations', () => {
 
       const mockInsert = {
         values: jest.fn().mockReturnThis(),
-        returning: jest.fn().mockResolvedValue([{ ...bookData, id: 1 }])
+        returning: (jest.fn() as any).mockResolvedValue([{ ...bookData, id: 1 }])
       };
 
       mockDb.insert.mockReturnValue(mockInsert);
@@ -112,7 +112,7 @@ describe('Database Operations', () => {
 
       const mockInsert = {
         values: jest.fn().mockReturnThis(),
-        returning: jest.fn().mockResolvedValue([{ ...userData, id: 1 }])
+        returning: (jest.fn() as any).mockResolvedValue([{ ...userData, id: 1 }])
       };
 
       mockDb.insert.mockReturnValue(mockInsert);
@@ -136,7 +136,7 @@ describe('Database Operations', () => {
 
       const mockInsert = {
         values: jest.fn().mockReturnThis(),
-        returning: jest.fn().mockResolvedValue([{ ...savedBookData, id: 1 }])
+        returning: (jest.fn() as any).mockResolvedValue([{ ...savedBookData, id: 1 }])
       };
 
       mockDb.insert.mockReturnValue(mockInsert);
@@ -162,7 +162,7 @@ describe('Database Operations', () => {
 
       const mockInsert = {
         values: jest.fn().mockReturnThis(),
-        returning: jest.fn().mockResolvedValue([{ ...preferencesData, id: 1 }])
+        returning: (jest.fn() as any).mockResolvedValue([{ ...preferencesData, id: 1 }])
       };
 
       mockDb.insert.mockReturnValue(mockInsert);

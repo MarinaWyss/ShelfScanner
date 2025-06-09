@@ -244,8 +244,7 @@ export async function getRecommendations(
   try {
     // CRITICAL: We will ONLY use the books that were detected in the image
     // No external recommendations will be added at all
-    log(`ONLY using ${books.length} detected books for recommendations:`, 
-      books.map(b => b.title));
+    log(`ONLY using ${books.length} detected books for recommendations: ${books.map(b => b.title).join(', ')}`);
     log('Using preferences:', preferences);
     
     // Get user's preferred genres
@@ -423,13 +422,13 @@ export async function getRecommendations(
             log(`Using verified rating from database for "${book.title}": ${finalRating}`);
           } else {
             // No rating available - leave it blank
-            log(`No verified rating found for "${book.title}" - leaving blank`);
+                        log(`No verified rating found for "${book.title}" - leaving blank`);
           }
         }
       } catch (error) {
-        log(`Error processing rating for "${book.title}":`, error);
+        log(`Error processing rating for "${book.title}": ${error instanceof Error ? error.message : String(error)}`);
       }
-      
+
       return {
         title: book.title || 'Unknown Title',
         author: book.author || 'Unknown Author',
@@ -462,13 +461,13 @@ export async function getRecommendations(
             log(`Using verified rating for already read book "${book.title}": ${finalRating}`);
           } else {
             // No rating available - leave it blank
-            log(`No verified rating found for already read book "${book.title}" - leaving blank`);
+                        log(`No verified rating found for already read book "${book.title}" - leaving blank`);
           }
         }
       } catch (error) {
-        log(`Error processing rating for "${book.title}":`, error);
+        log(`Error processing rating for "${book.title}": ${error instanceof Error ? error.message : String(error)}`);
       }
-      
+
       return {
         title: book.title || 'Unknown Title',
         author: book.author || 'Unknown Author',
@@ -484,9 +483,9 @@ export async function getRecommendations(
     }));
     
     // Log the final sorted books
-    log("Final scored NEW books:", scoredNewBooks.map(b => `${b.title}: ${b.score}`));
+    log(`Final scored NEW books: ${scoredNewBooks.map(b => `${b.title}: ${b.score}`).join(', ')}`);
     if (scoredReadBooks.length > 0) {
-      log("Books you've already READ:", scoredReadBooks.map(b => `${b.title}: ${b.score}`));
+      log(`Books you've already READ: ${scoredReadBooks.map(b => `${b.title}: ${b.score}`).join(', ')}`);
     }
     
     // Return new books first, then already read books

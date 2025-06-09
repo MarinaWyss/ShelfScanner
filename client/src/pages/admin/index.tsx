@@ -37,6 +37,33 @@ interface StatsResponse {
     openaiConfigured: boolean;
     googleVisionConfigured: boolean;
   };
+  apiMonitoring?: {
+    openai?: {
+      configured: boolean;
+      status: string;
+      failureCount: number;
+      successCount: number;
+      uniqueUsers: number;
+      usageToday: number;
+      dailyLimit: number;
+      withinLimits: boolean;
+      affectedUsers: number;
+      lastFailure: string | null;
+      isCritical: boolean;
+    };
+    failures?: Record<string, any>;
+  };
+  health?: {
+    status: string;
+    memory?: {
+      used: number;
+      total: number;
+      usedPercentage: number;
+    };
+    cpu?: {
+      loadPercentage: number;
+    };
+  };
 }
 
 /**
@@ -323,8 +350,8 @@ export default function AdminPage() {
                       <div className="flex justify-between items-center text-sm">
                         <span>Used / Total:</span>
                         <span>
-                          {Math.round(data.health.memory?.used / 1024 / 1024)} MB / 
-                          {Math.round(data.health.memory?.total / 1024 / 1024)} MB
+                          {data.health.memory?.used ? Math.round(data.health.memory.used / 1024 / 1024) : 0} MB / 
+                          {data.health.memory?.total ? Math.round(data.health.memory.total / 1024 / 1024) : 0} MB
                         </span>
                       </div>
                       <Progress 

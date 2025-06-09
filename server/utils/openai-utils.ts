@@ -70,7 +70,7 @@ export async function getOpenAIBookRating(title: string, author: string): Promis
     }
   } catch (error) {
     // Log error and provide fallback
-    log("Error getting OpenAI book rating:", error);
+    log(`Error getting OpenAI book rating: ${error instanceof Error ? error.message : String(error)}`);
     return "4.0";
   }
 }
@@ -129,7 +129,7 @@ export async function getOpenAIBookSummary(title: string, author: string): Promi
     }
   } catch (error) {
     // Log error and provide fallback
-    log("Error getting OpenAI book summary:", error);
+    log(`Error getting OpenAI book summary: ${error instanceof Error ? error.message : String(error)}`);
     return `"${title}" by ${author} is a book that could not be summarized at this time due to technical limitations.`;
   }
 }

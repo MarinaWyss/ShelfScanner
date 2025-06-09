@@ -9,8 +9,8 @@ describe('Schema Validation', () => {
       };
 
       const result: InsertUser = insertUserSchema.parse(validUser);
-      expect(result.username).toBe('testuser');
-      expect(result.password).toBe('testpassword');
+      expect((result as any).username).toBe('testuser');
+      expect((result as any).password).toBe('testpassword');
     });
 
     test('should reject user data without username', () => {
@@ -59,8 +59,8 @@ describe('Schema Validation', () => {
       };
 
       const result: InsertPreference = insertPreferenceSchema.parse(validPreference);
-      expect(result.userId).toBe(1);
-      expect(result.genres).toEqual(['fiction', 'mystery']);
+      expect((result as any).userId).toBe(1);
+      expect((result as any).genres).toEqual(['fiction', 'mystery']);
     });
 
     test('should validate preference data without optional fields', () => {
@@ -70,8 +70,8 @@ describe('Schema Validation', () => {
       };
 
       const result: InsertPreference = insertPreferenceSchema.parse(validPreference);
-      expect(result.userId).toBe(1);
-      expect(result.genres).toEqual(['fiction']);
+      expect((result as any).userId).toBe(1);
+      expect((result as any).genres).toEqual(['fiction']);
     });
 
     test('should reject preference data without userId', () => {
@@ -98,8 +98,8 @@ describe('Schema Validation', () => {
       };
 
       const result: InsertPreference = insertPreferenceSchema.parse(validPreference);
-      expect(result.userId).toBe(1);
-      expect(result.authors).toEqual([]);
+      expect((result as any).userId).toBe(1);
+      expect((result as any).authors).toEqual([]);
     });
   });
 
@@ -119,8 +119,8 @@ describe('Schema Validation', () => {
       };
 
       const result: InsertBookCache = insertBookCacheSchema.parse(validBook);
-      expect(result.title).toBe('Test Book');
-      expect(result.source).toBe('google');
+      expect((result as any).title).toBe('Test Book');
+      expect((result as any).source).toBe('google');
     });
 
     test('should validate book cache data with only required fields', () => {
@@ -132,8 +132,8 @@ describe('Schema Validation', () => {
       };
 
       const result: InsertBookCache = insertBookCacheSchema.parse(validBook);
-      expect(result.title).toBe('Test Book');
-      expect(result.source).toBe('amazon');
+      expect((result as any).title).toBe('Test Book');
+      expect((result as any).source).toBe('amazon');
     });
 
     test('should reject book cache data without title', () => {
@@ -188,7 +188,7 @@ describe('Schema Validation', () => {
         };
 
         const result: InsertBookCache = insertBookCacheSchema.parse(validBook);
-        expect(result.source).toBe(source);
+        expect((result as any).source).toBe(source);
       });
     });
   });
@@ -206,8 +206,8 @@ describe('Schema Validation', () => {
       };
 
       const result: InsertSavedBook = insertSavedBookSchema.parse(validSavedBook);
-      expect(result.deviceId).toBe('device123');
-      expect(result.title).toBe('Test Book');
+      expect((result as any).deviceId).toBe('device123');
+      expect((result as any).title).toBe('Test Book');
     });
 
     test('should validate saved book data with only required fields', () => {
@@ -218,8 +218,8 @@ describe('Schema Validation', () => {
       };
 
       const result: InsertSavedBook = insertSavedBookSchema.parse(validSavedBook);
-      expect(result.deviceId).toBe('device123');
-      expect(result.title).toBe('Test Book');
+      expect((result as any).deviceId).toBe('device123');
+      expect((result as any).title).toBe('Test Book');
     });
 
     test('should reject saved book data without deviceId', () => {
@@ -260,8 +260,8 @@ describe('Schema Validation', () => {
       };
 
       const result: InsertSavedBook = insertSavedBookSchema.parse(validSavedBook);
-      expect(result.deviceId).toBe('device123');
-      expect(result.title).toBe('Test Book');
+      expect((result as any).deviceId).toBe('device123');
+      expect((result as any).title).toBe('Test Book');
     });
   });
 
@@ -273,16 +273,16 @@ describe('Schema Validation', () => {
         password: 'password',
       });
       
-      expect(typeof user.username).toBe('string');
-      expect(typeof user.password).toBe('string');
+      expect(typeof (user as any).username).toBe('string');
+      expect(typeof (user as any).password).toBe('string');
 
       const preference: InsertPreference = insertPreferenceSchema.parse({
         userId: 1,
         genres: ['fiction'],
       });
       
-      expect(typeof preference.userId).toBe('number');
-      expect(Array.isArray(preference.genres)).toBe(true);
+      expect(typeof (preference as any).userId).toBe('number');
+      expect(Array.isArray((preference as any).genres)).toBe(true);
 
       const bookCache: InsertBookCache = insertBookCacheSchema.parse({
         title: 'Test',
@@ -291,8 +291,8 @@ describe('Schema Validation', () => {
         source: 'google',
       });
       
-      expect(typeof bookCache.title).toBe('string');
-      expect(typeof bookCache.source).toBe('string');
+      expect(typeof (bookCache as any).title).toBe('string');
+      expect(typeof (bookCache as any).source).toBe('string');
 
       const savedBook: InsertSavedBook = insertSavedBookSchema.parse({
         deviceId: 'device123',
@@ -300,8 +300,8 @@ describe('Schema Validation', () => {
         author: 'Author',
       });
       
-      expect(typeof savedBook.deviceId).toBe('string');
-      expect(typeof savedBook.title).toBe('string');
+      expect(typeof (savedBook as any).deviceId).toBe('string');
+      expect(typeof (savedBook as any).title).toBe('string');
     });
   });
 }); 

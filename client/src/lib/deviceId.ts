@@ -48,7 +48,7 @@ export function syncDeviceIdCookie(): void {
     if (serverDeviceId && serverDeviceId !== deviceId) {
       localStorage.setItem(DEVICE_ID_KEY, serverDeviceId);
       if (process.env.NODE_ENV === 'development') {
-        console.console.log('Updated local device ID to match server cookie');
+        console.log('Updated local device ID to match server cookie');
       }
       return;
     }
@@ -60,7 +60,7 @@ export function syncDeviceIdCookie(): void {
   
   document.cookie = `${DEVICE_ID_COOKIE}=${deviceId}; expires=${expiryDate.toUTCString()}; path=/; SameSite=Strict`;
   if (process.env.NODE_ENV === 'development') {
-    console.console.log('Device ID synced to cookie');
+    console.log('Device ID synced to cookie');
   }
 }
 

@@ -52,7 +52,7 @@ export async function analyzeImage(base64Image: string): Promise<any> {
       throw new Error('Invalid image data provided');
     }
     
-    log("Processing image with Google Vision API, content length:", imageContent.length);
+    log(`Processing image with Google Vision API, content length: ${imageContent.length}`);
     
     const visionRequest: VisionRequest = {
       requests: [

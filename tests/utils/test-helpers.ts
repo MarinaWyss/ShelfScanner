@@ -179,8 +179,8 @@ export const createMockRequest = (overrides = {}) => ({
   ...overrides
 });
 
-export const createMockResponse = () => {
-  const res = {
+export const createMockResponse = (): any => {
+  const res: any = {
     status: jest.fn(() => res),
     json: jest.fn(() => res),
     send: jest.fn(() => res),

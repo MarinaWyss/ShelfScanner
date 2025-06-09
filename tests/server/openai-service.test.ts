@@ -40,7 +40,7 @@ describe('OpenAI Service', () => {
         }]
       };
 
-      mockOpenAI.chat.completions.create.mockResolvedValue(mockResponse);
+      (mockOpenAI.chat.completions.create as any).mockResolvedValue(mockResponse);
 
       const userPreferences = {
         genres: ['Science Fiction', 'Adventure'],
@@ -67,12 +67,12 @@ describe('OpenAI Service', () => {
       });
 
       expect(mockOpenAI.chat.completions.create).toHaveBeenCalledTimes(1);
-      expect(result.choices[0].message.content).toContain('The Martian');
+      expect((result as any).choices[0].message.content).toContain('The Martian');
     });
 
     it('should handle OpenAI API errors gracefully', async () => {
       const error = new Error('OpenAI API rate limit exceeded');
-      mockOpenAI.chat.completions.create.mockRejectedValue(error);
+      (mockOpenAI.chat.completions.create as any).mockRejectedValue(error);
 
       await expect(mockOpenAI.chat.completions.create({})).rejects.toThrow('OpenAI API rate limit exceeded');
     });
@@ -86,12 +86,12 @@ describe('OpenAI Service', () => {
         }]
       };
 
-      mockOpenAI.chat.completions.create.mockResolvedValue(invalidResponse);
+      (mockOpenAI.chat.completions.create as any).mockResolvedValue(invalidResponse as any);
 
       const result = await mockOpenAI.chat.completions.create({});
       
       expect(() => {
-        JSON.parse(result.choices[0].message.content);
+        JSON.parse((result as any).choices[0].message.content);
       }).toThrow();
     });
   });
@@ -113,7 +113,7 @@ describe('OpenAI Service', () => {
         }]
       };
 
-      mockOpenAI.chat.completions.create.mockResolvedValue(mockSummaryResponse);
+      (mockOpenAI.chat.completions.create as any).mockResolvedValue(mockSummaryResponse as any);
 
       const bookData = {
         title: 'Dune',
@@ -136,7 +136,7 @@ describe('OpenAI Service', () => {
       });
 
       expect(mockOpenAI.chat.completions.create).toHaveBeenCalledTimes(1);
-      const response = JSON.parse(result.choices[0].message.content);
+      const response = JSON.parse((result as any).choices[0].message.content);
       expect(response.title).toBe('Dune');
       expect(response.enhancedSummary).toBeDefined();
       expect(response.themes).toBeInstanceOf(Array);
@@ -148,18 +148,18 @@ describe('OpenAI Service', () => {
       const rateLimitError = new Error('Rate limit exceeded');
       rateLimitError.name = 'RateLimitError';
       
-      mockOpenAI.chat.completions.create.mockRejectedValue(rateLimitError);
+      (mockOpenAI.chat.completions.create as any).mockRejectedValue(rateLimitError as any);
 
       await expect(mockOpenAI.chat.completions.create({})).rejects.toThrow('Rate limit exceeded');
     });
 
     it('should implement exponential backoff for retries', async () => {
       // First call fails, second succeeds
-      mockOpenAI.chat.completions.create
-        .mockRejectedValueOnce(new Error('Rate limit exceeded'))
+      (mockOpenAI.chat.completions.create as any)
+        .mockRejectedValueOnce(new Error('Rate limit exceeded') as any)
         .mockResolvedValueOnce({
           choices: [{ message: { content: 'Success' } }]
-        });
+        } as any);
 
       // Test retry logic would go here
       expect(mockOpenAI.chat.completions.create).toBeDefined();
