@@ -73,7 +73,7 @@ export default function PreferencesStep({ preferences, onSubmit, isLoading }: Pr
 
   const handleGoodreadsUpload = useCallback((e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file) {return;}
 
     // Check if it's a CSV file
     if (!file.name.endsWith('.csv')) {
@@ -119,7 +119,7 @@ export default function PreferencesStep({ preferences, onSubmit, isLoading }: Pr
         
         // Store the raw parsed data
         setGoodreadsData(parsedData);
-      } catch (error) {
+      } catch {
         toast({
           title: "Import failed",
           description: "Failed to parse Goodreads CSV file. Please ensure it's a valid export.",
@@ -147,7 +147,7 @@ export default function PreferencesStep({ preferences, onSubmit, isLoading }: Pr
     try {
       // Split into lines, being careful with Windows/Unix line endings
       const lines = csvText.split(/\r?\n/);
-      if (lines.length === 0) return [];
+      if (lines.length === 0) {return [];}
       
       // Extract headers from first line
       const headerLine = lines[0];
@@ -163,11 +163,11 @@ export default function PreferencesStep({ preferences, onSubmit, isLoading }: Pr
       
       // Process all lines (except header)
       for (let i = 1; i < lines.length; i++) {
-        if (!lines[i].trim()) continue;
+        if (!lines[i].trim()) {continue;}
         
         // Parse this line, handling quotes and commas properly
         const values = parseCSVLine(lines[i]);
-        if (values.length < headers.length) continue; // Malformed line
+        if (values.length < headers.length) {continue;} // Malformed line
         
         // Create an entry with just the fields we need
         const entry: Record<string, string> = {};
@@ -328,15 +328,15 @@ export default function PreferencesStep({ preferences, onSubmit, isLoading }: Pr
     }
     
     // Common mappings
-    if (shelf.includes('ya') || shelf.includes('young-adult')) return 'Young Adult';
-    if (shelf.includes('sci-fi')) return 'Science Fiction';
-    if (shelf.includes('scifi')) return 'Science Fiction';
-    if (shelf.includes('biograph')) return 'Biography';
-    if (shelf.includes('historic')) return 'History';
-    if (shelf.includes('classic')) return 'Classics';
-    if (shelf.includes('comic') || shelf.includes('graphic')) return 'Comics';
-    if (shelf.includes('business') || shelf.includes('finance')) return 'Business';
-    if (shelf.includes('tech') || shelf.includes('science')) return 'Science';
+    if (shelf.includes('ya') || shelf.includes('young-adult')) {return 'Young Adult';}
+    if (shelf.includes('sci-fi')) {return 'Science Fiction';}
+    if (shelf.includes('scifi')) {return 'Science Fiction';}
+    if (shelf.includes('biograph')) {return 'Biography';}
+    if (shelf.includes('historic')) {return 'History';}
+    if (shelf.includes('classic')) {return 'Classics';}
+    if (shelf.includes('comic') || shelf.includes('graphic')) {return 'Comics';}
+    if (shelf.includes('business') || shelf.includes('finance')) {return 'Business';}
+    if (shelf.includes('tech') || shelf.includes('science')) {return 'Science';}
     
     return null;
   };

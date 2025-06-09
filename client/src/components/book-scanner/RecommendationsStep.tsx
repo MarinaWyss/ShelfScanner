@@ -2,7 +2,6 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
 import StarRating from "@/components/ui/star-rating";
 
 import AffiliateDisclosure from "@/components/ui/affiliate-disclosure";
@@ -189,10 +188,10 @@ export default function RecommendationsStep({ recommendations, isLoading, goodre
     
     // Check if this book appears in the user's Goodreads history
     return goodreadsData.some(goodreadsBook => {
-      if (!goodreadsBook["Title"] || !goodreadsBook["Author"]) return false;
+      if (!goodreadsBook["Title"] || !goodreadsBook["Author"]) {return false;}
       
       // Only consider books that have been read (have a rating)
-      if (!goodreadsBook["My Rating"] || parseInt(goodreadsBook["My Rating"]) === 0) return false;
+      if (!goodreadsBook["My Rating"] || parseInt(goodreadsBook["My Rating"]) === 0) {return false;}
       
       const goodreadsTitle = goodreadsBook["Title"].toLowerCase().replace(/[^\w\s]/g, '').trim();
       const goodreadsAuthor = goodreadsBook["Author"].toLowerCase().replace(/[^\w\s]/g, '').trim();

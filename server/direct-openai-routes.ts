@@ -1,6 +1,6 @@
 import { Router, Request, Response } from "express";
 import { getOpenAIRecommendations } from "./openai-recommendations";
-import { getOpenAIDescription, getOpenAIMatchReason } from "./openai-descriptions";
+import { getOpenAIDescription } from "./openai-descriptions";
 import { log } from './vite';
 
 const router = Router();

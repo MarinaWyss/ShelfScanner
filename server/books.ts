@@ -1,6 +1,5 @@
 import axios from 'axios';
 import { log } from './vite';
-import { getEstimatedBookRating } from './utils/book-utils';
 import { rateLimiter } from './rate-limiter';
 
 /**
@@ -270,7 +269,7 @@ export async function getRecommendations(
     
     // Separate books into two categories: new books and already read books
     let newBooks: any[] = [];
-    let alreadyReadBooks2: any[] = [];
+    const alreadyReadBooks2: any[] = [];
     
     if (alreadyReadBooks.length > 0) {
       books.forEach(book => {
@@ -315,7 +314,7 @@ export async function getRecommendations(
       
       // Add 10 points for each direct genre match with user preferences
       for (const category of book.categories) {
-        if (!category) continue;
+        if (!category) {continue;}
         
         for (const preferredGenre of preferredGenres) {
           if (category.toLowerCase().includes(preferredGenre.toLowerCase())) {

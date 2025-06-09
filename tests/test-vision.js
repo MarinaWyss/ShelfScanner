@@ -1,7 +1,6 @@
 import { analyzeBookshelfImage } from './server/openai-vision.js';
 import fs from 'fs';
 import dotenv from 'dotenv';
-import path from 'path';
 
 // Load environment variables
 dotenv.config();

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Link, useLocation } from 'wouter';
+import { Link } from 'wouter';
 import { 
   Card, 
   CardContent, 
@@ -14,7 +14,7 @@ import { Progress } from "@/components/ui/progress";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertCircle, Clock, AlertTriangle, CheckCircle, Info, Activity, Server } from "lucide-react";
+import { AlertCircle, Clock, AlertTriangle, CheckCircle, Activity, Server } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 // Import the LoginForm component 
@@ -482,9 +482,9 @@ function ApiUsageCard({
     
   // Determine status color based on usage
   const getStatusColor = (percent: number) => {
-    if (percent >= 90) return 'bg-red-500';
-    if (percent >= 80) return 'bg-yellow-500';
-    if (percent >= 50) return 'bg-blue-500';
+    if (percent >= 90) {return 'bg-red-500';}
+    if (percent >= 80) {return 'bg-yellow-500';}
+    if (percent >= 50) {return 'bg-blue-500';}
     return 'bg-green-500';
   };
 

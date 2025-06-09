@@ -40,7 +40,6 @@ export default function Books() {
     goodreadsData: null
   });
   const [detectedBooks, setDetectedBooks] = useState<Book[]>([]);
-  const [bookImageBase64, setBookImageBase64] = useState<string>('');
   const [currentRecommendations, setCurrentRecommendations] = useState<Recommendation[]>([]);
   const { toast } = useToast();
 
@@ -158,11 +157,10 @@ export default function Books() {
     savePreferencesMutation.mutate(preferences);
   };
 
-  const handleBooksDetected = (books: Book[], imageBase64: string) => {
+  const handleBooksDetected = (books: Book[], _imageBase64: string) => {
     console.log("Books detected:", books.length, "books");
     if (books && books.length > 0) {
       setDetectedBooks(books);
-      setBookImageBase64(imageBase64);
       saveBooksMutation.mutate(books);
       
       // No longer automatically process recommendations

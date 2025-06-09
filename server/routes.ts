@@ -1,18 +1,15 @@
-import type { Express, Request, Response, NextFunction } from "express";
+import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { analyzeImage } from "./vision";
 import { analyzeBookshelfImage } from "./openai-vision";
 import { searchBooksByTitle, getRecommendations } from "./books";
 import { searchEnhancedBooks } from "./enhanced-book-api";
-import { getEstimatedBookRating } from "./utils/book-utils";
 import { bookCacheService } from "./book-cache-service";
 import { bookEnhancer } from "./book-enhancer";
 import { getOpenAIBookDetails } from "./openai-books";
 import { getOpenAIBookRating, getOpenAIBookSummary } from "./utils/openai-utils";
 import multer from "multer";
-import { z } from "zod";
-import { insertPreferenceSchema, insertSavedBookSchema, insertBookCacheSchema } from "@shared/schema";
+import { insertPreferenceSchema, insertSavedBookSchema } from "@shared/schema";
 import { getApiUsageStats } from "./api-stats";
 
 // In-memory storage for multer
@@ -83,7 +80,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Check cache first
-      let cachedBook = await storage.findBookInCache(decodeURIComponent(title), decodeURIComponent(author));
+      const cachedBook = await storage.findBookInCache(decodeURIComponent(title), decodeURIComponent(author));
       
       if (cachedBook) {
         return res.json({
@@ -100,7 +97,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // If not in cache, generate data with OpenAI
-      let bookData: any = {
+      const bookData: any = {
         title: decodeURIComponent(title),
         author: decodeURIComponent(author)
       };
@@ -127,8 +124,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Error retrieving book details" });
     }
   });
-  // API routes
-  const apiRouter = app.route('/api');
   
   // Upload and analyze bookshelf image
   app.post('/api/books/analyze', upload.single('image'), async (req: Request, res: Response) => {
@@ -403,7 +398,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Only get preferences specific to this device ID
-      let preferences = await storage.getPreferencesByDeviceId(deviceId);
+      const preferences = await storage.getPreferencesByDeviceId(deviceId);
       
       // If no preferences, don't fall back to shared ones
       // New devices should start fresh with their own preferences

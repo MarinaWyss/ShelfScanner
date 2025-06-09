@@ -2,11 +2,10 @@ import {
   users, type User, type InsertUser,
   preferences, type Preference, type InsertPreference,
   savedBooks, type SavedBook, type InsertSavedBook,
-  bookCache, type BookCache, type InsertBookCache,
-  type Recommendation // Now just an interface, not a table
+  bookCache, type BookCache, type InsertBookCache
 } from "@shared/schema";
 import { db } from "./db";
-import { eq, and, desc, asc, or, sql, lte, gte } from "drizzle-orm";
+import { eq, and, desc, or, sql, gte } from "drizzle-orm";
 import { log } from "./vite";
 
 // Storage interface
@@ -186,7 +185,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async findBookByISBN(isbn: string): Promise<BookCache | undefined> {
-    if (!isbn || isbn.length < 10) return undefined;
+    if (!isbn || isbn.length < 10) {return undefined;}
 
     try {
       const [book] = await db.select().from(bookCache).where(
@@ -284,7 +283,7 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
-  async getRecentlyAddedBooks(limit: number = 10): Promise<BookCache[]> {
+  async getRecentlyAddedBooks(limit = 10): Promise<BookCache[]> {
     try {
       return db.select()
         .from(bookCache)

@@ -44,7 +44,7 @@ export default function LoginForm({ onLoginSuccess }: LoginFormProps) {
         setError(errorData.message || 'Invalid username or password');
         onLoginSuccess(false);
       }
-    } catch (err) {
+    } catch {
       setError('An error occurred during login. Please try again.');
       onLoginSuccess(false);
     } finally {

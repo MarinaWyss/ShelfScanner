@@ -38,7 +38,7 @@ export default function UploadStep({ onBooksDetected, detectedBooks }: UploadSte
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
+    if (!file) {return;}
 
     // Check file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {

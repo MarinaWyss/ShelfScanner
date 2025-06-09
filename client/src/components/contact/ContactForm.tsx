@@ -37,7 +37,7 @@ export default function ContactForm({ isOpen, onClose }: ContactFormProps) {
       setEmail('');
       setMessage('');
       
-    } catch (error) {
+    } catch {
       toast({
         title: "Failed to open email client",
         description: "Please contact us directly at shelfscannerapp@gmail.com",

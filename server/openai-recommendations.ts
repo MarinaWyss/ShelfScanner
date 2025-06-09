@@ -1,7 +1,6 @@
 import OpenAI from "openai";
 import { log } from './vite';
 import { rateLimiter } from './rate-limiter';
-import { bookCacheService } from './book-cache-service';
 
 // Configure OpenAI client
 const openai = new OpenAI({ 
@@ -16,13 +15,13 @@ const openai = new OpenAI({
  * 
  * @param userBooks Array of books the user has read/saved
  * @param preferences User preferences (genres, authors, etc.)
- * @param deviceId Optional user device ID for analytics
+ * @param _deviceId Optional user device ID for analytics (unused)
  * @returns Array of book recommendations
  */
 export async function getOpenAIRecommendations(
   userBooks: Array<{ title: string, author: string }>,
   preferences: { genres?: string[], authors?: string[], goodreadsData?: any } = {},
-  deviceId?: string
+  _deviceId?: string
 ): Promise<Array<{ 
   title: string, 
   author: string, 
@@ -47,14 +46,14 @@ export async function getOpenAIRecommendations(
       throw new Error("Rate limit reached for AI recommendations");
     }
     
-    // Format user books for the prompt
-    const formattedBooks = userBooks.map(book => 
+    // Format user books for the prompt (currently unused)
+    const _formattedBooks = userBooks.map(book => 
       `"${book.title}" by ${book.author}`
     ).join(', ');
     
-    // Format user preferences
-    const genres = preferences.genres?.join(', ') || '';
-    const authors = preferences.authors?.join(', ') || '';
+    // Format user preferences (currently unused)
+    const _genres = preferences.genres?.join(', ') || '';
+    const _authors = preferences.authors?.join(', ') || '';
     
     // Generate recommendations using OpenAI
     log(`Generating recommendations based on ${userBooks.length} books`, 'openai');
@@ -125,7 +124,7 @@ export async function getOpenAIRecommendations(
           if (!goodreadsInfo) {
             goodreadsInfo = `Additional reading preferences from my Goodreads profile.`;
           }
-        } catch (error) {
+        } catch {
           // If there's an error parsing Goodreads data, use a simpler format
           goodreadsInfo = `I have additional reading preferences from my Goodreads profile.`;
         }
@@ -226,7 +225,7 @@ Only return the JSON object with no additional text.`
           // Validate that each recommendation is from the user's book list
           // And enhance with original properties (like coverUrl, isbn) from the user's book
           const validatedRecommendations = parsed.recommendations.filter((rec: any) => {
-            if (!rec.title || !rec.author) return false;
+            if (!rec.title || !rec.author) {return false;}
             
             const key = `${rec.title.toLowerCase()}|${rec.author.toLowerCase()}`;
             const isInUserBooks = userBooksMap.has(key);
@@ -269,7 +268,7 @@ Only return the JSON object with no additional text.`
           // Validate that each recommendation is from the user's book list
           // And enhance with original properties (like coverUrl, isbn) from the user's book
           const validatedRecommendations = parsed.filter((rec: any) => {
-            if (!rec.title || !rec.author) return false;
+            if (!rec.title || !rec.author) {return false;}
             
             const key = `${rec.title.toLowerCase()}|${rec.author.toLowerCase()}`;
             return userBooksMap.has(key);
@@ -302,13 +301,6 @@ Only return the JSON object with no additional text.`
       log(`Error from OpenAI API: ${error instanceof Error ? error.message : String(error)}`, 'openai');
       throw new Error(`Failed to generate book recommendations: ${error instanceof Error ? error.message : String(error)}`);
     }
-    
-    // The code has been restructured to handle this better with proper returns
-    // in the try/catch blocks above
-    
-    // We should never reach this point, but just in case
-    log("Reached unexpected code path in recommendations", 'openai');
-    throw new Error("Failed to generate recommendations from scanned books");
   } catch (error) {
     log(`Error generating OpenAI recommendations: ${error instanceof Error ? error.message : String(error)}`, 'openai');
     throw error;

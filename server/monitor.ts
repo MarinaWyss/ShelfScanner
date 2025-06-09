@@ -73,7 +73,7 @@ export function logEvent(level: LogLevel, message: string, details?: any): void 
     let stats;
     try {
       stats = fs.statSync(SYSTEM_LOG_FILE);
-    } catch (error) {
+    } catch {
       // If file doesn't exist, create it
       fs.writeFileSync(SYSTEM_LOG_FILE, '');
       stats = fs.statSync(SYSTEM_LOG_FILE);
@@ -154,7 +154,7 @@ export function logApiUsage(
  * @param level Optional filter by log level
  * @returns Array of log entries
  */
-export function getRecentEvents(count: number = 50, level?: LogLevel): LogEntry[] {
+export function getRecentEvents(count = 50, level?: LogLevel): LogEntry[] {
   if (level) {
     return recentEvents
       .filter(entry => entry.level === level)
@@ -169,10 +169,10 @@ export function getRecentEvents(count: number = 50, level?: LogLevel): LogEntry[
  * @param maxLines Maximum number of lines to retrieve
  * @returns Array of log lines
  */
-export function getLogs(maxLines: number = 100): string[] {
+export function getLogs(maxLines = 100): string[] {
   try {
     // Read the log file
-    let content = fs.readFileSync(SYSTEM_LOG_FILE, 'utf8');
+    const content = fs.readFileSync(SYSTEM_LOG_FILE, 'utf8');
     
     // Split into lines
     const lines = content.split('\n').filter(line => line.trim().length > 0);

@@ -76,7 +76,7 @@ const logger = winston.createLogger({
 export { logger };
 
 // Function to log and optionally alert on critical events
-export function logCritical(message: string, alertAdmin: boolean = false, metadata?: Record<string, any>) {
+export function logCritical(message: string, alertAdmin = false, metadata?: Record<string, any>) {
   logger.error(`CRITICAL: ${message}`, metadata);
   
   // Flag to indicate if alert was sent, to prevent duplicate alerts

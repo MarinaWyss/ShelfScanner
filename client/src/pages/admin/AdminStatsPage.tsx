@@ -1,6 +1,4 @@
-import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Link } from 'wouter';
 import { 
   Card, 
   CardContent, 
@@ -16,21 +14,12 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { 
   AlertCircle, 
-  ArrowLeft, 
   Clock, 
   AlertTriangle, 
-  CheckCircle, 
+  CheckCircle,
   Server, 
   Activity
 } from "lucide-react";
-
-interface ApiStats {
-  windowUsage: number;
-  windowSeconds: number;
-  dailyUsage: number;
-  dailyLimit: number;
-  withinLimits: boolean;
-}
 
 interface ApiMonitoring {
   openai: {

@@ -56,7 +56,7 @@ export class RateLimiter {
    * @param windowSeconds Time window in seconds
    * @returns boolean indicating if the request is allowed
    */
-  public isAllowed(apiName: string, windowSeconds: number = 60): boolean {
+  public isAllowed(apiName: string, windowSeconds = 60): boolean {
     this.checkAndResetDaily(apiName);
     
     const key = `${apiName}_${windowSeconds}`;
@@ -121,7 +121,7 @@ export class RateLimiter {
     dailyLimit: number
   ): void {
     const usagePercent = (dailyUsage / dailyLimit) * 100;
-    const windowPercent = (currentCount / limit) * 100;
+    const _windowPercent = (currentCount / limit) * 100;
     const alertKey = `${apiName}_alert`;
     
     // Check if we've already sent an alert for this API today
@@ -158,7 +158,7 @@ export class RateLimiter {
    * @param apiName API identifier
    * @param windowSeconds Time window in seconds
    */
-  public increment(apiName: string, windowSeconds: number = 60): void {
+  public increment(apiName: string, windowSeconds = 60): void {
     this.checkAndResetDaily(apiName);
     
     const key = `${apiName}_${windowSeconds}`;

@@ -27,3 +27,11 @@ logs/
 
 # OS generated files
 Thumbs.db
+
+# Test artifacts
+/coverage/
+/test-results/
+/playwright-report/
+/test-results-*/
+*.log
+.env.test.localcoverage/

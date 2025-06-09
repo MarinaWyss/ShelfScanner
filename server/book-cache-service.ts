@@ -1,6 +1,6 @@
 import { db } from './db';
 import { bookCache, type InsertBookCache, type BookCache } from '@shared/schema';
-import { eq, and, or, sql, desc, asc, lte, gte, isNotNull, not, isNull } from 'drizzle-orm';
+import { eq, and, or, sql, lte, gte, isNotNull, not, isNull } from 'drizzle-orm';
 import { getEstimatedBookRating } from './utils/book-utils';
 import { log } from './vite';
 import OpenAI from "openai";
@@ -92,7 +92,7 @@ export class BookCacheService {
    * @returns BookCache object if found, undefined otherwise
    */
   async findByISBN(isbn: string): Promise<BookCache | undefined> {
-    if (!isbn || isbn.length < 10) return undefined;
+    if (!isbn || isbn.length < 10) {return undefined;}
 
     try {
       const [book] = await db.select().from(bookCache).where(

@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Link } from "wouter";
-import { apiRequest } from "@/lib/queryClient";
 import { Trash2, ChevronDown, ChevronUp } from "lucide-react";
 import StarRating from "@/components/ui/star-rating";
 

@@ -19,11 +19,6 @@ async function testRateLimits() {
     console.log('Test 2: Simulating multiple API calls to test rate limiter');
     console.log('Making 5 calls to analyze endpoint to test rate limiting...');
     
-    // Create a minimal test image payload
-    const testPayload = {
-      image: Buffer.from('TEST_IMAGE_DATA').toString('base64')
-    };
-    
     // Make multiple requests to the OpenAI endpoint to test rate limiting
     for (let i = 0; i < 5; i++) {
       try {

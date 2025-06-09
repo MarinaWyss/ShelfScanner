@@ -12,7 +12,6 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   AlertCircle, 
   ArrowLeft, 
@@ -20,19 +19,10 @@ import {
   AlertTriangle, 
   CheckCircle, 
   Server, 
-  Database,
   Activity
 } from "lucide-react";
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-
-interface ApiStats {
-  windowUsage: number;
-  windowSeconds: number;
-  dailyUsage: number;
-  dailyLimit: number;
-  withinLimits: boolean;
-}
 
 interface ApiMonitoring {
   openai: {
