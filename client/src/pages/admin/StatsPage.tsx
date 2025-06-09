@@ -21,7 +21,7 @@ export default function StatsPage() {
           setLocation('/admin');
         }
       } catch (error) {
-        console.error('Error checking authentication:', error);
+        log('Error checking authentication:', error);
         setLocation('/admin');
       }
     };

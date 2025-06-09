@@ -5,6 +5,7 @@
 
 import { Request, Response, NextFunction } from 'express';
 import { v4 as uuidv4 } from 'uuid';
+import { log } from './vite';
 
 // Cookie name for storing device ID
 const DEVICE_ID_COOKIE = 'deviceId';
@@ -35,7 +36,7 @@ export function ensureDeviceId(req: Request, res: Response, next: NextFunction) 
       secure: process.env.NODE_ENV === 'production'
     });
     
-    console.log(`Generated new device ID: ${deviceId}`);
+    log(`Generated new device ID: ${deviceId}`);
   } else {
     // Always update the cookie to ensure it doesn't expire
     // This prevents issues with cookie expiration across devices

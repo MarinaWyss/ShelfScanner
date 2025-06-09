@@ -5,6 +5,7 @@ import { Router, Request, Response } from 'express';
 import { getApiFailureStats } from './utils/api-monitoring';
 import { getApiUsageStats } from './utils/api-usage-tracking';
 import { rateLimiter } from './rate-limiter';
+import { log } from './vite';
 
 const router = Router();
 
@@ -43,7 +44,7 @@ router.get('/api-monitoring', async (req: Request, res: Response) => {
       }
     });
   } catch (error) {
-    console.error(`Error getting API monitoring data: ${error}`);
+    log(`Error getting API monitoring data: ${error}`);
     return res.status(500).json({ 
       message: 'Error getting API monitoring data',
       error: error instanceof Error ? error.message : String(error)
@@ -65,7 +66,7 @@ router.post('/api-monitoring/reset', async (req: Request, res: Response) => {
       timestamp: new Date().toISOString()
     });
   } catch (error) {
-    console.error(`Error resetting API monitoring counters: ${error}`);
+    log(`Error resetting API monitoring counters: ${error}`);
     return res.status(500).json({ 
       message: 'Error resetting API monitoring counters',
       error: error instanceof Error ? error.message : String(error)

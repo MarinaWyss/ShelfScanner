@@ -20,7 +20,7 @@ export function getDeviceId(): string {
   if (!deviceId) {
     deviceId = uuidv4();
     localStorage.setItem(DEVICE_ID_KEY, deviceId);
-    console.log('Generated new device ID:', deviceId);
+    log('Generated new device ID:', deviceId);
   }
   
   return deviceId;
@@ -44,7 +44,7 @@ export function syncDeviceIdCookie(): void {
     // If server has a different device ID, update our localStorage to match it
     if (serverDeviceId && serverDeviceId !== deviceId) {
       localStorage.setItem(DEVICE_ID_KEY, serverDeviceId);
-      console.log('Updated local device ID to match server cookie:', serverDeviceId);
+      log('Updated local device ID to match server cookie:', serverDeviceId);
       return;
     }
   }
@@ -54,7 +54,7 @@ export function syncDeviceIdCookie(): void {
   expiryDate.setFullYear(expiryDate.getFullYear() + 1);
   
   document.cookie = `${DEVICE_ID_COOKIE}=${deviceId}; expires=${expiryDate.toUTCString()}; path=/; SameSite=Strict`;
-  console.log('Device ID synced to cookie');
+  log('Device ID synced to cookie');
 }
 
 /**

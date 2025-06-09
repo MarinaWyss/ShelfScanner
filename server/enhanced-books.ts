@@ -510,25 +510,25 @@ export async function getRecommendations(
     // First attempt to use OpenAI for intelligent book recommendations
     if (process.env.OPENAI_API_KEY) {
       try {
-        console.log(`Preparing to use OpenAI for intelligent book recommendations with ${newBooks.length} books`);
+        log(`Preparing to use OpenAI for intelligent book recommendations with ${newBooks.length} books`);
         
         // Skip the test and directly use OpenAI for recommendations
-        console.log(`Using OpenAI API for recommendations directly...`);
+        log(`Using OpenAI API for recommendations directly...`);
         
         // Call OpenAI to get AI-powered recommendations
         const aiRecommendations = await getOpenAIRecommendations(newBooks, preferences);
         
         if (aiRecommendations && aiRecommendations.length > 0) {
-          console.log(`OpenAI returned ${aiRecommendations.length} intelligent recommendations!`);
+          log(`OpenAI returned ${aiRecommendations.length} intelligent recommendations!`);
           
           // Format OpenAI recommendations for our system
           const formattedRecommendations = aiRecommendations.map(book => {
             // Log each recommendation with its match reason to debug
-            console.log(`Recommendation: "${book.title}" - Match Score: ${(book as any).matchScore} - Match Reason: ${(book as any).matchReason || 'None provided'}`);
+            log(`Recommendation: "${book.title}" - Match Score: ${(book as any).matchScore} - Match Reason: ${(book as any).matchReason || 'None provided'}`);
             
             // Make sure matchReason is passed through properly
             const matchReason = (book as any).matchReason || '';
-            console.log(`DEBUG - Full match reason for "${book.title}": ${matchReason}`);
+            log(`DEBUG - Full match reason for "${book.title}": ${matchReason}`);
             
             return {
               title: book.title,
@@ -558,22 +558,22 @@ export async function getRecommendations(
               };
             });
             
-            console.log(`Combining ${formattedRecommendations.length} AI recommendations with ${scoredReadBooks.length} books you've read`);
+            log(`Combining ${formattedRecommendations.length} AI recommendations with ${scoredReadBooks.length} books you've read`);
             return [...formattedRecommendations, ...scoredReadBooks];
           }
           
-          console.log(`Returning ${formattedRecommendations.length} AI-powered book recommendations`);
+          log(`Returning ${formattedRecommendations.length} AI-powered book recommendations`);
           return formattedRecommendations;
         } else {
-          console.log('OpenAI returned no recommendations, falling back to traditional algorithm');
+          log('OpenAI returned no recommendations, falling back to traditional algorithm');
         }
       } catch (error) {
-        console.error(`Error using OpenAI: ${error instanceof Error ? error.message : String(error)}`);
-        console.log('Falling back to traditional algorithm');
+        log(`Error using OpenAI: ${error instanceof Error ? error.message : String(error)}`);
+        log('Falling back to traditional algorithm');
       }
     } else {
       if (process.env.NODE_ENV === 'development') {
-    console.log('OpenAI API key not configured, using traditional algorithm');
+    log('OpenAI API key not configured, using traditional algorithm');
   }
     }
     

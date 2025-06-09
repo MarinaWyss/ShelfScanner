@@ -67,7 +67,7 @@ export default function AdminStatsPage() {
           setLocation('/admin');
         }
       } catch (error) {
-        console.error('Error checking authentication:', error);
+        log('Error checking authentication:', error);
         setLocation('/admin');
       }
       setAuthChecked(true);

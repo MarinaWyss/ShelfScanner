@@ -98,11 +98,11 @@ interface OpenLibraryResponse {
 export async function searchBooksByTitle(title: string): Promise<any[]> {
   try {
     if (!title || title.trim().length < 2) {
-      console.log(`Skipping search for invalid title: "${title}"`);
+      log(`Skipping search for invalid title: "${title}"`);
       return [];
     }
     
-    console.log(`Searching for book: "${title}"`);
+    log(`Searching for book: "${title}"`);
     
     // Check if we can make a Google Books API request (basic rate limiting to prevent throttling)
     if (!rateLimiter.isAllowed('google-books')) {
@@ -120,7 +120,7 @@ export async function searchBooksByTitle(title: string): Promise<any[]> {
     rateLimiter.increment('google-books');
     
     if (googleResponse.data.items && googleResponse.data.items.length > 0) {
-      console.log(`Found ${googleResponse.data.items.length} results for "${title}"`);
+      log(`Found ${googleResponse.data.items.length} results for "${title}"`);
       
       // Map the Google Books results
       const books = googleResponse.data.items.map((item: BookResponse) => {
@@ -162,7 +162,7 @@ export async function searchBooksByTitle(title: string): Promise<any[]> {
           // IMPORTANT: Don't use Google Books ratings - OpenAI will provide them later
           // Clear any ratings that might have come from Google Books
           book.rating = '';
-          console.log(`Cleared Google Books rating for "${book.title}" - will be replaced with OpenAI rating`);
+          log(`Cleared Google Books rating for "${book.title}" - will be replaced with OpenAI rating`);
           return book;
         })
       );
@@ -184,7 +184,7 @@ export async function searchBooksByTitle(title: string): Promise<any[]> {
     rateLimiter.increment('open-library');
     
     if (openLibraryResponse.data.docs && openLibraryResponse.data.docs.length > 0) {
-      console.log(`Found ${openLibraryResponse.data.docs.length} OpenLibrary results for "${title}"`);
+      log(`Found ${openLibraryResponse.data.docs.length} OpenLibrary results for "${title}"`);
       
       // Map Open Library results
       const books = openLibraryResponse.data.docs.map(doc => ({
@@ -208,7 +208,7 @@ export async function searchBooksByTitle(title: string): Promise<any[]> {
           // IMPORTANT: Don't use Open Library ratings - OpenAI will provide them later
           // Clear any ratings that might have come from Open Library
           book.rating = '';
-          console.log(`Cleared ratings for "${book.title}" - will be replaced with OpenAI rating`);
+          log(`Cleared ratings for "${book.title}" - will be replaced with OpenAI rating`);
           
           // Clear any summaries that might have come from Open Library
           book.summary = '';
@@ -220,7 +220,7 @@ export async function searchBooksByTitle(title: string): Promise<any[]> {
       return booksWithoutRatings;
     }
     
-    console.log(`No results found for "${title}"`);
+    log(`No results found for "${title}"`);
     return [];
   } catch (error) {
     log(`Error searching for books: ${error instanceof Error ? error.message : String(error)}`, 'books');
@@ -244,9 +244,9 @@ export async function getRecommendations(
   try {
     // CRITICAL: We will ONLY use the books that were detected in the image
     // No external recommendations will be added at all
-    console.log(`ONLY using ${books.length} detected books for recommendations:`, 
+    log(`ONLY using ${books.length} detected books for recommendations:`, 
       books.map(b => b.title));
-    console.log('Using preferences:', preferences);
+    log('Using preferences:', preferences);
     
     // Get user's preferred genres
     const preferredGenres = preferences.genres || [];
@@ -264,7 +264,7 @@ export async function getRecommendations(
           });
         }
       });
-      console.log(`Found ${alreadyReadBooks.length} books the user has already read in Goodreads data`);
+      log(`Found ${alreadyReadBooks.length} books the user has already read in Goodreads data`);
     }
     
     // Separate books into two categories: new books and already read books
@@ -283,7 +283,7 @@ export async function getRecommendations(
         
         // If we found a match, this book has been read already
         if (matchingTitle) {
-          console.log(`Identified "${book.title}" as user has already read "${matchingTitle.originalTitle}"`);
+          log(`Identified "${book.title}" as user has already read "${matchingTitle.originalTitle}"`);
           // Mark this book as already read and add to already read list
           alreadyReadBooks2.push({
             ...book,
@@ -296,7 +296,7 @@ export async function getRecommendations(
         }
       });
       
-      console.log(`Separated ${alreadyReadBooks2.length} books the user has already read from ${newBooks.length} new books`);
+      log(`Separated ${alreadyReadBooks2.length} books the user has already read from ${newBooks.length} new books`);
     } else {
       // No Goodreads data available, all books are new
       newBooks = books;
@@ -319,7 +319,7 @@ export async function getRecommendations(
         for (const preferredGenre of preferredGenres) {
           if (category.toLowerCase().includes(preferredGenre.toLowerCase())) {
             score += 10;
-            console.log(`${book.title} matches preferred genre ${preferredGenre}, +10 points`);
+            log(`${book.title} matches preferred genre ${preferredGenre}, +10 points`);
           }
         }
       }
@@ -328,42 +328,42 @@ export async function getRecommendations(
       if (book.title.toLowerCase().includes('stranger in a strange land')) {
         if (preferredGenres.includes('Science Fiction')) {
           score += 12;
-          console.log(`${book.title} is a sci-fi classic and matches preferences, +12 points`);
+          log(`${book.title} is a sci-fi classic and matches preferences, +12 points`);
         }
       }
       
       if (book.title.toLowerCase().includes('leviathan wakes')) {
         if (preferredGenres.includes('Science Fiction')) {
           score += 15;
-          console.log(`${book.title} is modern sci-fi and matches preferences, +15 points`);
+          log(`${book.title} is modern sci-fi and matches preferences, +15 points`);
         }
       }
       
       if (book.title.toLowerCase().includes('cognitive behavioral')) {
         if (preferredGenres.includes('Self-Help') || preferredGenres.includes('Non-Fiction')) {
           score += 14;
-          console.log(`${book.title} is self-help/non-fiction and matches preferences, +14 points`);
+          log(`${book.title} is self-help/non-fiction and matches preferences, +14 points`);
         }
       }
       
       if (book.title.toLowerCase().includes('overdiagnosed')) {
         if (preferredGenres.includes('Non-Fiction')) {
           score += 13;
-          console.log(`${book.title} is non-fiction and matches preferences, +13 points`);
+          log(`${book.title} is non-fiction and matches preferences, +13 points`);
         }
       }
       
       if (book.title.toLowerCase().includes('mythos')) {
         if (preferredGenres.includes('Non-Fiction')) {
           score += 9;
-          console.log(`${book.title} is non-fiction and matches preferences, +9 points`);
+          log(`${book.title} is non-fiction and matches preferences, +9 points`);
         }
       }
       
       if (book.title.toLowerCase().includes('awe')) {
         if (preferredGenres.includes('Self-Help')) {
           score += 11;
-          console.log(`${book.title} is self-help and matches preferences, +11 points`);
+          log(`${book.title} is self-help and matches preferences, +11 points`);
         }
       }
       
@@ -374,12 +374,12 @@ export async function getRecommendations(
           if (entry["Author"] && book.author && 
               book.author.toLowerCase().includes(entry["Author"].toLowerCase())) {
             score += 3;
-            console.log(`${book.title} author matches ${entry["Author"]}, +3 points`);
+            log(`${book.title} author matches ${entry["Author"]}, +3 points`);
             
             // Bonus for highly rated books by same author
             if (entry["My Rating"] && parseInt(entry["My Rating"]) >= 4) {
               score += 3;
-              console.log(`${book.title} by ${entry["Author"]} was highly rated, +3 points`);
+              log(`${book.title} by ${entry["Author"]} was highly rated, +3 points`);
             }
           }
         }
@@ -412,7 +412,7 @@ export async function getRecommendations(
         // First check if Google Books provided a rating (real source)
         if (book.rating) {
           finalRating = book.rating;
-          console.log(`Using Google Books rating for "${book.title}": ${finalRating}`);
+          log(`Using Google Books rating for "${book.title}": ${finalRating}`);
         } 
         // If not, check our verified database
         else if (book.title && book.author) {
@@ -420,14 +420,14 @@ export async function getRecommendations(
           const verifiedRating = getPopularBookRating(book.title, book.author);
           if (verifiedRating) {
             finalRating = verifiedRating;
-            console.log(`Using verified rating from database for "${book.title}": ${finalRating}`);
+            log(`Using verified rating from database for "${book.title}": ${finalRating}`);
           } else {
             // No rating available - leave it blank
-            console.log(`No verified rating found for "${book.title}" - leaving blank`);
+            log(`No verified rating found for "${book.title}" - leaving blank`);
           }
         }
       } catch (error) {
-        console.error(`Error processing rating for "${book.title}":`, error);
+        log(`Error processing rating for "${book.title}":`, error);
       }
       
       return {
@@ -451,7 +451,7 @@ export async function getRecommendations(
         // First check if Google Books provided a rating (real source)
         if (book.rating) {
           finalRating = book.rating;
-          console.log(`Using Google Books rating for already read book "${book.title}": ${finalRating}`);
+          log(`Using Google Books rating for already read book "${book.title}": ${finalRating}`);
         } 
         // If not, check our verified database
         else if (book.title && book.author) {
@@ -459,14 +459,14 @@ export async function getRecommendations(
           const verifiedRating = getPopularBookRating(book.title, book.author);
           if (verifiedRating) {
             finalRating = verifiedRating;
-            console.log(`Using verified rating for already read book "${book.title}": ${finalRating}`);
+            log(`Using verified rating for already read book "${book.title}": ${finalRating}`);
           } else {
             // No rating available - leave it blank
-            console.log(`No verified rating found for already read book "${book.title}" - leaving blank`);
+            log(`No verified rating found for already read book "${book.title}" - leaving blank`);
           }
         }
       } catch (error) {
-        console.error(`Error processing rating for "${book.title}":`, error);
+        log(`Error processing rating for "${book.title}":`, error);
       }
       
       return {
@@ -484,9 +484,9 @@ export async function getRecommendations(
     }));
     
     // Log the final sorted books
-    console.log("Final scored NEW books:", scoredNewBooks.map(b => `${b.title}: ${b.score}`));
+    log("Final scored NEW books:", scoredNewBooks.map(b => `${b.title}: ${b.score}`));
     if (scoredReadBooks.length > 0) {
-      console.log("Books you've already READ:", scoredReadBooks.map(b => `${b.title}: ${b.score}`));
+      log("Books you've already READ:", scoredReadBooks.map(b => `${b.title}: ${b.score}`));
     }
     
     // Return new books first, then already read books

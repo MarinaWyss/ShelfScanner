@@ -11,6 +11,8 @@ import { getOpenAIBookRating, getOpenAIBookSummary } from "./utils/openai-utils"
 import multer from "multer";
 import { insertPreferenceSchema, insertSavedBookSchema } from "@shared/schema";
 import { getApiUsageStats } from "./api-stats";
+import { logDeviceOperation, logBookOperation } from './utils/safe-logger';
+import { log } from './vite';
 
 // In-memory storage for multer
 const upload = multer({
@@ -38,9 +40,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Clean up non-OpenAI ratings to ensure consistent OpenAI-generated content
   try {
     const cleanedCount = await bookCacheService.cleanupNonOpenAIRatings();
-    console.log(`Cleaned up ${cleanedCount} non-OpenAI ratings from cache during startup`);
+    log(`Cleaned up ${cleanedCount} non-OpenAI ratings from cache during startup`, 'startup');
   } catch (error) {
-    console.error('Error cleaning up non-OpenAI ratings:', error);
+    log(`Error cleaning up non-OpenAI ratings: ${error instanceof Error ? error.message : String(error)}`, 'startup');
   }
 
   // Make environment variables available to the frontend
@@ -65,7 +67,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const books = await searchEnhancedBooks(title);
       res.json(books);
     } catch (error) {
-      console.error("Error searching for enhanced books:", error);
+      log(`Error searching for enhanced books: ${error instanceof Error ? error.message : String(error)}`, 'enhanced-books');
       res.status(500).json({ message: "Error retrieving book information" });
     }
   });
@@ -120,7 +122,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         fromCache: false
       });
     } catch (error) {
-      console.error("Error getting book details:", error);
+      log(`Error getting book details: ${error instanceof Error ? error.message : String(error)}`, "error");
       res.status(500).json({ message: "Error retrieving book details" });
     }
   });
@@ -155,7 +157,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const bookTitles = visionAnalysis.bookTitles;
       
       if (process.env.NODE_ENV === 'development') {
-        console.log("OpenAI identified book titles:", bookTitles);
+        log(`OpenAI identified ${bookTitles.length} book titles`, 'vision-api');
       }
       
       if (bookTitles.length === 0) {
@@ -295,7 +297,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: `Found ${detectedBooks.length} books in your photo: ${bookTitlesFound}. These have been ranked based on your preferences.`
       });
     } catch (error) {
-      console.error('Error processing image:', error);
+      log('Error processing image:', error);
       return res.status(500).json({ 
         message: 'Error processing image',
         error: error instanceof Error ? error.message : String(error)
@@ -379,7 +381,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       return res.status(201).json(preferences);
     } catch (error) {
-      console.error('Error saving preferences:', error);
+      log('Error saving preferences:', error);
       return res.status(400).json({ 
         message: 'Error saving preferences',
         error: error instanceof Error ? error.message : String(error)
@@ -409,7 +411,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       return res.status(200).json(preferences);
     } catch (error) {
-      console.error('Error getting preferences:', error);
+      log('Error getting preferences:', error);
       return res.status(500).json({ 
         message: 'Error getting preferences',
         error: error instanceof Error ? error.message : String(error)
@@ -456,7 +458,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       return res.status(200).json(savedBooks);
     } catch (error) {
-      console.error('Error saving books:', error);
+      log('Error saving books:', error);
       return res.status(400).json({ 
         message: 'Error saving books',
         error: error instanceof Error ? error.message : String(error)
@@ -483,29 +485,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'No books provided in the current image' });
       }
       
-      console.log(`Processing ${books.length} books from current image only`);
+      log(`Processing ${books.length} books from current image`, 'books');
       
       // Process books: First check cache, then get OpenAI data if needed, and store in cache
       books = await Promise.all(books.map(async (book: any) => {
-        console.log(`Processing book: "${book.title}" by ${book.author}`);
+        logBookOperation('Processing book', book.title, book.author);
         
         // First check if we have this book in cache with OpenAI data
         const cachedBook = await storage.findBookInCache(book.title, book.author);
         
         if (cachedBook && cachedBook.source === 'openai') {
           // We have cache hit - use cached data
-          console.log(`Using cached OpenAI data for "${book.title}"`);
+          logBookOperation('Using cached OpenAI data', book.title);
           
           // Apply cached rating if available
           if (cachedBook.rating) {
             book.rating = cachedBook.rating;
-            console.log(`Using cached OpenAI rating for "${book.title}": ${cachedBook.rating}`);
+            logBookOperation('Using cached OpenAI rating', book.title, book.author, `rating: ${cachedBook.rating}`);
           }
           
           // Apply cached summary if available
           if (cachedBook.summary) {
             book.summary = cachedBook.summary;
-            console.log(`Using cached OpenAI summary for "${book.title}"`);
+            logBookOperation('Using cached OpenAI summary', book.title);
           }
         }
         
@@ -515,10 +517,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const rating = await bookCacheService.getEnhancedRating(book.title, book.author, book.isbn);
             if (rating) {
               book.rating = rating;
-              console.log(`Got fresh OpenAI rating for "${book.title}": ${rating}`);
+              logBookOperation('Got fresh OpenAI rating', book.title, book.author, `rating: ${rating}`);
             }
           } catch (error) {
-            console.error(`Error getting OpenAI rating for "${book.title}":`, error);
+            logBookOperation('Error getting OpenAI rating', book.title, book.author, error instanceof Error ? error.message : String(error));
             book.rating = '';  // Leave empty rather than using fallbacks
           }
         }
@@ -529,10 +531,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const summary = await bookCacheService.getEnhancedSummary(book.title, book.author);
             if (summary) {
               book.summary = summary;
-              console.log(`Got fresh OpenAI summary for "${book.title}"`);
+              logBookOperation('Got fresh OpenAI summary', book.title);
             }
           } catch (error) {
-            console.error(`Error getting OpenAI summary for "${book.title}":`, error);
+            logBookOperation('Error getting OpenAI summary', book.title, book.author, error instanceof Error ? error.message : String(error));
             book.summary = '';  // Leave empty rather than using fallbacks
           }
         }
@@ -556,10 +558,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
               },
               expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) // 365 days cache
             });
-            console.log(`Cached OpenAI data for "${book.title}"`);
+            logBookOperation('Cached OpenAI data', book.title);
           }
         } catch (cacheError) {
-          console.error(`Error caching book data for "${book.title}":`, cacheError);
+          logBookOperation('Error caching book data', book.title, book.author, cacheError instanceof Error ? cacheError.message : String(cacheError));
         }
         
         return book;
@@ -570,7 +572,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Determine if we're using OpenAI or fallback algorithm for recommendations
       const isUsingOpenAI = recommendationsData.some(rec => rec.matchReason && rec.matchReason.length > 0);
-      console.log(`Using ${isUsingOpenAI ? 'OpenAI' : 'fallback algorithm'} for recommendations`);
+      log(`Using ${isUsingOpenAI ? 'OpenAI' : 'fallback algorithm'} for recommendations`, 'recommendations');
       
       // Enhance each recommendation with OpenAI data and cache it for future use
       const enhancedRecommendations = await Promise.all(recommendationsData.map(async (recommendation: any) => {
@@ -578,25 +580,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (!isUsingOpenAI && (!recommendation.matchReason || recommendation.matchReason.length === 0)) {
           recommendation.matchReason = "using fallback algo";
         }
-        console.log(`Enhancing recommendation: "${recommendation.title}" by ${recommendation.author}`);
+        log(`Enhancing recommendation: "${recommendation.title}" by ${recommendation.author}`);
         
         // First check if we have this recommendation in cache
         const cachedBook = await storage.findBookInCache(recommendation.title, recommendation.author);
         
         if (cachedBook && cachedBook.source === 'openai') {
           // Use cached OpenAI data if available
-          console.log(`Using cached OpenAI data for recommendation "${recommendation.title}"`);
+          log(`Using cached OpenAI data for recommendation "${recommendation.title}"`);
           
           // Use cached rating
           if (cachedBook.rating) {
             recommendation.rating = cachedBook.rating;
-            console.log(`Using cached OpenAI rating for recommendation "${recommendation.title}": ${cachedBook.rating}`);
+            log(`Using cached OpenAI rating for recommendation "${recommendation.title}": ${cachedBook.rating}`);
           }
           
           // Use cached summary
           if (cachedBook.summary) {
             recommendation.summary = cachedBook.summary;
-            console.log(`Using cached OpenAI summary for recommendation "${recommendation.title}"`);
+            log(`Using cached OpenAI summary for recommendation "${recommendation.title}"`);
           }
         }
         
@@ -606,10 +608,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const rating = await bookCacheService.getEnhancedRating(recommendation.title, recommendation.author);
             if (rating) {
               recommendation.rating = rating;
-              console.log(`Got fresh OpenAI rating for recommendation "${recommendation.title}": ${rating}`);
+              log(`Got fresh OpenAI rating for recommendation "${recommendation.title}": ${rating}`);
             }
           } catch (error) {
-            console.error(`Error getting OpenAI rating for recommendation "${recommendation.title}":`, error);
+            log(`Error getting OpenAI rating for recommendation "${recommendation.title}":`, error);
           }
         }
         
@@ -619,10 +621,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const summary = await bookCacheService.getEnhancedSummary(recommendation.title, recommendation.author);
             if (summary) {
               recommendation.summary = summary;
-              console.log(`Got fresh OpenAI summary for recommendation "${recommendation.title}"`);
+              log(`Got fresh OpenAI summary for recommendation "${recommendation.title}"`);
             }
           } catch (error) {
-            console.error(`Error getting OpenAI summary for recommendation "${recommendation.title}":`, error);
+            log(`Error getting OpenAI summary for recommendation "${recommendation.title}":`, error);
           }
         }
         
@@ -655,22 +657,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
               },
               expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) // 365 days cache
             });
-            console.log(`Cached OpenAI data for recommendation "${recommendation.title}" - ${needsCaching ? "new or updated data" : "already in cache"}`);
+            log(`Cached OpenAI data for recommendation "${recommendation.title}" - ${needsCaching ? "new or updated data" : "already in cache"}`);
           } else {
-            console.log(`Skipping cache for "${recommendation.title}" - already in cache with same data`);
+            log(`Skipping cache for "${recommendation.title}" - already in cache with same data`);
           }
         } catch (cacheError) {
-          console.error(`Error caching recommendation data for "${recommendation.title}":`, cacheError);
+          log(`Error caching recommendation data for "${recommendation.title}":`, cacheError);
         }
         
         return recommendation;
       }));
       
       // Return recommendations directly without storing in database
-      console.log(`Returning ${enhancedRecommendations.length} recommendations directly to client`);
+      log(`Returning ${enhancedRecommendations.length} recommendations directly to client`);
       return res.status(200).json(enhancedRecommendations);
     } catch (error) {
-      console.error('Error generating recommendations:', error);
+      log('Error generating recommendations:', error);
       return res.status(500).json({ 
         message: 'Error generating recommendations',
         error: error instanceof Error ? error.message : String(error)
@@ -683,14 +685,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // Since recommendations are now ephemeral and generated on-demand,
       // we need to inform the client that they should use the POST endpoint
-      console.log('GET /api/recommendations requested, but recommendations are now ephemeral');
+      log('GET /api/recommendations requested, but recommendations are now ephemeral');
       
       return res.status(200).json({ 
         message: 'Recommendations are now generated on-demand and not stored. Please use POST /api/recommendations with your detected books to get recommendations.',
         recommendations: [] 
       });
     } catch (error) {
-      console.error('Error with recommendations endpoint:', error);
+      log('Error with recommendations endpoint:', error);
       return res.status(500).json({ 
         message: 'Error with recommendations endpoint',
         error: error instanceof Error ? error.message : String(error)
@@ -705,17 +707,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // Extract deviceId from cookie
       const deviceId = req.cookies.deviceId || '';
-      console.log('GetSavedBooks - Device ID from cookie:', deviceId);
+      logDeviceOperation('GetSavedBooks - Retrieved device ID from cookie', deviceId);
       
       // Validate deviceId
       if (!deviceId) {
-        console.log('GetSavedBooks - No device ID provided');
+        log('GetSavedBooks - No device ID provided', 'saved-books');
         return res.status(400).json({ message: 'Device ID is required' });
       }
       
       // Get saved books
       const savedBooks = await storage.getSavedBooksByDeviceId(deviceId);
-      console.log(`GetSavedBooks - Found ${savedBooks.length} books for device ${deviceId}`);
+      logDeviceOperation('GetSavedBooks - Found books', deviceId, `${savedBooks.length} books`);
       
       // Enhance saved books with the latest data from book_cache
       const enhancedSavedBooks = await Promise.all(
@@ -737,7 +739,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
                 };
               }
             } catch (error) {
-              console.error(`Error fetching cache data for book ID ${book.id}:`, error);
+              log(`Error fetching cache data for book ID ${book.id}:`, error);
             }
           }
           
@@ -749,7 +751,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Return empty array instead of 404 for no books
       return res.status(200).json(enhancedSavedBooks);
     } catch (error) {
-      console.error('Error getting saved books:', error);
+      log('Error getting saved books:', error);
       return res.status(500).json({ 
         message: 'Error getting saved books',
         error: error instanceof Error ? error.message : String(error)
@@ -774,14 +776,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Book title and author are required' });
       }
       
-      console.log(`Saving book "${title}" by ${author} for device ${deviceId}`);
+      logDeviceOperation('Saving book', deviceId, `"${title}" by ${author}`);
       
       // First, check if book exists in cache or create it if not
       let bookCacheEntry = await storage.findBookInCache(title, author);
       
       // If not in cache, add it to cache first
       if (!bookCacheEntry) {
-        console.log(`Book "${title}" not in cache, adding it first`);
+        logBookOperation('Book not in cache, adding it first', title);
         
         // Create an expiration date (90 days)
         const expiresAt = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
@@ -802,9 +804,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           expiresAt
         });
         
-        console.log(`Created cache entry for "${title}" with ID ${bookCacheEntry.id}`);
+        logBookOperation('Created cache entry', title, author, `ID ${bookCacheEntry.id}`);
       } else {
-        console.log(`Found existing cache entry for "${title}" with ID ${bookCacheEntry.id}`);
+        logBookOperation('Found existing cache entry', title, author, `ID ${bookCacheEntry.id}`);
       }
       
       // Now create the saved book with a reference to the cache entry
@@ -824,11 +826,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Save book
       const savedBook = await storage.createSavedBook(validatedData);
       
-      console.log(`Saved book "${title}" with ID ${savedBook.id}, linked to cache ID ${bookCacheEntry.id}`);
+      logBookOperation('Saved book', title, author, `ID ${savedBook.id}, linked to cache ID ${bookCacheEntry.id}`);
       
       return res.status(201).json(savedBook);
     } catch (error) {
-      console.error('Error saving book:', error);
+      log('Error saving book:', error);
       return res.status(400).json({ 
         message: 'Error saving book',
         error: error instanceof Error ? error.message : String(error)
@@ -854,7 +856,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       return res.status(200).json({ message: 'Book deleted successfully' });
     } catch (error) {
-      console.error('Error deleting saved book:', error);
+      log('Error deleting saved book:', error);
       return res.status(500).json({ 
         message: 'Error deleting saved book',
         error: error instanceof Error ? error.message : String(error)
@@ -868,7 +870,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const stats = getApiUsageStats();
       return res.status(200).json(stats);
     } catch (error) {
-      console.error('Error getting API statistics:', error);
+      log('Error getting API statistics:', error);
       return res.status(500).json({ 
         message: 'Error getting API statistics',
         error: error instanceof Error ? error.message : String(error)
@@ -886,7 +888,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Device ID is required' });
       }
       
-      console.log(`Enhancing saved books for device ${deviceId}`);
+      logDeviceOperation('Enhancing saved books', deviceId);
       
       // Call the book enhancer to improve book data using OpenAI
       const enhancedCount = await bookEnhancer.enhanceSavedBooks(deviceId);
@@ -899,7 +901,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         books: savedBooks
       });
     } catch (error) {
-      console.error('Error enhancing saved books:', error);
+      log('Error enhancing saved books:', error);
       return res.status(500).json({ 
         message: 'Error enhancing saved books',
         error: error instanceof Error ? error.message : String(error)
@@ -916,7 +918,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Book title and author are required' });
       }
       
-      console.log(`Enhancing book: "${title}" by ${author}`);
+      log(`Enhancing book: "${title}" by ${author}`);
       
       // Use the book enhancer to get improved data
       const enhancedBook = await bookEnhancer.enhanceBook({
@@ -927,7 +929,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       return res.status(200).json(enhancedBook);
     } catch (error) {
-      console.error('Error enhancing book:', error);
+      log('Error enhancing book:', error);
       return res.status(500).json({ 
         message: 'Error enhancing book data',
         error: error instanceof Error ? error.message : String(error)
@@ -944,7 +946,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Title and author are required as query parameters' });
       }
       
-      console.log(`DEMO: Getting OpenAI rating and summary for "${title}" by ${author}`);
+      log(`DEMO: Getting OpenAI rating and summary for "${title}" by ${author}`);
       
       // Get direct OpenAI rating
       const rating = await getOpenAIBookRating(title, author);
@@ -961,7 +963,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         timestamp: new Date().toISOString()
       });
     } catch (error) {
-      console.error('Error in OpenAI book demo:', error);
+      log('Error in OpenAI book demo:', error);
       return res.status(500).json({ 
         message: 'Error getting OpenAI book data',
         error: error instanceof Error ? error.message : String(error)
@@ -978,7 +980,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Title and author are required as query parameters' });
       }
       
-      console.log(`Getting OpenAI book details for "${title}" by ${author}`);
+      log(`Getting OpenAI book details for "${title}" by ${author}`);
       
       // Get book details using OpenAI exclusively
       const bookDetails = await getOpenAIBookDetails(title, author);
@@ -988,7 +990,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         requestedAt: new Date().toISOString()
       });
     } catch (error) {
-      console.error('Error getting OpenAI book details:', error);
+      log('Error getting OpenAI book details:', error);
       return res.status(500).json({ 
         message: 'Error getting book details from OpenAI',
         error: error instanceof Error ? error.message : String(error)
@@ -1032,7 +1034,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Return the result
       res.json(result);
     } catch (error) {
-      console.error('Error testing OpenAI:', error);
+      log('Error testing OpenAI:', error);
       res.status(500).json({ 
         message: 'Error testing OpenAI',
         error: error instanceof Error ? error.message : String(error)
@@ -1052,12 +1054,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Import the OpenAI recommendations function
       const { getOpenAIRecommendations } = await import('./openai-recommendations');
       
-      console.log(`Testing AI recommendations with ${books.length} books`);
+      log(`Testing AI recommendations with ${books.length} books`);
       
       // Get AI-powered recommendations
       const recommendations = await getOpenAIRecommendations(books, preferences || {});
       
-      console.log(`Received ${recommendations.length} AI-powered recommendations`);
+      log(`Received ${recommendations.length} AI-powered recommendations`);
       
       // Return the recommendations
       res.json({
@@ -1065,7 +1067,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         recommendations
       });
     } catch (error) {
-      console.error('Error generating AI recommendations:', error);
+      log('Error generating AI recommendations:', error);
       res.status(500).json({ 
         message: 'Error generating AI recommendations',
         error: error instanceof Error ? error.message : String(error)

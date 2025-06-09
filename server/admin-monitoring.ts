@@ -4,6 +4,7 @@ import { checkSystemHealth, getRecentEvents, getLogs, LogLevel } from './monitor
 import { rateLimiter } from './rate-limiter';
 import { getApiFailureStats } from './utils/api-monitoring';
 import crypto from 'crypto';
+import { log } from './vite';
 
 const router = Router();
 
@@ -72,7 +73,7 @@ router.post('/login', (req: Request, res: Response) => {
   // Check credentials against environment variables (using hashed password)
   if (username !== ADMIN_USERNAME || hashPassword(password) !== ADMIN_PASSWORD_HASH) {
     // Log failed login attempt
-    console.warn(`Failed admin login attempt for username: ${username}`);
+    log(`Failed admin login attempt for username: ${username}`);
     return res.status(401).json({ message: 'Invalid username or password' });
   }
   
@@ -95,7 +96,7 @@ router.post('/login', (req: Request, res: Response) => {
     expires
   });
   
-  console.log(`Admin login successful: ${username}`);
+  log(`Admin login successful: ${username}`);
   return res.status(200).json({ message: 'Login successful' });
 });
 
@@ -153,7 +154,7 @@ router.get('/stats', requireAuth, (req: Request, res: Response) => {
       }
     });
   } catch (error) {
-    console.error(`Error getting API statistics: ${error}`);
+    log(`Error getting API statistics: ${error}`);
     return res.status(500).json({ 
       message: 'Error getting API statistics',
       error: error instanceof Error ? error.message : String(error)
@@ -182,7 +183,7 @@ router.get('/logs', requireAuth, async (req: Request, res: Response) => {
       recentEvents
     });
   } catch (error) {
-    console.error(`Error reading logs: ${error}`);
+    log(`Error reading logs: ${error}`);
     return res.status(500).json({ 
       message: 'Error reading logs',
       error: error instanceof Error ? error.message : String(error)
@@ -199,7 +200,7 @@ router.get('/health', requireAuth, (req: Request, res: Response) => {
     const health = checkSystemHealth();
     return res.status(200).json(health);
   } catch (error) {
-    console.error(`Error checking system health: ${error}`);
+    log(`Error checking system health: ${error}`);
     return res.status(500).json({ 
       message: 'Error checking system health',
       error: error instanceof Error ? error.message : String(error)
@@ -232,7 +233,7 @@ router.post('/test-increment', requireAuth, (req: Request, res: Response) => {
       stats 
     });
   } catch (error) {
-    console.error(`Error testing API counter: ${error}`);
+    log(`Error testing API counter: ${error}`);
     return res.status(500).json({ 
       message: 'Error testing API counter',
       error: error instanceof Error ? error.message : String(error)

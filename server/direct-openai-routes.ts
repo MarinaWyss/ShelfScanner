@@ -155,7 +155,7 @@ router.post("/recommendations", async (req: Request, res: Response) => {
       });
     }
   } catch (error) {
-    console.error("Error getting direct OpenAI recommendations:", error);
+    log("Error getting direct OpenAI recommendations:", error);
     return res.status(500).json({
       success: false,
       message: "Error generating recommendations",
