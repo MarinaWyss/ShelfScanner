@@ -1,8 +1,35 @@
 {
   "version": 2,
-  "buildCommand": "npm run build",
-  "outputDirectory": "dist/public",
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist/public"
+      }
+    },
+    {
+      "src": "api/saved-books.ts",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "api/saved-books/[id].ts",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "api/preferences.ts",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "api/index.ts",
+      "use": "@vercel/node"
+    }
+  ],
   "routes": [
+    {
+      "src": "/api/saved-books/([^/]+)",
+      "dest": "/api/saved-books/$1"
+    },
     {
       "src": "/api/saved-books",
       "dest": "/api/saved-books"

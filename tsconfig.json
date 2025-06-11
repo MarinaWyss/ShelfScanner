@@ -3,6 +3,7 @@
     "client/src/**/*", 
     "shared/**/*", 
     "server/**/*",
+    "api/**/*",
     "tests/**/*",
     "*.config.ts",
     "*.config.js"
