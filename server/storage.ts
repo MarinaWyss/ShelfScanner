@@ -3,10 +3,10 @@ import {
   preferences, type Preference, type InsertPreference,
   savedBooks, type SavedBook, type InsertSavedBook,
   bookCache, type BookCache, type InsertBookCache
-} from "@shared/schema";
-import { db } from "./db";
+} from "../shared/schema.js";
+import { db } from "./db.js";
 import { eq, and, desc, or, sql, gte } from "drizzle-orm";
-import { log } from "./vite";
+import { log } from "./vite.js";
 
 // Storage interface
 export interface IStorage {
