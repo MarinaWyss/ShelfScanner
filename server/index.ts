@@ -87,7 +87,7 @@ app.use((req, res, next) => {
       startHealthMonitoring();
       
       // Send startup notification if email is configured
-      if (process.env.SENDGRID_API_KEY && process.env.ADMIN_EMAIL) {
+      if (process.env.SMTP_SMARTHOST && process.env.SMTP_FROM && process.env.ADMIN_EMAIL) {
         sendStartupNotification().catch(error => {
           log(`Failed to send startup notification: ${error}`, 'startup');
         });

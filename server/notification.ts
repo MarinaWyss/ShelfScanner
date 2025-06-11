@@ -1,13 +1,27 @@
-import { MailService } from '@sendgrid/mail';
+import nodemailer from 'nodemailer';
 import { logger } from './logger';
 
-// Create SendGrid mail service
-const mailService = new MailService();
+// Create SMTP transporter
+let transporter: nodemailer.Transporter | null = null;
 
-// Initialize the mail service with API key if available
-if (process.env.SENDGRID_API_KEY) {
-  mailService.setApiKey(process.env.SENDGRID_API_KEY);
-} 
+// Initialize the mail service with SMTP configuration if available
+if (process.env.SMTP_SMARTHOST && process.env.SMTP_FROM) {
+  const [host, port] = process.env.SMTP_SMARTHOST.split(':');
+  
+  transporter = nodemailer.createTransport({
+    host: host,
+    port: parseInt(port) || 587,
+    secure: false, // true for 465, false for other ports
+    auth: process.env.SMTP_AUTH_USERNAME && process.env.SMTP_AUTH_PASSWORD ? {
+      user: process.env.SMTP_AUTH_USERNAME,
+      pass: process.env.SMTP_AUTH_PASSWORD
+    } : undefined,
+    tls: {
+      // Do not fail on invalid certs for development
+      rejectUnauthorized: process.env.NODE_ENV === 'production'
+    }
+  });
+}
 
 // Cache to prevent duplicate alerts in a short time period
 const alertCache = new Map<string, number>();
@@ -22,13 +36,13 @@ interface EmailParams {
 }
 
 /**
- * Send an email alert using SendGrid
+ * Send an email alert using SMTP
  * @param params Email parameters
  * @returns Promise resolving to success status
  */
 export async function sendAlertEmail(params: EmailParams): Promise<boolean> {
-  if (!process.env.SENDGRID_API_KEY) {
-    logger.warn('Cannot send alert email: SendGrid API key not configured');
+  if (!transporter) {
+    logger.warn('Cannot send alert email: SMTP not configured');
     return false;
   }
   
@@ -57,12 +71,12 @@ export async function sendAlertEmail(params: EmailParams): Promise<boolean> {
     
     // Make sure we have valid to/from addresses
     const adminEmail = process.env.ADMIN_EMAIL || '';
-    const fromEmail = `alerts@${process.env.HOST || 'shelfscanner.app'}`;
+    const fromEmail = process.env.SMTP_FROM || `alerts@${process.env.HOST || 'shelfscanner.app'}`;
     
-    // Send the email
-    await mailService.send({
-      to: params.to || adminEmail,
+    // Send the email using SMTP
+    await transporter.sendMail({
       from: params.from || fromEmail,
+      to: params.to || adminEmail,
       subject: params.subject,
       text: params.text || '',
       html: params.html || '',
@@ -71,7 +85,7 @@ export async function sendAlertEmail(params: EmailParams): Promise<boolean> {
     logger.info(`Alert email sent: ${params.subject}`);
     return true;
   } catch (error) {
-    logger.error(`SendGrid email error: ${error}`);
+    logger.error(`SMTP email error: ${error}`);
     return false;
   }
 }

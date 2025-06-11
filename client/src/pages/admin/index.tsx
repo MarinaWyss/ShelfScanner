@@ -223,11 +223,11 @@ export default function AdminPage() {
                 status={data?.config.googleVisionConfigured ? "Configured" : "Not Configured"} 
                 enabled={data?.config.googleVisionConfigured}
               />
-              <SystemStatusCard 
-                title="Email Alerts" 
-                status={process.env.NODE_ENV === 'production' ? "Enabled" : "Dev Mode"}
-                enabled={process.env.NODE_ENV === 'production'}
-              />
+                             <SystemStatusCard 
+                 title="SMTP Email" 
+                 status={process.env.NODE_ENV === 'production' ? "Configured" : "Dev Mode"}
+                 enabled={process.env.NODE_ENV === 'production'}
+               />
             </div>
 
             {/* Detailed System Health */}
