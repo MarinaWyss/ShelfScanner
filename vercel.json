@@ -5,7 +5,7 @@
       "src": "server/index.ts",
       "use": "@vercel/node",
       "config": {
-        "includeFiles": ["server/**", "shared/**", "dist/**"],
+        "includeFiles": ["server/**", "shared/**", "dist/public/**"],
         "maxDuration": 30
       }
     },

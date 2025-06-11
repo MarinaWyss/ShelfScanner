@@ -40,62 +40,75 @@ Have you ever been at a book sale, library, or friend's house looking at shelves
 **Backend**: Express.js + TypeScript, PostgreSQL, Drizzle ORM  
 **AI Services**: OpenAI GPT-4, Google Vision API  
 **Infrastructure**: Vite build tool, Winston logging, Session auth  
+**Deployment**: Vercel (Frontend & API), PostgreSQL database
 
 ## 🚀 Quick Setup
 
-### Option 1: Deploy on Replit (Easiest)
+### Prerequisites
 
-1. **Fork the Repository**
-   ```bash
-   # Import this repository into Replit
-   # Go to https://replit.com and click "Create Repl" → "Import from GitHub"
-   # Use the URL of your forked repository
-   ```
+- Node.js 18+ and npm
+- PostgreSQL database (local or cloud)
+- OpenAI API key
+- Google Vision API key
 
-2. **Configure Environment Variables**
-   In Replit, go to the "Secrets" tab and add:
-   ```
-   DATABASE_URL=your_postgresql_connection_string
-   ADMIN_USERNAME=your_admin_username
-   ADMIN_PASSWORD_HASH=your_hashed_password
-   OPENAI_API_KEY=your_openai_api_key
-   GOOGLE_VISION_API_KEY=your_google_vision_api_key
-   ```
+### Local Development
 
-3. **Set Up Database**
-   Replit includes PostgreSQL. Enable it in your repl and update the DATABASE_URL
-
-4. **Install Dependencies & Run**
-   ```bash
-   npm install
-   npm run db:push
-   npm run dev
-   ```
-
-### Option 2: Local Development
-
-1. **Clone and Install**
+1. **Clone and Install Dependencies**
    ```bash
    git clone <your-repo-url>
    cd ShelfScanner
    npm install
    ```
 
-2. **Set Up Environment**
+2. **Set Up Environment Variables**
+   Create a `.env` file in the root directory:
    ```bash
    cp .env.example .env
-   # Edit .env with your actual credentials
+   # Edit .env with your actual credentials (see Environment Configuration below)
    ```
 
 3. **Database Setup**
    ```bash
-   # Set up PostgreSQL locally or use a cloud provider
-   npm run db:push
+   # Push the database schema
+   npm run db:push:dev
+   
+   # Optional: Set up initial schemas/data
+   npm run db:setup
    ```
 
 4. **Start Development Server**
    ```bash
    npm run dev
+   ```
+
+   The application will be available at `http://localhost:5000`
+
+### Production Deployment
+
+#### Option 1: Vercel (Recommended)
+
+1. **Deploy to Vercel**
+   ```bash
+   # Install Vercel CLI
+   npm i -g vercel
+   
+   # Deploy
+   vercel
+   ```
+
+2. **Configure Environment Variables**
+   In your Vercel dashboard, add all required environment variables (see Environment Configuration below)
+
+#### Option 2: Docker Deployment
+
+1. **Build Production Bundle**
+   ```bash
+   npm run build
+   ```
+
+2. **Start Production Server**
+   ```bash
+   npm start
    ```
 
 ## 🔐 Environment Configuration
@@ -197,7 +210,9 @@ ShelfScanner/
 │   └── storage.ts         # Database operations
 ├── shared/                # Shared TypeScript types
 │   └── schema.ts          # Database schema definitions
-└── public/                # Static assets
+├── public/                # Static assets
+├── tests/                 # Test files
+└── scripts/               # Utility scripts
 ```
 
 ## 🔍 How It Works
@@ -237,6 +252,37 @@ ShelfScanner/
 - **Input Validation**: Zod schemas validate all user inputs
 - **Rate Limiting**: Prevents API abuse and reduces costs
 
+## 🧪 Development Scripts
+
+```bash
+# Development
+npm run dev              # Start development server
+npm run check           # TypeScript type checking
+
+# Database
+npm run db:push         # Push schema to database
+npm run db:push:dev     # Push schema (development)
+npm run db:push:prod    # Push schema (production)
+npm run db:studio       # Open Drizzle Studio
+npm run db:generate     # Generate migrations
+npm run db:setup        # Initial database setup
+
+# Testing
+npm run test            # Run all tests
+npm run test:client     # Client-side tests
+npm run test:server     # Server-side tests
+npm run test:e2e        # End-to-end tests
+npm run test:ui         # Test UI
+
+# Code Quality
+npm run lint            # Run ESLint
+npm run lint:fix        # Fix ESLint issues
+npm run security:check  # Security audit
+
+# Production
+npm run build           # Build for production
+npm start               # Start production server
+```
 
 ## 📈 Monitoring & Admin
 
@@ -245,7 +291,6 @@ Access the admin dashboard at `/admin` to monitor:
 - System health and performance
 - Error rates and logs
 - User activity patterns
-
 
 ## 📄 License
 
