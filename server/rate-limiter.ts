@@ -1,5 +1,6 @@
 import { log } from './vite';
 import { logApiUsage, LogLevel, logEvent } from './monitor';
+import { sendRateLimitAlert } from './notification';
 
 /**
  * Simple in-memory rate limiter to control API usage
@@ -131,6 +132,11 @@ export class RateLimiter {
     if (usagePercent >= 80 && !alreadySentAlert) {
       // Log the high usage with proper log level
       logApiUsage(apiName, dailyUsage, dailyLimit, { type: 'daily' });
+      
+      // Send actual email alert for high usage
+      sendRateLimitAlert(apiName, dailyUsage, dailyLimit).catch(error => {
+        log(`Failed to send rate limit alert for ${apiName}: ${error}`, 'rate-limiter');
+      });
       
       // Log a critical event if usage is very high
       if (usagePercent >= 90) {

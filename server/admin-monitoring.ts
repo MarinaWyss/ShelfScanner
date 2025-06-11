@@ -134,10 +134,10 @@ router.post('/logout', requireAuth, (req: Request, res: Response) => {
  * Get API statistics
  * GET /api/admin/stats
  */
-router.get('/stats', requireAuth, (req: Request, res: Response) => {
+router.get('/stats', requireAuth, async (req: Request, res: Response) => {
   try {
     const stats = getApiUsageStats();
-    const health = checkSystemHealth();
+    const health = await checkSystemHealth();
     const apiFailures = getApiFailureStats();
     
     // Get OpenAI specific monitoring information
@@ -202,9 +202,9 @@ router.get('/logs', requireAuth, async (req: Request, res: Response) => {
  * Get system health status
  * GET /api/admin/health
  */
-router.get('/health', requireAuth, (req: Request, res: Response) => {
+router.get('/health', requireAuth, async (req: Request, res: Response) => {
   try {
-    const health = checkSystemHealth();
+    const health = await checkSystemHealth();
     return res.status(200).json(health);
   } catch (error) {
     log(`Error checking system health: ${error}`);

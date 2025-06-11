@@ -3,6 +3,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { log } from './vite';
 import os from 'os';
+import { db } from './db';
+import { sendDatabaseAlert } from './notification';
 
 // Get directory name in ESM
 const __filename = fileURLToPath(import.meta.url);
@@ -62,6 +64,11 @@ interface SystemHealthMetrics {
     total: number;
     free: number;
     usedPercentage: number;
+  };
+  database: {
+    connected: boolean;
+    responseTime: number;
+    error?: string;
   };
   process: {
     pid: number;
@@ -296,10 +303,47 @@ function updatePerformanceHistory(): void {
 }
 
 /**
- * Check system health with comprehensive metrics
- * @returns Object with detailed health status
+ * Check database connectivity and performance
  */
-export function checkSystemHealth(): SystemHealthMetrics {
+async function checkDatabaseHealth(): Promise<{ connected: boolean; responseTime: number; error?: string }> {
+  try {
+    const startTime = Date.now();
+    
+    // Simple query to test database connectivity
+    await db.execute('SELECT 1 as health_check');
+    
+    const responseTime = Date.now() - startTime;
+    
+    return {
+      connected: true,
+      responseTime
+    };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    
+    // Log database error
+    logEvent(LogLevel.CRITICAL, 'Database connection failed', { error: errorMessage });
+    
+    // Send alert for database issues (with cooldown)
+    if (Math.random() < 0.1) { // Only send alert 10% of the time to avoid spam
+      sendDatabaseAlert(errorMessage).catch(alertError => {
+        log(`Failed to send database alert: ${alertError}`, 'monitor');
+      });
+    }
+    
+    return {
+      connected: false,
+      responseTime: -1,
+      error: errorMessage
+    };
+  }
+}
+
+/**
+ * Check overall system health and generate metrics
+ * @returns SystemHealthMetrics object
+ */
+export async function checkSystemHealth(): Promise<SystemHealthMetrics> {
   updatePerformanceHistory();
   
   const memoryUsage = process.memoryUsage();
@@ -345,6 +389,8 @@ export function checkSystemHealth(): SystemHealthMetrics {
     });
   }
   
+  const databaseHealth = await checkDatabaseHealth();
+  
   return {
     status,
     timestamp: new Date().toISOString(),
@@ -364,6 +410,7 @@ export function checkSystemHealth(): SystemHealthMetrics {
       usage: cpuUsage
     },
     disk: diskSpace,
+    database: databaseHealth,
     process: {
       pid: process.pid,
       memoryUsage: memoryUsage,

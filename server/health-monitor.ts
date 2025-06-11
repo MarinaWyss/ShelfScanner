@@ -250,7 +250,7 @@ export function getMonitoringStatus(): {
 export async function triggerHealthCheck(): Promise<any> {
   log('Manual health check triggered', 'health-monitor');
   await performHealthCheck();
-  return checkSystemHealth();
+  return await checkSystemHealth();
 }
 
 /**

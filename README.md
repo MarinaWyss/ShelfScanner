@@ -30,8 +30,9 @@ Have you ever been at a book sale, library, or friend's house looking at shelves
 ### Performance & Reliability
 - **Intelligent Caching**: Multi-layer caching reduces API costs and improves speed
 - **Rate Limiting**: Built-in protection against API abuse
-- **Health Monitoring**: Real-time system performance tracking
+- **Health Monitoring**: Real-time system performance tracking with email alerts
 - **Error Handling**: Graceful fallbacks when services are unavailable
+- **Database Monitoring**: PostgreSQL connection and performance tracking
 
 ## 🛠 Technology Stack
 
@@ -114,7 +115,45 @@ ADMIN_PASSWORD_HASH=your_hashed_password
 # API Keys (Optional but recommended)
 OPENAI_API_KEY=sk-your_openai_key_here
 GOOGLE_VISION_API_KEY=your_google_vision_key
+
+# Monitoring & Alerting (Required for production alerts)
+SMTP_SMARTHOST=smtp.gmail.com:587
+SMTP_FROM=alerts@yourdomain.com
+SMTP_AUTH_USERNAME=your_email@gmail.com
+SMTP_AUTH_PASSWORD=your_app_password
+ADMIN_EMAIL=your_email@gmail.com
+HOST=https://yourdomain.com
 ```
+
+### Monitoring & Alerting Setup
+
+**Email Alerts Configuration:**
+```env
+# Gmail SMTP (recommended)
+SMTP_SMARTHOST=smtp.gmail.com:587
+SMTP_FROM=alerts@yourdomain.com
+SMTP_AUTH_USERNAME=your_email@gmail.com
+SMTP_AUTH_PASSWORD=your_gmail_app_password
+ADMIN_EMAIL=your_email@gmail.com
+
+# Alternative SMTP providers
+# SendGrid: smtp.sendgrid.net:587
+# AWS SES: email-smtp.us-east-1.amazonaws.com:587
+# Mailgun: smtp.mailgun.org:587
+```
+
+**Alert Types:**
+- **Critical System Health**: Memory >90%, CPU >90%, Disk >95%
+- **API Rate Limits**: OpenAI/Google APIs approaching daily limits (80%+)
+- **Database Issues**: Connection failures, slow queries
+- **API Failures**: Multiple failures affecting users
+- **Daily Reports**: System performance summaries
+
+**Alert Frequency:**
+- Critical alerts: 30-minute cooldown
+- Warning alerts: 60-minute cooldown
+- Rate limit alerts: Once per day per API
+- Daily summaries: 12:00 AM system time
 
 ### Generating Admin Password Hash
 
