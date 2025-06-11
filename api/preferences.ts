@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import { VercelRequest, VercelResponse } from '@vercel/node';
-import { storage } from '../server/storage';
-import { insertPreferenceSchema } from '../shared/schema';
+import { storage } from '../server/storage.js';
+import { insertPreferenceSchema } from '../shared/schema.js';
 import { v4 as uuidv4 } from 'uuid';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {

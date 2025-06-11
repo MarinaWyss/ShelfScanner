@@ -12,28 +12,32 @@
       "src": "api/saved-books.ts",
       "use": "@vercel/node",
       "config": {
-        "includeFiles": ["server/**", "shared/**"]
+        "includeFiles": ["server/**", "shared/**", "tsconfig.json"],
+        "bundle": false
       }
     },
     {
       "src": "api/saved-books/[id].ts",
       "use": "@vercel/node",
       "config": {
-        "includeFiles": ["server/**", "shared/**"]
+        "includeFiles": ["server/**", "shared/**", "tsconfig.json"],
+        "bundle": false
       }
     },
     {
       "src": "api/preferences.ts",
       "use": "@vercel/node",
       "config": {
-        "includeFiles": ["server/**", "shared/**"]
+        "includeFiles": ["server/**", "shared/**", "tsconfig.json"],
+        "bundle": false
       }
     },
     {
       "src": "api/index.ts",
       "use": "@vercel/node",
       "config": {
-        "includeFiles": ["server/**", "shared/**"]
+        "includeFiles": ["server/**", "shared/**", "tsconfig.json"],
+        "bundle": false
       }
     }
   ],
