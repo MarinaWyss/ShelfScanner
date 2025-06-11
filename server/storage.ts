@@ -6,7 +6,7 @@ import {
 } from "../shared/schema.js";
 import { db } from "./db.js";
 import { eq, and, desc, or, sql, gte } from "drizzle-orm";
-import { log } from "./vite.js";
+import { log } from "./simple-logger.js";
 
 // Storage interface
 export interface IStorage {
