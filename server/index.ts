@@ -1,3 +1,16 @@
+/**
+ * ShelfScanner - Book Discovery Application
+ * 
+ * Copyright (c) 2025 ShelfScanner. All rights reserved.
+ * 
+ * This software is proprietary. Unauthorized commercial use, reproduction,
+ * or distribution is strictly prohibited and may result in legal action.
+ * 
+ * Source available for reference and educational purposes only.
+ * 
+ * For licensing inquiries: shelfscannerapp@gmail.com
+ */
+
 import 'dotenv/config';
 import express, { type Request, Response, NextFunction } from "express";
 import cookieParser from "cookie-parser";
@@ -5,6 +18,8 @@ import path from "path";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { ensureDeviceId } from "./middleware/deviceId";
+import { startHealthMonitoring } from "./health-monitor";
+import { sendStartupNotification } from "./notification";
 
 const app = express();
 
@@ -78,5 +93,20 @@ app.use((req, res, next) => {
   
   server.listen(port, host, () => {
     log(`serving on ${host}:${port}`);
+    
+    // Start health monitoring in production
+    if (process.env.NODE_ENV === 'production') {
+      log('Starting health monitoring service', 'startup');
+      startHealthMonitoring();
+      
+      // Send startup notification if email is configured
+      if (process.env.SMTP_SMARTHOST && process.env.SMTP_FROM && process.env.ADMIN_EMAIL) {
+        sendStartupNotification().catch(error => {
+          log(`Failed to send startup notification: ${error}`, 'startup');
+        });
+      }
+    } else {
+      log('Health monitoring disabled in development mode', 'startup');
+    }
   });
 })();

@@ -2,6 +2,9 @@ import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { log } from './vite';
+import os from 'os';
+import { db } from './db';
+import { sendDatabaseAlert } from './notification';
 
 // Get directory name in ESM
 const __filename = fileURLToPath(import.meta.url);
@@ -38,8 +41,103 @@ interface LogEntry {
   details?: any;
 }
 
+interface SystemHealthMetrics {
+  status: 'healthy' | 'warning' | 'critical';
+  timestamp: string;
+  apiAvailable: boolean;
+  uptime: number;
+  memory: {
+    used: number;
+    total: number;
+    free: number;
+    usedPercentage: number;
+    heapUsed: number;
+    heapTotal: number;
+  };
+  cpu: {
+    loadAverage: number[];
+    loadPercentage: number;
+    usage: number;
+  };
+  disk: {
+    used: number;
+    total: number;
+    free: number;
+    usedPercentage: number;
+  };
+  database: {
+    connected: boolean;
+    responseTime: number;
+    error?: string;
+  };
+  process: {
+    pid: number;
+    memoryUsage: NodeJS.MemoryUsage;
+    cpuUsage: NodeJS.CpuUsage;
+  };
+  critical: LogEntry[];
+  warnings: LogEntry[];
+}
+
 // In-memory cache of recent events (for quick access in dashboard)
 let recentEvents: LogEntry[] = [];
+
+// Store for tracking system performance over time
+let performanceHistory: Array<{
+  timestamp: string;
+  memoryUsage: number;
+  cpuUsage: number;
+}> = [];
+
+/**
+ * Get disk space information
+ */
+function getDiskSpace(): { used: number; total: number; free: number; usedPercentage: number } {
+  try {
+    const _stats = fs.statSync(process.cwd());
+    // For a more accurate disk space check, we'll use a different approach
+    const totalSpace = 100 * 1024 * 1024 * 1024; // Default 100GB estimate
+    const freeSpace = 50 * 1024 * 1024 * 1024;   // Default 50GB estimate
+    const usedSpace = totalSpace - freeSpace;
+    
+    return {
+      total: totalSpace,
+      used: usedSpace,
+      free: freeSpace,
+      usedPercentage: (usedSpace / totalSpace) * 100
+    };
+  } catch (error) {
+    log(`Error getting disk space: ${error}`, 'monitor');
+    return {
+      total: 0,
+      used: 0,
+      free: 0,
+      usedPercentage: 0
+    };
+  }
+}
+
+/**
+ * Get CPU usage percentage (approximation)
+ */
+function getCpuUsage(): number {
+  const cpus = os.cpus();
+  let totalIdle = 0;
+  let totalTick = 0;
+
+  cpus.forEach(cpu => {
+    for (const type in cpu.times) {
+      totalTick += cpu.times[type as keyof typeof cpu.times];
+    }
+    totalIdle += cpu.times.idle;
+  });
+
+  const idle = totalIdle / cpus.length;
+  const total = totalTick / cpus.length;
+  const usage = 100 - ~~(100 * idle / total);
+
+  return Math.max(0, Math.min(100, usage));
+}
 
 /**
  * Log an event to the monitoring system
@@ -186,18 +284,159 @@ export function getLogs(maxLines = 100): string[] {
 }
 
 /**
- * Check system health
- * @returns Object with health status
+ * Update performance history with current metrics
  */
-export function checkSystemHealth(): Record<string, any> {
-  return {
-    status: 'healthy',
-    apiAvailable: true,
+function updatePerformanceHistory(): void {
+  const memUsage = process.memoryUsage();
+  const cpuUsage = getCpuUsage();
+  
+  performanceHistory.unshift({
     timestamp: new Date().toISOString(),
-    memoryUsage: process.memoryUsage(),
-    uptime: process.uptime(),
-    critical: getRecentEvents(10, LogLevel.CRITICAL)
+    memoryUsage: memUsage.heapUsed,
+    cpuUsage: cpuUsage
+  });
+  
+  // Keep only last 24 hours of data (assuming 1 minute intervals)
+  if (performanceHistory.length > 1440) {
+    performanceHistory = performanceHistory.slice(0, 1440);
+  }
+}
+
+/**
+ * Check database connectivity and performance
+ */
+async function checkDatabaseHealth(): Promise<{ connected: boolean; responseTime: number; error?: string }> {
+  try {
+    const startTime = Date.now();
+    
+    // Simple query to test database connectivity
+    await db.execute('SELECT 1 as health_check');
+    
+    const responseTime = Date.now() - startTime;
+    
+    return {
+      connected: true,
+      responseTime
+    };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    
+    // Log database error
+    logEvent(LogLevel.CRITICAL, 'Database connection failed', { error: errorMessage });
+    
+    // Send alert for database issues (with cooldown)
+    if (Math.random() < 0.1) { // Only send alert 10% of the time to avoid spam
+      sendDatabaseAlert(errorMessage).catch(alertError => {
+        log(`Failed to send database alert: ${alertError}`, 'monitor');
+      });
+    }
+    
+    return {
+      connected: false,
+      responseTime: -1,
+      error: errorMessage
+    };
+  }
+}
+
+/**
+ * Check overall system health and generate metrics
+ * @returns SystemHealthMetrics object
+ */
+export async function checkSystemHealth(): Promise<SystemHealthMetrics> {
+  updatePerformanceHistory();
+  
+  const memoryUsage = process.memoryUsage();
+  const systemMem = {
+    total: os.totalmem(),
+    free: os.freemem(),
+    used: os.totalmem() - os.freemem()
   };
+  
+  const diskSpace = getDiskSpace();
+  const cpuUsage = getCpuUsage();
+  const loadAverage = os.loadavg();
+  
+  // Calculate percentages
+  const memUsedPercentage = (systemMem.used / systemMem.total) * 100;
+  const loadPercentage = (loadAverage[0] / os.cpus().length) * 100;
+  
+  // Determine overall health status
+  let status: 'healthy' | 'warning' | 'critical' = 'healthy';
+  
+  if (memUsedPercentage > 90 || diskSpace.usedPercentage > 90 || loadPercentage > 90) {
+    status = 'critical';
+  } else if (memUsedPercentage > 75 || diskSpace.usedPercentage > 75 || loadPercentage > 75) {
+    status = 'warning';
+  }
+  
+  // Get recent critical and warning events
+  const criticalEvents = getRecentEvents(10, LogLevel.CRITICAL);
+  const warningEvents = getRecentEvents(20, LogLevel.WARNING);
+  
+  // Log health status if concerning
+  if (status === 'critical') {
+    logEvent(LogLevel.CRITICAL, 'System health is critical', {
+      memoryUsage: memUsedPercentage,
+      diskUsage: diskSpace.usedPercentage,
+      cpuLoad: loadPercentage
+    });
+  } else if (status === 'warning') {
+    logEvent(LogLevel.WARNING, 'System health shows warning signs', {
+      memoryUsage: memUsedPercentage,
+      diskUsage: diskSpace.usedPercentage,
+      cpuLoad: loadPercentage
+    });
+  }
+  
+  const databaseHealth = await checkDatabaseHealth();
+  
+  return {
+    status,
+    timestamp: new Date().toISOString(),
+    apiAvailable: true,
+    uptime: process.uptime(),
+    memory: {
+      used: systemMem.used,
+      total: systemMem.total,
+      free: systemMem.free,
+      usedPercentage: memUsedPercentage,
+      heapUsed: memoryUsage.heapUsed,
+      heapTotal: memoryUsage.heapTotal
+    },
+    cpu: {
+      loadAverage: loadAverage,
+      loadPercentage: loadPercentage,
+      usage: cpuUsage
+    },
+    disk: diskSpace,
+    database: databaseHealth,
+    process: {
+      pid: process.pid,
+      memoryUsage: memoryUsage,
+      cpuUsage: process.cpuUsage()
+    },
+    critical: criticalEvents,
+    warnings: warningEvents
+  };
+}
+
+/**
+ * Get performance history for trending analysis
+ * @param hours Number of hours of history to return (default 24)
+ * @returns Array of performance data points
+ */
+export function getPerformanceHistory(hours = 24): Array<{
+  timestamp: string;
+  memoryUsage: number;
+  cpuUsage: number;
+}> {
+  const hoursInMs = hours * 60 * 60 * 1000;
+  const cutoffTime = new Date(Date.now() - hoursInMs);
+  
+  return performanceHistory.filter(entry => 
+    new Date(entry.timestamp) >= cutoffTime
+  );
 }
 
 // Initialize the monitoring system

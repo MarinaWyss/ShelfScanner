@@ -1,8 +1,15 @@
 import { Router, Request, Response, NextFunction } from 'express';
 import { getApiUsageStats } from './api-stats';
-import { checkSystemHealth, getRecentEvents, getLogs, LogLevel } from './monitor';
+import { checkSystemHealth, getRecentEvents, getLogs, LogLevel, getPerformanceHistory } from './monitor';
 import { rateLimiter } from './rate-limiter';
 import { getApiFailureStats } from './utils/api-monitoring';
+import { 
+  startHealthMonitoring, 
+  stopHealthMonitoring, 
+  getMonitoringStatus, 
+  triggerHealthCheck, 
+  triggerDailyReport 
+} from './health-monitor';
 import crypto from 'crypto';
 import { log } from './vite';
 
@@ -127,10 +134,10 @@ router.post('/logout', requireAuth, (req: Request, res: Response) => {
  * Get API statistics
  * GET /api/admin/stats
  */
-router.get('/stats', requireAuth, (req: Request, res: Response) => {
+router.get('/stats', requireAuth, async (req: Request, res: Response) => {
   try {
     const stats = getApiUsageStats();
-    const health = checkSystemHealth();
+    const health = await checkSystemHealth();
     const apiFailures = getApiFailureStats();
     
     // Get OpenAI specific monitoring information
@@ -195,9 +202,9 @@ router.get('/logs', requireAuth, async (req: Request, res: Response) => {
  * Get system health status
  * GET /api/admin/health
  */
-router.get('/health', requireAuth, (req: Request, res: Response) => {
+router.get('/health', requireAuth, async (req: Request, res: Response) => {
   try {
-    const health = checkSystemHealth();
+    const health = await checkSystemHealth();
     return res.status(200).json(health);
   } catch (error) {
     log(`Error checking system health: ${error}`);
@@ -236,6 +243,124 @@ router.post('/test-increment', requireAuth, (req: Request, res: Response) => {
     log(`Error testing API counter: ${error}`);
     return res.status(500).json({ 
       message: 'Error testing API counter',
+      error: error instanceof Error ? error.message : String(error)
+    });
+  }
+});
+
+/**
+ * Get performance history for trending
+ * GET /api/admin/performance-history
+ */
+router.get('/performance-history', requireAuth, (req: Request, res: Response) => {
+  try {
+    const hours = req.query.hours ? parseInt(req.query.hours as string) : 24;
+    const history = getPerformanceHistory(hours);
+    
+    return res.status(200).json({ 
+      history,
+      totalPoints: history.length
+    });
+  } catch (error) {
+    log(`Error getting performance history: ${error}`);
+    return res.status(500).json({ 
+      message: 'Error getting performance history',
+      error: error instanceof Error ? error.message : String(error)
+    });
+  }
+});
+
+/**
+ * Get health monitoring status
+ * GET /api/admin/health-monitor/status
+ */
+router.get('/health-monitor/status', requireAuth, (req: Request, res: Response) => {
+  try {
+    const status = getMonitoringStatus();
+    return res.status(200).json(status);
+  } catch (error) {
+    log(`Error getting monitoring status: ${error}`);
+    return res.status(500).json({ 
+      message: 'Error getting monitoring status',
+      error: error instanceof Error ? error.message : String(error)
+    });
+  }
+});
+
+/**
+ * Start health monitoring
+ * POST /api/admin/health-monitor/start
+ */
+router.post('/health-monitor/start', requireAuth, (req: Request, res: Response) => {
+  try {
+    startHealthMonitoring();
+    return res.status(200).json({ 
+      message: 'Health monitoring started successfully',
+      status: getMonitoringStatus()
+    });
+  } catch (error) {
+    log(`Error starting health monitoring: ${error}`);
+    return res.status(500).json({ 
+      message: 'Error starting health monitoring',
+      error: error instanceof Error ? error.message : String(error)
+    });
+  }
+});
+
+/**
+ * Stop health monitoring
+ * POST /api/admin/health-monitor/stop
+ */
+router.post('/health-monitor/stop', requireAuth, (req: Request, res: Response) => {
+  try {
+    stopHealthMonitoring();
+    return res.status(200).json({ 
+      message: 'Health monitoring stopped successfully',
+      status: getMonitoringStatus()
+    });
+  } catch (error) {
+    log(`Error stopping health monitoring: ${error}`);
+    return res.status(500).json({ 
+      message: 'Error stopping health monitoring',
+      error: error instanceof Error ? error.message : String(error)
+    });
+  }
+});
+
+/**
+ * Trigger manual health check
+ * POST /api/admin/health-monitor/check
+ */
+router.post('/health-monitor/check', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const health = await triggerHealthCheck();
+    return res.status(200).json({ 
+      message: 'Health check completed',
+      health
+    });
+  } catch (error) {
+    log(`Error triggering health check: ${error}`);
+    return res.status(500).json({ 
+      message: 'Error triggering health check',
+      error: error instanceof Error ? error.message : String(error)
+    });
+  }
+});
+
+/**
+ * Trigger manual daily report
+ * POST /api/admin/health-monitor/daily-report
+ */
+router.post('/health-monitor/daily-report', requireAuth, async (req: Request, res: Response) => {
+  try {
+    await triggerDailyReport();
+    return res.status(200).json({ 
+      message: 'Daily report sent successfully'
+    });
+  } catch (error) {
+    log(`Error triggering daily report: ${error}`);
+    return res.status(500).json({ 
+      message: 'Error triggering daily report',
       error: error instanceof Error ? error.message : String(error)
     });
   }
