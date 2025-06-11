@@ -2,29 +2,21 @@
   "version": 2,
   "builds": [
     {
-      "src": "server/index.ts",
-      "use": "@vercel/node",
-      "config": {
-        "includeFiles": ["server/**", "shared/**", "dist/public/**"],
-        "maxDuration": 30
-      }
-    },
-    {
       "src": "package.json",
       "use": "@vercel/static-build",
       "config": {
         "distDir": "dist/public"
       }
+    },
+    {
+      "src": "api/index.ts",
+      "use": "@vercel/node"
     }
   ],
   "routes": [
     {
-      "src": "/ads.txt",
-      "dest": "/ads.txt"
-    },
-    {
       "src": "/api/(.*)",
-      "dest": "/server/index.ts"
+      "dest": "/api"
     },
     {
       "src": "/(.*)",
