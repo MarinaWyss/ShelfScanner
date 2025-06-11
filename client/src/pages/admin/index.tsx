@@ -726,7 +726,7 @@ function HealthMonitoringControls() {
       } else {
         throw new Error('Failed to start monitoring');
       }
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to start health monitoring.",
@@ -751,7 +751,7 @@ function HealthMonitoringControls() {
       } else {
         throw new Error('Failed to stop monitoring');
       }
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to stop health monitoring.",
@@ -774,7 +774,7 @@ function HealthMonitoringControls() {
       } else {
         throw new Error('Failed to trigger health check');
       }
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to trigger health check.",
@@ -797,7 +797,7 @@ function HealthMonitoringControls() {
       } else {
         throw new Error('Failed to trigger daily report');
       }
-    } catch (error) {
+    } catch {
       toast({
         title: "Error",
         description: "Failed to trigger daily report.",

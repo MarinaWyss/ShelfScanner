@@ -6,7 +6,7 @@ import { log } from './vite';
 let healthMonitorInterval: NodeJS.Timeout | null = null;
 let dailySummaryInterval: NodeJS.Timeout | null = null;
 let lastHealthStatus: 'healthy' | 'warning' | 'critical' = 'healthy';
-let lastAlertTime: Record<string, number> = {};
+const lastAlertTime: Record<string, number> = {};
 
 // Daily statistics tracking
 let dailyStats = {

@@ -94,7 +94,7 @@ let performanceHistory: Array<{
  */
 function getDiskSpace(): { used: number; total: number; free: number; usedPercentage: number } {
   try {
-    const stats = fs.statSync(process.cwd());
+    const _stats = fs.statSync(process.cwd());
     // For a more accurate disk space check, we'll use a different approach
     const totalSpace = 100 * 1024 * 1024 * 1024; // Default 100GB estimate
     const freeSpace = 50 * 1024 * 1024 * 1024;   // Default 50GB estimate
