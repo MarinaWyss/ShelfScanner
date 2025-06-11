@@ -54,6 +54,7 @@
     "@radix-ui/react-toggle-group": "^1.1.3",
     "@radix-ui/react-tooltip": "^1.2.0",
     "@react-oauth/google": "^0.12.2",
+    "@supabase/supabase-js": "^2.50.0",
     "@tanstack/react-query": "^5.60.5",
     "@types/cookie-parser": "^1.4.8",
     "@types/memoizee": "^0.4.12",
