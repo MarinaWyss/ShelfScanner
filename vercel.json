@@ -1,22 +1,15 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "dist/public"
-      }
-    },
-    {
-      "src": "api/index.ts",
-      "use": "@vercel/node"
-    }
-  ],
+  "buildCommand": "npm run build",
+  "outputDirectory": "dist/public",
   "routes": [
     {
-      "src": "/api/(.*)",
-      "dest": "/api"
+      "src": "/api/saved-books",
+      "dest": "/api/saved-books"
+    },
+    {
+      "src": "/api/preferences",
+      "dest": "/api/preferences"
     },
     {
       "src": "/(.*)",

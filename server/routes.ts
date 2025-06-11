@@ -1022,25 +1022,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Test endpoint for OpenAI connection
-  app.get('/api/test/openai', async (_req: Request, res: Response) => {
-    try {
-      // Import the test function
-      const { testOpenAI } = await import('./openai-test');
-      
-      // Run the test
-      const result = await testOpenAI();
-      
-      // Return the result
-      res.json(result);
-    } catch (error) {
-      log(`Error testing OpenAI: ${error instanceof Error ? error.message : String(error)}`);
-      res.status(500).json({ 
-        message: 'Error testing OpenAI',
-        error: error instanceof Error ? error.message : String(error)
-      });
-    }
-  });
+
   
   // Test endpoint for OpenAI-powered recommendations
   app.post('/api/test/ai-recommendations', async (req: Request, res: Response) => {
