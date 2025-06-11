@@ -1,3 +1,16 @@
+/**
+ * ShelfScanner - Book Discovery Application
+ * 
+ * Copyright (c) 2025 ShelfScanner. All rights reserved.
+ * 
+ * This software is proprietary. Unauthorized commercial use, reproduction,
+ * or distribution is strictly prohibited and may result in legal action.
+ * 
+ * Source available for reference and educational purposes only.
+ * 
+ * For licensing inquiries: shelfscannerapp@gmail.com
+ */
+
 import 'dotenv/config';
 import express, { type Request, Response, NextFunction } from "express";
 import cookieParser from "cookie-parser";
