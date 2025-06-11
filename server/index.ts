@@ -5,6 +5,8 @@ import path from "path";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { ensureDeviceId } from "./middleware/deviceId";
+import { startHealthMonitoring } from "./health-monitor";
+import { sendStartupNotification } from "./notification";
 
 const app = express();
 
@@ -78,5 +80,20 @@ app.use((req, res, next) => {
   
   server.listen(port, host, () => {
     log(`serving on ${host}:${port}`);
+    
+    // Start health monitoring in production
+    if (process.env.NODE_ENV === 'production') {
+      log('Starting health monitoring service', 'startup');
+      startHealthMonitoring();
+      
+      // Send startup notification if email is configured
+      if (process.env.SENDGRID_API_KEY && process.env.ADMIN_EMAIL) {
+        sendStartupNotification().catch(error => {
+          log(`Failed to send startup notification: ${error}`, 'startup');
+        });
+      }
+    } else {
+      log('Health monitoring disabled in development mode', 'startup');
+    }
   });
 })();

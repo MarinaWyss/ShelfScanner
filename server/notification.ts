@@ -121,6 +121,142 @@ export async function sendErrorAlert(title: string, message: string, details?: a
       <p>${message}</p>
       ${details ? `<pre>${JSON.stringify(details, null, 2)}</pre>` : ''}
       <p><strong>Time:</strong> ${new Date().toISOString()}</p>
+      <p><em>Check your admin dashboard for more details: <a href="${process.env.HOST || 'https://shelfscanner.app'}/admin">Admin Dashboard</a></em></p>
+    `
+  });
+}
+
+/**
+ * Send a system health alert
+ * @param status System health status
+ * @param metrics Health metrics
+ */
+export async function sendSystemHealthAlert(
+  status: 'warning' | 'critical', 
+  metrics: any
+): Promise<boolean> {
+  const emoji = status === 'critical' ? '🚨' : '⚠️';
+  const title = `${emoji} System Health ${status === 'critical' ? 'Critical' : 'Warning'}`;
+  
+  const healthSummary = `
+    <h2>System Health Alert</h2>
+    <p>Your application is showing ${status} health indicators:</p>
+    <ul>
+      <li><strong>Memory Usage:</strong> ${metrics.memory?.usedPercentage?.toFixed(1)}% (${Math.round(metrics.memory?.used / 1024 / 1024)} MB / ${Math.round(metrics.memory?.total / 1024 / 1024)} MB)</li>
+      <li><strong>CPU Load:</strong> ${metrics.cpu?.loadPercentage?.toFixed(1)}%</li>
+      <li><strong>Disk Usage:</strong> ${metrics.disk?.usedPercentage?.toFixed(1)}%</li>
+      <li><strong>Uptime:</strong> ${Math.floor(metrics.uptime / 3600)} hours</li>
+    </ul>
+    
+    ${status === 'critical' ? `
+      <div style="background-color: #fee; border: 1px solid #f00; padding: 10px; margin: 10px 0;">
+        <h3>Immediate Action Required</h3>
+        <p>Your system is in critical condition. Consider:</p>
+        <ul>
+          <li>Restarting the application to free memory</li>
+          <li>Checking for memory leaks or runaway processes</li>
+          <li>Scaling up server resources if persistently high usage</li>
+          <li>Reviewing recent error logs</li>
+        </ul>
+      </div>
+    ` : `
+      <div style="background-color: #ffc; border: 1px solid #fa0; padding: 10px; margin: 10px 0;">
+        <h3>Monitoring Recommended</h3>
+        <p>Your system is showing warning signs. Monitor closely and consider preventive action.</p>
+      </div>
+    `}
+    
+    <p><strong>Time:</strong> ${new Date().toISOString()}</p>
+    <p><em>View detailed metrics: <a href="${process.env.HOST || 'https://shelfscanner.app'}/admin">Admin Dashboard</a></em></p>
+  `;
+  
+  return await sendAlertEmail({
+    to: process.env.ADMIN_EMAIL || '',
+    from: `alerts@${process.env.HOST || 'shelfscanner.app'}`,
+    subject: title,
+    html: healthSummary
+  });
+}
+
+/**
+ * Send database connectivity alert
+ * @param error Database error
+ */
+export async function sendDatabaseAlert(error: string): Promise<boolean> {
+  return await sendAlertEmail({
+    to: process.env.ADMIN_EMAIL || '',
+    from: `alerts@${process.env.HOST || 'shelfscanner.app'}`,
+    subject: '💾 Database Connection Issue',
+    html: `
+      <h2>Database Connection Alert</h2>
+      <p>There is an issue with the database connection:</p>
+      <pre>${error}</pre>
+      <p><strong>Impact:</strong> Users may experience issues with data persistence.</p>
+      <p><strong>Action Required:</strong> Check database connectivity and server resources.</p>
+      <p><strong>Time:</strong> ${new Date().toISOString()}</p>
+      <p><em>Check admin dashboard: <a href="${process.env.HOST || 'https://shelfscanner.app'}/admin">Admin Dashboard</a></em></p>
+    `
+  });
+}
+
+/**
+ * Send application startup notification
+ */
+export async function sendStartupNotification(): Promise<boolean> {
+  return await sendAlertEmail({
+    to: process.env.ADMIN_EMAIL || '',
+    from: `alerts@${process.env.HOST || 'shelfscanner.app'}`,
+    subject: '🚀 Application Started',
+    html: `
+      <h2>Application Startup</h2>
+      <p>ShelfScanner application has started successfully.</p>
+      <ul>
+        <li><strong>Time:</strong> ${new Date().toISOString()}</li>
+        <li><strong>Environment:</strong> ${process.env.NODE_ENV || 'development'}</li>
+        <li><strong>Process ID:</strong> ${process.pid}</li>
+        <li><strong>Memory:</strong> ${Math.round(process.memoryUsage().heapUsed / 1024 / 1024)} MB</li>
+      </ul>
+      <p><em>Monitor your application: <a href="${process.env.HOST || 'https://shelfscanner.app'}/admin">Admin Dashboard</a></em></p>
+    `
+  });
+}
+
+/**
+ * Send daily summary report
+ * @param stats Daily statistics
+ */
+export async function sendDailySummary(stats: any): Promise<boolean> {
+  return await sendAlertEmail({
+    to: process.env.ADMIN_EMAIL || '',
+    from: `alerts@${process.env.HOST || 'shelfscanner.app'}`,
+    subject: '📊 Daily Summary Report',
+    html: `
+      <h2>Daily Summary Report</h2>
+      <p>Here's your daily activity summary for ${new Date().toDateString()}:</p>
+      
+      <h3>API Usage</h3>
+      <ul>
+        ${Object.entries(stats.apiUsage || {}).map(([api, usage]: [string, any]) => 
+          `<li><strong>${api}:</strong> ${usage.requests} requests (${usage.errors} errors)</li>`
+        ).join('')}
+      </ul>
+      
+      <h3>System Health</h3>
+      <ul>
+        <li><strong>Peak Memory Usage:</strong> ${stats.peakMemory}%</li>
+        <li><strong>Average CPU Load:</strong> ${stats.avgCpuLoad}%</li>
+        <li><strong>Critical Events:</strong> ${stats.criticalEvents}</li>
+        <li><strong>Warning Events:</strong> ${stats.warningEvents}</li>
+      </ul>
+      
+      ${stats.criticalEvents > 0 ? `
+        <div style="background-color: #fee; border: 1px solid #f00; padding: 10px; margin: 10px 0;">
+          <strong>⚠️ Attention Required:</strong> ${stats.criticalEvents} critical events detected today.
+        </div>
+      ` : ''}
+      
+      <p><strong>Generated:</strong> ${new Date().toISOString()}</p>
+      <p><em>View detailed analytics: <a href="${process.env.HOST || 'https://shelfscanner.app'}/admin">Admin Dashboard</a></em></p>
     `
   });
 }

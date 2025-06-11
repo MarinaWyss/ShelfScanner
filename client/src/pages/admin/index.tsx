@@ -55,14 +55,33 @@ interface StatsResponse {
   };
   health?: {
     status: string;
+    uptime?: number;
     memory?: {
       used: number;
       total: number;
+      free: number;
       usedPercentage: number;
+      heapUsed: number;
+      heapTotal: number;
     };
     cpu?: {
+      loadAverage: number[];
       loadPercentage: number;
+      usage: number;
     };
+    disk?: {
+      used: number;
+      total: number;
+      free: number;
+      usedPercentage: number;
+    };
+    process?: {
+      pid: number;
+      memoryUsage: any;
+      cpuUsage: any;
+    };
+    critical?: any[];
+    warnings?: any[];
   };
 }
 
@@ -186,22 +205,129 @@ export default function AdminPage() {
 
         {/* System Status Tab */}
         <TabsContent value="system">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <SystemStatusCard 
-              title="OpenAI API" 
-              status={data?.config.openaiConfigured ? "Configured" : "Not Configured"} 
-              enabled={data?.config.openaiEnabled}
-            />
-            <SystemStatusCard 
-              title="Google Vision API" 
-              status={data?.config.googleVisionConfigured ? "Configured" : "Not Configured"} 
-              enabled={data?.config.googleVisionConfigured}
-            />
-            <SystemStatusCard 
-              title="SendGrid Email" 
-              status="Not Available in Frontend"
-              enabled={false}
-            />
+          <div className="space-y-6">
+            {/* System Overview Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <SystemStatusCard 
+                title="Overall Health" 
+                status={data?.health?.status || "Unknown"} 
+                enabled={data?.health?.status === 'healthy'}
+              />
+              <SystemStatusCard 
+                title="OpenAI API" 
+                status={data?.config.openaiConfigured ? "Configured" : "Not Configured"} 
+                enabled={data?.config.openaiEnabled}
+              />
+              <SystemStatusCard 
+                title="Google Vision API" 
+                status={data?.config.googleVisionConfigured ? "Configured" : "Not Configured"} 
+                enabled={data?.config.googleVisionConfigured}
+              />
+              <SystemStatusCard 
+                title="Email Alerts" 
+                status={process.env.NODE_ENV === 'production' ? "Enabled" : "Dev Mode"}
+                enabled={process.env.NODE_ENV === 'production'}
+              />
+            </div>
+
+            {/* Detailed System Health */}
+            {data?.health && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Activity className="h-5 w-5" />
+                    System Resources
+                  </CardTitle>
+                  <CardDescription>
+                    Current system resource utilization
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* Memory Usage */}
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="font-medium">Memory Usage</span>
+                                               <span className="text-sm text-muted-foreground">
+                           {Math.round((data.health.memory?.used || 0) / 1024 / 1024)} MB / 
+                           {Math.round((data.health.memory?.total || 0) / 1024 / 1024)} MB
+                       </span>
+                      </div>
+                      <Progress 
+                        value={data.health.memory?.usedPercentage || 0} 
+                        className="h-2" 
+                      />
+                      <span className="text-xs text-muted-foreground">
+                        {data.health.memory?.usedPercentage?.toFixed(1)}% used
+                      </span>
+                    </div>
+
+                    {/* CPU Load */}
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="font-medium">CPU Load</span>
+                        <span className="text-sm text-muted-foreground">
+                          {data.health.cpu?.loadPercentage?.toFixed(1)}%
+                        </span>
+                      </div>
+                      <Progress 
+                        value={data.health.cpu?.loadPercentage || 0} 
+                        className="h-2" 
+                      />
+                      <span className="text-xs text-muted-foreground">
+                        Load avg: {data.health.cpu?.loadAverage?.[0]?.toFixed(2)}
+                      </span>
+                    </div>
+
+                    {/* Disk Usage */}
+                    <div className="space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="font-medium">Disk Usage</span>
+                                               <span className="text-sm text-muted-foreground">
+                           {Math.round((data.health.disk?.used || 0) / 1024 / 1024 / 1024)} GB / 
+                           {Math.round((data.health.disk?.total || 0) / 1024 / 1024 / 1024)} GB
+                       </span>
+                      </div>
+                      <Progress 
+                        value={data.health.disk?.usedPercentage || 0} 
+                        className="h-2" 
+                      />
+                      <span className="text-xs text-muted-foreground">
+                        {data.health.disk?.usedPercentage?.toFixed(1)}% used
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* System Info */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-4 border-t">
+                                         <div>
+                       <span className="text-sm font-medium">Uptime</span>
+                       <p className="text-lg">{Math.floor((data.health.uptime || 0) / 3600)}h</p>
+                     </div>
+                    <div>
+                      <span className="text-sm font-medium">Process ID</span>
+                      <p className="text-lg">{data.health.process?.pid}</p>
+                    </div>
+                                         <div>
+                       <span className="text-sm font-medium">Heap Used</span>
+                       <p className="text-lg">{Math.round((data.health.memory?.heapUsed || 0) / 1024 / 1024)} MB</p>
+                     </div>
+                    <div>
+                      <span className="text-sm font-medium">Status</span>
+                      <Badge 
+                        variant={data.health.status === 'healthy' ? "outline" : "destructive"}
+                        className={data.health.status === 'healthy' ? "bg-green-100 text-green-800" : ""}
+                      >
+                        {data.health.status}
+                      </Badge>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Health Monitoring Controls */}
+            <HealthMonitoringControls />
           </div>
         </TabsContent>
 
@@ -555,6 +681,226 @@ function ApiUsageCard({
           <span>{stats.withinLimits ? 'Within rate limits' : 'Rate limit exceeded'}</span>
         </div>
       </CardFooter>
+    </Card>
+  );
+}
+
+/**
+ * Health Monitoring Controls Component
+ */
+function HealthMonitoringControls() {
+  const [monitoringStatus, setMonitoringStatus] = useState<any>(null);
+  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
+
+  // Fetch monitoring status
+  const fetchMonitoringStatus = async () => {
+    try {
+      const response = await fetch('/api/admin/health-monitor/status');
+      if (response.ok) {
+        const status = await response.json();
+        setMonitoringStatus(status);
+      }
+    } catch (error) {
+      console.log('Error fetching monitoring status:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchMonitoringStatus();
+    const interval = setInterval(fetchMonitoringStatus, 30000); // Refresh every 30 seconds
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleStartMonitoring = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/admin/health-monitor/start', { method: 'POST' });
+      if (response.ok) {
+        const result = await response.json();
+        setMonitoringStatus(result.status);
+        toast({
+          title: "Monitoring Started",
+          description: "Health monitoring service has been started.",
+        });
+      } else {
+        throw new Error('Failed to start monitoring');
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to start health monitoring.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleStopMonitoring = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/admin/health-monitor/stop', { method: 'POST' });
+      if (response.ok) {
+        const result = await response.json();
+        setMonitoringStatus(result.status);
+        toast({
+          title: "Monitoring Stopped",
+          description: "Health monitoring service has been stopped.",
+        });
+      } else {
+        throw new Error('Failed to stop monitoring');
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to stop health monitoring.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleTriggerHealthCheck = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/admin/health-monitor/check', { method: 'POST' });
+      if (response.ok) {
+        toast({
+          title: "Health Check Complete",
+          description: "Manual health check has been performed.",
+        });
+      } else {
+        throw new Error('Failed to trigger health check');
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to trigger health check.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleTriggerDailyReport = async () => {
+    setLoading(true);
+    try {
+      const response = await fetch('/api/admin/health-monitor/daily-report', { method: 'POST' });
+      if (response.ok) {
+        toast({
+          title: "Daily Report Sent",
+          description: "Daily summary report has been sent to admin email.",
+        });
+      } else {
+        throw new Error('Failed to trigger daily report');
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to trigger daily report.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Activity className="h-5 w-5" />
+          Health Monitoring Controls
+        </CardTitle>
+        <CardDescription>
+          Manage automated health monitoring and alerting
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          {/* Monitoring Status */}
+          <div className="flex items-center justify-between p-4 border rounded-lg">
+            <div>
+              <h4 className="font-medium">Monitoring Service</h4>
+              <p className="text-sm text-muted-foreground">
+                Current health status: {monitoringStatus?.lastHealthStatus || 'Unknown'}
+              </p>
+            </div>
+            <Badge 
+              variant={monitoringStatus?.isRunning ? "outline" : "destructive"}
+              className={monitoringStatus?.isRunning ? "bg-green-100 text-green-800" : ""}
+            >
+              {monitoringStatus?.isRunning ? "Running" : "Stopped"}
+            </Badge>
+          </div>
+
+          {/* Control Buttons */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+            <Button
+              onClick={monitoringStatus?.isRunning ? handleStopMonitoring : handleStartMonitoring}
+              disabled={loading}
+              variant={monitoringStatus?.isRunning ? "outline" : "default"}
+              size="sm"
+            >
+              {monitoringStatus?.isRunning ? "Stop" : "Start"} Monitoring
+            </Button>
+            
+            <Button
+              onClick={handleTriggerHealthCheck}
+              disabled={loading}
+              variant="outline"
+              size="sm"
+            >
+              Manual Check
+            </Button>
+            
+            <Button
+              onClick={handleTriggerDailyReport}
+              disabled={loading}
+              variant="outline"
+              size="sm"
+            >
+              Send Report
+            </Button>
+
+            <Button
+              onClick={() => window.location.reload()}
+              variant="outline"
+              size="sm"
+            >
+              Refresh
+            </Button>
+          </div>
+
+          {/* Daily Statistics */}
+          {monitoringStatus?.dailyStats && (
+            <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+              <h4 className="font-medium mb-2">Today's Statistics</h4>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <div>
+                  <span className="text-muted-foreground">Peak Memory:</span>
+                  <p className="font-medium">{monitoringStatus.dailyStats.peakMemory?.toFixed(1)}%</p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Avg CPU:</span>
+                  <p className="font-medium">{monitoringStatus.dailyStats.avgCpuLoad?.toFixed(1)}%</p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Critical Events:</span>
+                  <p className="font-medium">{monitoringStatus.dailyStats.criticalEvents}</p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Warnings:</span>
+                  <p className="font-medium">{monitoringStatus.dailyStats.warningEvents}</p>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </CardContent>
     </Card>
   );
 }
