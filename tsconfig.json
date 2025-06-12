@@ -4,6 +4,7 @@
     "shared/**/*", 
     "server/**/*",
     "api/**/*",
+    "types/**/*",
     "tests/**/*",
     "*.config.ts",
     "*.config.js"
