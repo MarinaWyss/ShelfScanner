@@ -5,6 +5,8 @@ require('@vercel/node'); // Import but don't assign to variables
 const { storage } = require('../server/storage');
 const { insertPreferenceSchema } = require('../shared/schema');
 const { v4: uuidv4 } = require('uuid');
+const { logDeviceOperation } = require('../server/utils/safe-logger');
+const { log } = require('../server/simple-logger');
 
 /**
  * API handler for preferences
@@ -34,6 +36,7 @@ module.exports = async function handler(req, res) {
 
     if (req.method === 'GET') {
       // Get preferences for this device
+      logDeviceOperation('Getting preferences', deviceId);
       const preferences = await storage.getPreferencesByDeviceId(deviceId);
       
       if (!preferences) {
@@ -66,14 +69,14 @@ module.exports = async function handler(req, res) {
         preferences = await storage.createPreference(validatedData);
       }
       
-      console.log(`Saved preferences for device ${deviceId}`);
+      logDeviceOperation('Saved preferences', deviceId);
       
       return res.status(201).json(preferences);
     }
     
     return res.status(405).json({ message: 'Method not allowed' });
   } catch (error) {
-    console.error('Error handling preferences:', error);
+    log(`Error handling preferences: ${error instanceof Error ? error.message : String(error)}`, 'api-error');
     return res.status(500).json({ 
       message: 'Error handling preferences',
       error: error instanceof Error ? error.message : String(error)

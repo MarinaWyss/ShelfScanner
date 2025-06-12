@@ -4,6 +4,8 @@ require('dotenv/config');
 require('@vercel/node'); // Import but don't assign to variables
 const { storage } = require('../../server/storage');
 const { v4: uuidv4 } = require('uuid');
+const { logDeviceOperation, logBookOperation } = require('../../server/utils/safe-logger');
+const { log } = require('../../server/simple-logger');
 
 /**
  * API handler for deleting a saved book by ID
@@ -43,6 +45,8 @@ module.exports = async function handler(req, res) {
       return res.status(400).json({ message: 'Invalid book ID' });
     }
     
+    logDeviceOperation('Deleting saved book', deviceId, `ID: ${bookId}`);
+    
     // Delete the saved book
     const deleted = await storage.deleteSavedBook(bookId);
     
@@ -52,7 +56,7 @@ module.exports = async function handler(req, res) {
     
     return res.status(200).json({ message: 'Book deleted successfully' });
   } catch (error) {
-    console.error('Error deleting saved book:', error);
+    log(`Error deleting saved book: ${error instanceof Error ? error.message : String(error)}`, 'api-error');
     return res.status(500).json({ 
       message: 'Error deleting saved book',
       error: error instanceof Error ? error.message : String(error)

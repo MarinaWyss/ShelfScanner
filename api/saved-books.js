@@ -5,6 +5,8 @@ require('@vercel/node'); // Import but don't assign to variables
 const { storage } = require('../server/storage');
 const { insertSavedBookSchema } = require('../shared/schema');
 const { v4: uuidv4 } = require('uuid');
+const { logDeviceOperation, logBookOperation } = require('../server/utils/safe-logger');
+const { log } = require('../server/simple-logger');
 
 /**
  * API handler for saved books
@@ -34,6 +36,7 @@ module.exports = async function handler(req, res) {
 
     if (req.method === 'GET') {
       // Get saved books
+      logDeviceOperation('Getting saved books', deviceId);
       const savedBooks = await storage.getSavedBooksByDeviceId(deviceId);
       
       // Enhance saved books with the latest data from book_cache
@@ -56,7 +59,7 @@ module.exports = async function handler(req, res) {
                 };
               }
             } catch (error) {
-              console.error(`Error fetching cache data for book ID ${book.id}: ${error instanceof Error ? error.message : String(error)}`);
+              log(`Error fetching cache data for book ID ${book.id}: ${error instanceof Error ? error.message : String(error)}`, 'saved-books');
             }
           }
           
@@ -76,14 +79,14 @@ module.exports = async function handler(req, res) {
         return res.status(400).json({ message: 'Book title and author are required' });
       }
       
-      console.log(`Saving book: "${title}" by ${author} for device ${deviceId}`);
+      logDeviceOperation('Saving book', deviceId, `"${title}" by ${author}`);
       
       // First, check if book exists in cache or create it if not
       let bookCacheEntry = await storage.findBookInCache(title, author);
       
       // If not in cache, add it to cache first
       if (!bookCacheEntry) {
-        console.log(`Book not in cache, adding it first: ${title}`);
+        logBookOperation('Book not in cache, adding it first', title);
         
         // Create an expiration date (90 days)
         const expiresAt = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
@@ -104,9 +107,9 @@ module.exports = async function handler(req, res) {
           expiresAt
         });
         
-        console.log(`Created cache entry for ${title} with ID ${bookCacheEntry.id}`);
+        logBookOperation('Created cache entry', title, author, `ID ${bookCacheEntry.id}`);
       } else {
-        console.log(`Found existing cache entry for ${title} with ID ${bookCacheEntry.id}`);
+        logBookOperation('Found existing cache entry', title, author, `ID ${bookCacheEntry.id}`);
       }
       
       // Now create the saved book with a reference to the cache entry
@@ -126,14 +129,14 @@ module.exports = async function handler(req, res) {
       // Save book
       const savedBook = await storage.createSavedBook(validatedData);
       
-      console.log(`Saved book ${title} with ID ${savedBook.id}, linked to cache ID ${bookCacheEntry.id}`);
+      logBookOperation('Saved book', title, author, `ID ${savedBook.id}, linked to cache ID ${bookCacheEntry.id}`);
       
       return res.status(201).json(savedBook);
     }
     
     return res.status(405).json({ message: 'Method not allowed' });
   } catch (error) {
-    console.error('Error in saved-books API:', error);
+    log(`Error in saved-books API: ${error instanceof Error ? error.message : String(error)}`, 'api-error');
     return res.status(500).json({ 
       message: 'Error handling saved books',
       error: error instanceof Error ? error.message : String(error)
