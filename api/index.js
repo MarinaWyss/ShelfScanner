@@ -7,8 +7,8 @@ require('@vercel/node'); // Import but don't assign to variables
  * @param {import('@vercel/node').VercelRequest} req - The request object
  * @param {import('@vercel/node').VercelResponse} res - The response object
  */
-module.exports = function handler(req, res) {
-  return res.status(404).json({ 
-    message: 'API endpoint not found. Use specific endpoints like /api/saved-books or /api/preferences.' 
+module.exports = (req, res) => {
+  return res.status(200).json({ 
+    message: 'API is working correctly. Use specific endpoints like /api/saved-books or /api/preferences.' 
   });
 }; 
