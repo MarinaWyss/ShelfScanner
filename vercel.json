@@ -2,6 +2,6 @@
   "buildCommand": "npm run build",
   "outputDirectory": "dist/public",
   "rewrites": [
-    { "source": "/api/:path*", "destination": "/api-vercel/:path*" }
+    { "source": "/api/:path*", "destination": "/api/:path*.cjs" }
   ]
 } 
