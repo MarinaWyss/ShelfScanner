@@ -1,10 +1,17 @@
-import 'dotenv/config';
-import { VercelRequest, VercelResponse } from '@vercel/node';
-import { storage } from '../server/storage.js';
-import { insertSavedBookSchema } from '../shared/schema.js';
-import { v4 as uuidv4 } from 'uuid';
+/* eslint-disable no-undef */
+// Import using CommonJS require for Vercel compatibility
+require('dotenv/config');
+require('@vercel/node'); // Import but don't assign to variables
+const { storage } = require('../server/storage');
+const { insertSavedBookSchema } = require('../shared/schema');
+const { v4: uuidv4 } = require('uuid');
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+/**
+ * API handler for saved books
+ * @param {import('@vercel/node').VercelRequest} req - The request object
+ * @param {import('@vercel/node').VercelResponse} res - The response object
+ */
+module.exports = async function handler(req, res) {
   // Handle CORS
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -124,8 +131,6 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(201).json(savedBook);
     }
     
-
-    
     return res.status(405).json({ message: 'Method not allowed' });
   } catch (error) {
     console.error('Error in saved-books API:', error);
@@ -134,4 +139,4 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       error: error instanceof Error ? error.message : String(error)
     });
   }
-} 
+}; 

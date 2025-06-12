@@ -1,22 +1,29 @@
-import 'dotenv/config';
-import { VercelRequest, VercelResponse } from '@vercel/node';
-import formidable from 'formidable';
-import fs from 'node:fs/promises';
+/* eslint-disable no-undef */
+// Import using CommonJS require for Vercel compatibility
+require('dotenv/config');
+require('@vercel/node'); // Import but don't assign to variables
+const formidable = require('formidable');
+const fs = require('node:fs/promises');
 
 // Re-use existing server-side helpers so we don't duplicate business logic
-import { analyzeBookshelfImage } from '../../server/openai-vision';
-import { searchBooksByTitle } from '../../server/books';
-import { storage } from '../../server/storage';
+const { analyzeBookshelfImage } = require('../../server/openai-vision');
+const { searchBooksByTitle } = require('../../server/books');
+const { storage } = require('../../server/storage');
 
 // Disable the default body parser so we can handle multipart/form-data ourselves
-export const config = {
+exports.config = {
   api: {
     bodyParser: false,
   },
 };
 
-// Helper function to calculate similarity between two strings
-function calculateSimilarity(str1: string, str2: string): number {
+/**
+ * Calculate similarity between two strings
+ * @param {string} str1 - First string to compare
+ * @param {string} str2 - Second string to compare
+ * @returns {number} Similarity score between 0 and 1
+ */
+function calculateSimilarity(str1, str2) {
   const longer = str1.length > str2.length ? str1 : str2;
   const shorter = str1.length > str2.length ? str2 : str1;
 
@@ -26,8 +33,14 @@ function calculateSimilarity(str1: string, str2: string): number {
   return (longer.length - distance) / longer.length;
 }
 
-function levenshteinDistance(str1: string, str2: string): number {
-  const matrix: number[][] = [];
+/**
+ * Calculate Levenshtein distance between two strings
+ * @param {string} str1 - First string
+ * @param {string} str2 - Second string
+ * @returns {number} Edit distance between strings
+ */
+function levenshteinDistance(str1, str2) {
+  const matrix = [];
   for (let i = 0; i <= str1.length; i++) {
     matrix[i] = [i];
   }
@@ -47,18 +60,22 @@ function levenshteinDistance(str1: string, str2: string): number {
   return matrix[str1.length][str2.length];
 }
 
-// Parse the incoming `multipart/form-data` request and return the image buffer
-async function parseMultipart(req: VercelRequest): Promise<Buffer | undefined> {
+/**
+ * Parse the incoming multipart/form-data request and return the image buffer
+ * @param {import('@vercel/node').VercelRequest} req - The request object
+ * @returns {Promise<Buffer|undefined>} Image buffer or undefined if no image
+ */
+async function parseMultipart(req) {
   const form = formidable({ 
     maxFileSize: 5 * 1024 * 1024, // 5 MB cap
     keepExtensions: true,
     // Use memory storage for serverless compatibility
     fileWriteStreamHandler: () => {
-      const chunks: Buffer[] = [];
+      const chunks = [];
       let fileSize = 0;
       
       const writable = new (require('stream').Writable)({
-        write(chunk: Buffer, _encoding: string, callback: Function) {
+        write(chunk, _encoding, callback) {
           chunks.push(chunk);
           fileSize += chunk.length;
           callback();
@@ -74,10 +91,10 @@ async function parseMultipart(req: VercelRequest): Promise<Buffer | undefined> {
   });
 
   return new Promise((resolve, reject) => {
-    form.parse(req, async (err: any, _fields: any, files: any) => {
+    form.parse(req, async (err, _fields, files) => {
       if (err) {return reject(err);}
 
-      const file = files.image as any;
+      const file = files.image;
       if (!file) {return resolve(undefined);}
 
       const picked = Array.isArray(file) ? file[0] : file;
@@ -100,7 +117,12 @@ async function parseMultipart(req: VercelRequest): Promise<Buffer | undefined> {
   });
 }
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+/**
+ * API handler for analyzing bookshelf images
+ * @param {import('@vercel/node').VercelRequest} req - The request object
+ * @param {import('@vercel/node').VercelResponse} res - The response object
+ */
+module.exports = async function handler(req, res) {
   // Basic CORS headers – mirrors other API routes
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -169,17 +191,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       const preferences = await storage.getPreferencesByUserId(1);
 
       // Look up each detected title via our existing search helper
-      const detectedBooks: any[] = [];
+      const detectedBooks = [];
       for (const title of bookTitles) {
         const results = await searchBooksByTitle(title);
         if (!results || results.length === 0) {continue;}
 
         const titleLower = title.toLowerCase();
-        const bestMatch = results.reduce((best: any, current: any) => {
+        const bestMatch = results.reduce((best, current) => {
           const similarityCurrent = calculateSimilarity(titleLower, (current.title || '').toLowerCase());
           const similarityBest = best ? calculateSimilarity(titleLower, (best.title || '').toLowerCase()) : 0;
           return similarityCurrent > similarityBest ? current : best;
-        }, null as any);
+        }, null);
 
         if (bestMatch && calculateSimilarity(titleLower, bestMatch.title.toLowerCase()) > 0.6) {
           detectedBooks.push(bestMatch);
@@ -200,7 +222,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         if (preferences) {
           if (preferences.genres && book.categories) {
             for (const genre of preferences.genres) {
-              if (book.categories.some((cat: string) => cat?.toLowerCase().includes(genre.toLowerCase()))) {
+              if (book.categories.some((cat) => cat?.toLowerCase().includes(genre.toLowerCase()))) {
                 matchScore += 3;
               }
             }
@@ -240,7 +262,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         error: dbError instanceof Error ? dbError.message : String(dbError),
       });
     }
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error processing image:', error);
     
     // Provide more specific error messages for common issues
@@ -250,17 +272,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         error: 'Try uploading a smaller image or reducing the image resolution',
       });
     }
-
-    if (error.message && error.message.includes('ENOENT')) {
-      return res.status(500).json({
-        message: 'File processing error in serverless environment',
-        error: 'Image file could not be read. This is likely a serverless environment limitation.',
-      });
-    }
     
     return res.status(500).json({
-      message: 'Error processing image',
-      error: error?.message || String(error),
+      message: 'Error analyzing bookshelf image',
+      error: error instanceof Error ? error.message : String(error)
     });
   }
-} 
+}; 

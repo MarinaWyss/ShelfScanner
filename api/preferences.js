@@ -1,10 +1,17 @@
-import 'dotenv/config';
-import { VercelRequest, VercelResponse } from '@vercel/node';
-import { storage } from '../server/storage.js';
-import { insertPreferenceSchema } from '../shared/schema.js';
-import { v4 as uuidv4 } from 'uuid';
+/* eslint-disable no-undef */
+// Import using CommonJS require for Vercel compatibility
+require('dotenv/config');
+require('@vercel/node'); // Import but don't assign to variables
+const { storage } = require('../server/storage');
+const { insertPreferenceSchema } = require('../shared/schema');
+const { v4: uuidv4 } = require('uuid');
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+/**
+ * API handler for preferences
+ * @param {import('@vercel/node').VercelRequest} req - The request object
+ * @param {import('@vercel/node').VercelResponse} res - The response object
+ */
+module.exports = async function handler(req, res) {
   // Handle CORS
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -26,7 +33,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (req.method === 'GET') {
-      // Get user preferences
+      // Get preferences for this device
       const preferences = await storage.getPreferencesByDeviceId(deviceId);
       
       if (!preferences) {
@@ -37,8 +44,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
     
     if (req.method === 'POST') {
-      // Save user preferences
-      const userId = 1; // For backward compatibility
+      // For backward compatibility we still include userId but use deviceId as primary identifier
+      const userId = 1;
       
       // Validate request body
       const validatedData = insertPreferenceSchema.parse({
@@ -59,15 +66,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         preferences = await storage.createPreference(validatedData);
       }
       
+      console.log(`Saved preferences for device ${deviceId}`);
+      
       return res.status(201).json(preferences);
     }
     
     return res.status(405).json({ message: 'Method not allowed' });
   } catch (error) {
-    console.error('Error in preferences API:', error);
+    console.error('Error handling preferences:', error);
     return res.status(500).json({ 
       message: 'Error handling preferences',
       error: error instanceof Error ? error.message : String(error)
     });
   }
-} 
+}; 
