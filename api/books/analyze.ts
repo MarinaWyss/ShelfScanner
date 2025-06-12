@@ -4,9 +4,9 @@ import formidable, { File } from 'formidable';
 import fs from 'node:fs/promises';
 
 // Re-use existing server-side helpers so we don't duplicate business logic
-import { analyzeBookshelfImage } from '../../server/openai-vision.js';
-import { searchBooksByTitle } from '../../server/books.js';
-import { storage } from '../../server/storage.js';
+import { analyzeBookshelfImage } from '../../server/openai-vision';
+import { searchBooksByTitle } from '../../server/books';
+import { storage } from '../../server/storage';
 
 // Disable the default body parser so we can handle multipart/form-data ourselves
 export const config = {
@@ -51,17 +51,20 @@ function levenshteinDistance(str1: string, str2: string): number {
 async function parseMultipart(req: VercelRequest): Promise<Buffer | undefined> {
   const form = formidable({ maxFileSize: 5 * 1024 * 1024 }); // 5 MB cap
   return new Promise((resolve, reject) => {
-    form.parse(req, async (err: any, _fields: formidable.Fields, files: formidable.Files) => {
+    form.parse(req, async (err: any, _fields: any, files: any) => {
       if (err) return reject(err);
 
-      const file = files.image as File | File[] | undefined;
+      const file = files.image as any;
       if (!file) return resolve(undefined);
 
       const picked = Array.isArray(file) ? file[0] : file;
       if (!picked.filepath) return resolve(undefined);
 
+      // Cast picked to any to bypass missing type for filepath
+      const pickedAny = picked as any;
+
       try {
-        const data = await fs.readFile(picked.filepath);
+        const data = await fs.readFile(pickedAny.filepath);
         resolve(data);
       } catch (readErr) {
         reject(readErr);
