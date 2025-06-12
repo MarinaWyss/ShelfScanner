@@ -4,7 +4,7 @@ require('dotenv/config');
 require('@vercel/node'); // Import but don't assign to variables
 const { storage } = require('../../server/storage');
 const { v4: uuidv4 } = require('uuid');
-const { logDeviceOperation, logBookOperation } = require('../../server/utils/safe-logger');
+const { logDeviceOperation } = require('../../server/utils/safe-logger');
 const { log } = require('../../server/simple-logger');
 
 /**

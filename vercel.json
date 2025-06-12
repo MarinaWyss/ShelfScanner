@@ -7,7 +7,7 @@
       "memory": 1024,
       "maxDuration": 60
     },
-    "api/*.js": {
+    "dist/api/**/*.js": {
       "memory": 1024,
       "maxDuration": 60
     }
