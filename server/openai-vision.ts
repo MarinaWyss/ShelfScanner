@@ -50,52 +50,32 @@ export async function analyzeBookshelfImage(base64Image: string): Promise<{
     
     log("Processing image with OpenAI Vision API", "vision");
     
-    let response;
-    try {
-      response = await openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: [
-          {
-            role: "system",
-            content: "You are a precise book identification expert specializing in reading book spines on bookshelves. Your ONLY task is to identify the exact titles of books visible in the image. Never invent or guess titles. Only include titles where you can clearly read the complete title from the spine or cover. If you're uncertain about any title, exclude it completely."
-          },
-          {
-            role: "user",
-            content: [
-              {
-                type: "text",
-                text: "This is a photo of a bookshelf. I need you to identify ONLY the books that are clearly visible and legible in this image. Read the text directly from the book spines or covers.\n\nYour response should be a JSON object with these fields:\n\n1. 'bookTitles': An array containing ONLY the exact titles of books you can read with 100% certainty from the image. Do not include partial or guessed titles.\n\n2. 'isBookshelf': A boolean (true) if this shows multiple books on a shelf.\n\nIMPORTANT: Do not try to be helpful by guessing titles! Only include titles that you can read directly and completely from the image. Read each spine carefully - do not include books where you can only make out a few letters. For books with series names, include the complete title as shown on the spine."
-              },
-              {
-                type: "image_url", 
-                image_url: {
-                  url: `data:image/jpeg;base64,${base64Image}`
-                }
+    const response = await openai.chat.completions.create({
+      model: "gpt-4o", // the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
+      messages: [
+        {
+          role: "system",
+          content: "You are a precise book identification expert specializing in reading book spines on bookshelves. Your ONLY task is to identify the exact titles of books visible in the image. Never invent or guess titles. Only include titles where you can clearly read the complete title from the spine or cover. If you're uncertain about any title, exclude it completely."
+        },
+        {
+          role: "user",
+          content: [
+            {
+              type: "text",
+              text: "This is a photo of a bookshelf. I need you to identify ONLY the books that are clearly visible and legible in this image. Read the text directly from the book spines or covers.\n\nYour response should be a JSON object with these fields:\n\n1. 'bookTitles': An array containing ONLY the exact titles of books you can read with 100% certainty from the image. Do not include partial or guessed titles.\n\n2. 'isBookshelf': A boolean (true) if this shows multiple books on a shelf.\n\nIMPORTANT: Do not try to be helpful by guessing titles! Only include titles that you can read directly and completely from the image. Read each spine carefully - do not include books where you can only make out a few letters. For books with series names, include the complete title as shown on the spine."
+            },
+            {
+              type: "image_url", 
+              image_url: {
+                url: `data:image/jpeg;base64,${base64Image}`
               }
-            ]
-          }
-        ],
-        response_format: { type: "json_object" },
-        max_tokens: 800
-      });
-    } catch (apiError: any) {
-      log(`OpenAI API error: ${apiError?.message || String(apiError)}`, "vision");
-      
-      // Check for specific error types
-      if (apiError?.status === 429) {
-        log("OpenAI rate limit exceeded", "vision");
-        // Update rate limiter to prevent further requests
-        rateLimiter.increment('openai');
-        rateLimiter.increment('openai');
-      } else if (apiError?.status === 400) {
-        log("OpenAI 400 error - likely invalid image format or token limit issues", "vision");
-      } else if (apiError?.status === 401) {
-        log("OpenAI authentication error - check API key", "vision");
-      }
-      
-      // Fall back to Google Vision
-      return await fallbackToGoogleVision(base64Image);
-    }
+            }
+          ]
+        }
+      ],
+      response_format: { type: "json_object" },
+      max_tokens: 800
+    });
 
     // Increment the counter for successful API calls
     rateLimiter.increment('openai');
@@ -105,28 +85,9 @@ export async function analyzeBookshelfImage(base64Image: string): Promise<{
     let result;
     
     try {
-      // Add safety check for non-JSON responses
-      if (typeof content !== 'string' || content.trim() === '') {
-        log('Empty or invalid response from OpenAI', 'vision');
-        return await fallbackToGoogleVision(base64Image);
-      }
-      
-      // Check if content looks like an error message rather than JSON
-      if (content.startsWith('A server') || content.startsWith('Error') || !content.includes('{')) {
-        log(`OpenAI returned an error message instead of JSON: ${content.substring(0, 100)}...`, 'vision');
-        return await fallbackToGoogleVision(base64Image);
-      }
-      
       result = JSON.parse(content);
-      
-      // Validate the parsed result has the expected structure
-      if (!result || typeof result !== 'object' || (!Array.isArray(result.bookTitles) && result.bookTitles !== undefined)) {
-        log('OpenAI response missing expected structure', 'vision');
-        return await fallbackToGoogleVision(base64Image);
-      }
     } catch (error) {
       log(`Error parsing OpenAI response: ${error}`, "vision");
-      log(`Response content was: ${content.substring(0, 200)}...`, "vision");
       // Fallback to Google Vision if JSON parsing fails
       return await fallbackToGoogleVision(base64Image);
     }

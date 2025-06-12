@@ -1,14 +1,12 @@
 import 'dotenv/config';
 import { VercelRequest, VercelResponse } from '@vercel/node';
 import formidable from 'formidable';
-import type { Part, Fields } from 'formidable';
 import fs from 'node:fs/promises';
-import path from 'path';
 
-// Re-use existing server-side helpers using relative imports
-import { analyzeBookshelfImage } from '../../server/openai-vision.js';
-import { searchBooksByTitle } from '../../server/books.js';
-import { storage } from '../../server/storage.js';
+// Re-use existing server-side helpers so we don't duplicate business logic
+import { analyzeBookshelfImage } from '../../server/openai-vision';
+import { searchBooksByTitle } from '../../server/books';
+import { storage } from '../../server/storage';
 
 // Disable the default body parser so we can handle multipart/form-data ourselves
 export const config = {
@@ -51,71 +49,53 @@ function levenshteinDistance(str1: string, str2: string): number {
 
 // Parse the incoming `multipart/form-data` request and return the image buffer
 async function parseMultipart(req: VercelRequest): Promise<Buffer | undefined> {
-  return new Promise((resolve, reject) => {
-    // For serverless environments, use simpler approach without writing to disk
-    const form = formidable({
-      maxFileSize: 5 * 1024 * 1024, // 5MB limit
-      keepExtensions: true,
-      multiples: false,
-      // Don't write files to disk at all
-      uploadDir: undefined,
-    });
-    
-    // Track chunks as they come in
-    let imageChunks: Buffer[] = [];
-    let totalSize = 0;
-    
-    // Handle field data and file data separately
-    form.onPart = (part: any) => {
-      if (!part.originalFilename || !part.mimetype) {
-        // Standard field, not a file
-        form.handlePart(part);
-        return;
-      }
+  const form = formidable({ 
+    maxFileSize: 5 * 1024 * 1024, // 5 MB cap
+    keepExtensions: true,
+    // Use memory storage for serverless compatibility
+    fileWriteStreamHandler: () => {
+      const chunks: Buffer[] = [];
+      let fileSize = 0;
       
-      // This is a file part
-      if (part.name !== 'image') {
-        // Not the field we're looking for, ignore
-        part.on('data', () => {});
-        part.on('end', () => {});
-        return;
-      }
-      
-      // Handle our image file
-      part.on('data', (buffer: Buffer) => {
-        imageChunks.push(buffer);
-        totalSize += buffer.length;
-        
-        // Safety check: if image exceeds max size, abort
-        if (totalSize > 5 * 1024 * 1024) {
-          part.removeAllListeners();
-          reject(new Error('Image file exceeds 5MB limit'));
+      const writable = new (require('stream').Writable)({
+        write(chunk: Buffer, _encoding: string, callback: Function) {
+          chunks.push(chunk);
+          fileSize += chunk.length;
+          callback();
         }
       });
-      
-      part.on('end', () => {
-        // Finished receiving the file
-      });
-      
-      part.on('error', (err: Error) => {
-        reject(err);
-      });
-    };
 
-    // Parse the request
-    form.parse(req, (err: Error | null, _fields: any) => {
-      if (err) {
-        return reject(err);
-      }
+      writable.data = () => {
+        return Buffer.concat(chunks, fileSize);
+      };
+
+      return writable;
+    }
+  });
+
+  return new Promise((resolve, reject) => {
+    form.parse(req, async (err: any, _fields: any, files: any) => {
+      if (err) {return reject(err);}
+
+      const file = files.image as any;
+      if (!file) {return resolve(undefined);}
+
+      const picked = Array.isArray(file) ? file[0] : file;
       
-      // If no image chunks were collected, we didn't have an image
-      if (imageChunks.length === 0) {
-        return resolve(undefined);
+      try {
+        // Get buffer directly from the stream instead of reading from filesystem
+        if (picked._writeStream && typeof picked._writeStream.data === 'function') {
+          resolve(picked._writeStream.data());
+        } else if (picked.filepath) {
+          // Fallback to original method if needed
+          const data = await fs.readFile(picked.filepath);
+          resolve(data);
+        } else {
+          resolve(undefined);
+        }
+      } catch (readErr) {
+        reject(readErr);
       }
-      
-      // Combine chunks into a single buffer
-      const imageBuffer = Buffer.concat(imageChunks, totalSize);
-      return resolve(imageBuffer);
     });
   });
 }
