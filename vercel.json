@@ -10,12 +10,5 @@
     { "src": "/api/(.+)", "dest": "/api/index.cjs" },
     { "handle": "filesystem" },
     { "src": "/(.*)", "dest": "/index.html" }
-  ],
-  "functions": {
-    "api/*.cjs": {
-      "runtime": "nodejs18.x",
-      "memory": 1024,
-      "maxDuration": 30
-    }
-  }
+  ]
 } 
