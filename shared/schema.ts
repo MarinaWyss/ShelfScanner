@@ -42,10 +42,10 @@ const currentSchemaName = getSchemaName();
 
 // Log which schema is being used for debugging
 if (typeof console !== 'undefined') {
-  const context = process.env.VERCEL_ENV ? `Vercel ${process.env.VERCEL_ENV}` : 
-                  process.env.NODE_ENV === 'development' ? 'Local development' : 'Unknown';
-  const branch = process.env.VERCEL_GIT_COMMIT_REF || process.env.GIT_BRANCH || process.env.BRANCH || 'unknown';
-  console.log(`📊 Database Schema: "${currentSchemaName}" | Context: ${context} | Branch: ${branch}`);
+  const _context = process.env.VERCEL_ENV ? `Vercel ${process.env.VERCEL_ENV}` : 
+                process.env.NODE_ENV === 'development' ? 'Local development' : 'Unknown';
+  const _branch = process.env.VERCEL_GIT_COMMIT_REF || process.env.GIT_BRANCH || process.env.BRANCH || 'unknown';
+  // console.log(`📊 Database Schema: "${currentSchemaName}" | Context: ${_context} | Branch: ${_branch}`); // REMOVED: DB config may expose sensitive deployment info
 }
 
 export const appSchema = currentSchemaName === 'public' 

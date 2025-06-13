@@ -12,9 +12,6 @@ export default async function handler(req, res) {
   console.log('=== DIRECT RECOMMENDATIONS API CALLED ===');
   console.log('Method:', req.method);
   console.log('URL:', req.url);
-  console.log('Headers:', req.headers);
-  console.log('Query:', req.query);
-  console.log('Body:', req.body);
   
   // Handle CORS
   res.setHeader('Access-Control-Allow-Credentials', 'true');

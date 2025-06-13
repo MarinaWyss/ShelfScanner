@@ -12,9 +12,6 @@ export default async function handler(req, res) {
   console.log('=== BOOKS API CALLED ===');
   console.log('Method:', req.method);
   console.log('URL:', req.url);
-  console.log('Headers:', req.headers);
-  console.log('Query:', req.query);
-  console.log('Body:', req.body);
   
   // Handle CORS
   res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -49,7 +46,6 @@ export default async function handler(req, res) {
 
     if (req.method === 'POST') {
       try {
-        console.log('POST request body:', req.body);
         
         const userId = 1; // Default user ID
         
@@ -64,7 +60,7 @@ export default async function handler(req, res) {
           try {
             // Validate book data
             if (!bookData.title) {
-              console.log('Missing title for book:', bookData);
+              // console.log('Missing title for book:', bookData); // REMOVED: Book data may contain sensitive info
               continue;
             }
             

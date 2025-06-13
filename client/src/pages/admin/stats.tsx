@@ -64,13 +64,14 @@ export default function AdminStatsPage() {
           setIsAuthenticated(true);
         } else {
           // Redirect to admin page if not authenticated
-          setLocation('/admin');
+          window.location.href = '/admin';
         }
-      } catch (error) {
-        console.log('Error checking authentication:', error);
-        setLocation('/admin');
+      } catch {
+        // console.log('Error checking authentication:', error); // REMOVED: Auth errors may expose sensitive info
+        window.location.href = '/admin';
+      } finally {
+        setAuthChecked(true);
       }
-      setAuthChecked(true);
     };
     
     checkAuth();

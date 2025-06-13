@@ -18,11 +18,11 @@ export default function StatsPage() {
         const response = await fetch('/api/admin/check-auth');
         if (!response.ok) {
           // Redirect to admin login if not authenticated
-          setLocation('/admin');
+          window.location.href = '/admin';
         }
-      } catch (error) {
-        console.log('Error checking authentication:', error);
-        setLocation('/admin');
+      } catch {
+        // console.log('Error checking authentication:', error); // REMOVED: Auth errors may expose sensitive info
+        window.location.href = '/admin';
       }
     };
     

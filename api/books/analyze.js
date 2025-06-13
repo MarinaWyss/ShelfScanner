@@ -12,8 +12,6 @@ export default async function handler(req, res) {
   console.log('=== BOOKS ANALYZE API CALLED ===');
   console.log('Method:', req.method);
   console.log('URL:', req.url);
-  console.log('Headers:', req.headers);
-  console.log('Query:', req.query);
   console.log('Content-Type:', req.headers['content-type']);
   
   // Handle CORS
@@ -78,7 +76,6 @@ export default async function handler(req, res) {
       });
     });
     
-    console.log('Form parse result:', parseResult);
     const { files } = parseResult;
     console.log('Form parsed successfully, files:', Object.keys(files));
     
@@ -127,7 +124,6 @@ export default async function handler(req, res) {
       
       if (deviceId) {
         preferences = await storage.getPreferencesByDeviceId(deviceId);
-        console.log('Retrieved preferences for deviceId:', deviceId);
       } else {
         console.log('No device ID found, proceeding without preferences');
       }

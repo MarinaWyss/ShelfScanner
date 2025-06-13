@@ -116,12 +116,9 @@ export default function Books() {
         books: detectedBooks,
         preferences: userPreferences
       });
-      return response.json();
-    },
-    onSuccess: (data) => {
-      console.log("Successfully created recommendations:", data);
+      const data = await response.json();
       
-      // Store the recommendations directly instead of relying on a GET request
+      
       setCurrentRecommendations(data);
       
       if (data && (Array.isArray(data) && data.length > 0)) {
