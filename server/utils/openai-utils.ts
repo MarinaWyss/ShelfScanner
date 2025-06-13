@@ -5,7 +5,7 @@
 import OpenAI from "openai";
 import { z } from "zod";
 import { zodResponseFormat } from "openai/helpers/zod";
-import { log } from "../vite.js";
+import { log } from "../simple-logger.js";
 import { rateLimiter } from "../rate-limiter.js";
 
 // Configure OpenAI client

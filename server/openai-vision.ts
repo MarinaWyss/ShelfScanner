@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import { log } from "./vite.js";
+import { log } from "./simple-logger.js";
 import { rateLimiter } from "./rate-limiter.js";
 import { analyzeImage } from "./vision.js"; // Import Google Vision fallback
 

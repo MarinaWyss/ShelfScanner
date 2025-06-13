@@ -1,4 +1,4 @@
-import { log } from '../vite.js';
+import { log } from '../simple-logger.js';
 
 /**
  * Sanitize a device ID for logging - only show first 4 and last 4 characters

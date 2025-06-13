@@ -1,7 +1,7 @@
 import { Router, Request, Response } from "express";
 import { getOpenAIRecommendations } from "./openai-recommendations.js";
 import { getOpenAIDescription } from "./openai-descriptions.js";
-import { log } from './vite.js';
+import { log } from './simple-logger.js';
 
 const router = Router();
 

@@ -12,7 +12,7 @@ import multer from "multer";
 import { insertPreferenceSchema, insertSavedBookSchema } from "../shared/schema.js";
 import { getApiUsageStats } from "./api-stats.js";
 import { logDeviceOperation, logBookOperation } from './utils/safe-logger.js';
-import { log } from './vite.js';
+import { log } from './simple-logger.js';
 import { Router } from "express";
 import { z } from "zod";
 

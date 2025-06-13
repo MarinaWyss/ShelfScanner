@@ -1,10 +1,10 @@
-import { db } from './db';
-import { bookCache, type InsertBookCache, type BookCache } from '@shared/schema';
+import { db } from './db.js';
+import { bookCache, type InsertBookCache, type BookCache } from '../shared/schema.js';
 import { eq, and, or, sql, lte, gte, isNotNull, not, isNull } from 'drizzle-orm';
-import { getEstimatedBookRating } from './utils/book-utils';
-import { log } from './vite';
+import { getEstimatedBookRating } from './utils/book-utils.js';
+import { log } from './simple-logger.js';
 import OpenAI from "openai";
-import { rateLimiter } from './rate-limiter';
+import { rateLimiter } from './rate-limiter.js';
 
 // Configure OpenAI client
 const openai = new OpenAI({ 

@@ -1,6 +1,6 @@
-import { log } from './vite';
-import { logApiUsage, LogLevel, logEvent } from './monitor';
-import { sendRateLimitAlert } from './notification';
+import { log } from './simple-logger.js';
+import { logApiUsage, LogLevel, logEvent } from './monitor.js';
+import { sendRateLimitAlert } from './notification.js';
 
 /**
  * Simple in-memory rate limiter to control API usage

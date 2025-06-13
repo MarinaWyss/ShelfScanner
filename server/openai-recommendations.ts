@@ -1,6 +1,6 @@
 import OpenAI from "openai";
-import { log } from './vite';
-import { rateLimiter } from './rate-limiter';
+import { log } from './simple-logger.js';
+import { rateLimiter } from './rate-limiter.js';
 
 // Configure OpenAI client
 const openai = new OpenAI({ 
