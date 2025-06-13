@@ -43,6 +43,38 @@
   --sidebar-ring: 214 100% 50%;
 }
 
+.dark {
+  --background: 224 71% 4%;
+  --foreground: 213 31% 91%;
+  --muted: 223 47% 11%;
+  --muted-foreground: 215.4 16.3% 70%;
+  --popover: 224 71% 4%;
+  --popover-foreground: 215 20.2% 85%;
+  --card: 224 71% 4%;
+  --card-foreground: 213 31% 91%;
+  --border: 215 27.9% 15.5%;
+  --input: 215 27.9% 15.5%;
+  --primary: 265 89% 58%; /* Keep the same violet */
+  --primary-foreground: 210 40% 98%;
+  --secondary: 223 47% 11%;
+  --secondary-foreground: 210 40% 98%;
+  --accent: 215 27.9% 15.5%;
+  --accent-foreground: 210 40% 98%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+  --ring: 263 70% 50%;
+  
+  /* Sidebar colors for dark theme */
+  --sidebar-background: 224 71% 4%;
+  --sidebar-foreground: 213 31% 91%;
+  --sidebar-primary: 263 70% 50%;
+  --sidebar-primary-foreground: 210 40% 98%;
+  --sidebar-accent: 215 27.9% 15.5%; 
+  --sidebar-accent-foreground: 210 40% 98%;
+  --sidebar-border: 215 27.9% 15.5%;
+  --sidebar-ring: 263 70% 50%;
+}
+
 @layer base {
   * {
     @apply border-border;
