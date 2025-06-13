@@ -96,7 +96,10 @@ export default function RecommendationsStep({ recommendations, isLoading, goodre
         if (!response.ok) {
           throw new Error('Failed to fetch saved books');
         }
-        const savedBooks = await response.json();
+        const data = await response.json();
+        
+        // Handle the API response format which returns { books: [], deviceId: string }
+        const savedBooks = Array.isArray(data) ? data : (data.books || []);
         
         // Find the book to remove by title and author
         const bookToRemove = savedBooks.find((saved: {title: string, author: string}) => 
@@ -104,7 +107,13 @@ export default function RecommendationsStep({ recommendations, isLoading, goodre
         );
         
         if (bookToRemove) {
-          const deleteResponse = await fetch(`/api/saved-books/${bookToRemove.id}`, {
+          // Get deviceId from cookies
+          const deviceId = document.cookie
+            .split('; ')
+            .find(row => row.startsWith('deviceId='))
+            ?.split('=')[1];
+            
+          const deleteResponse = await fetch(`/api/saved-books?bookId=${bookToRemove.id}&deviceId=${deviceId}`, {
             method: 'DELETE'
           } as RequestInit);
           
@@ -123,6 +132,12 @@ export default function RecommendationsStep({ recommendations, isLoading, goodre
         }
       } else {
         // Save book to reading list
+        // Get deviceId from cookies
+        const deviceId = document.cookie
+          .split('; ')
+          .find(row => row.startsWith('deviceId='))
+          ?.split('=')[1];
+          
         const saveResponse = await fetch('/api/saved-books', {
           method: 'POST',
           headers: {
@@ -134,6 +149,7 @@ export default function RecommendationsStep({ recommendations, isLoading, goodre
             coverUrl: book.coverUrl,
             rating: book.rating,
             summary: book.summary,
+            deviceId: deviceId,
           }),
         } as RequestInit);
 

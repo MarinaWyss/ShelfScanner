@@ -43,14 +43,18 @@ export default function SavedBooks() {
           throw new Error(`Failed to fetch books: ${response.status}`);
         }
         
-        const books = await response.json();
-        console.log("Retrieved saved books:", books);
+        const data = await response.json();
+        console.log("Retrieved saved books response:", data);
         
-        if (Array.isArray(books)) {
-          setSavedBooks(books);
+        // Handle the API response format which returns { books: [], deviceId: string }
+        if (data && Array.isArray(data.books)) {
+          setSavedBooks(data.books);
           // No error message needed for empty arrays - it's valid to have no saved books
+        } else if (Array.isArray(data)) {
+          // Fallback for direct array response (legacy compatibility)
+          setSavedBooks(data);
         } else {
-          console.log("Unexpected response format:", books);
+          console.log("Unexpected response format:", data);
           setError("Received invalid data format from server");
         }
       } catch (err) {
@@ -67,7 +71,13 @@ export default function SavedBooks() {
   // Function to remove a book from saved list
   const removeBook = async (id: number) => {
     try {
-      const response = await fetch(`/api/saved-books/${id}`, {
+      // Get deviceId from cookies
+      const deviceId = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('deviceId='))
+        ?.split('=')[1];
+        
+      const response = await fetch(`/api/saved-books?bookId=${id}&deviceId=${deviceId}`, {
         method: 'DELETE',
       });
       
