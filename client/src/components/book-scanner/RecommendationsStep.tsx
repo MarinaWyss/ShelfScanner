@@ -3,6 +3,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useState, useEffect } from "react";
 import { useToast } from "@/hooks/use-toast";
 import StarRating from "@/components/ui/star-rating";
+import DonationButton from "@/components/ui/DonationButton";
+import DonationModal from "@/components/ui/DonationModal";
 
 import AffiliateDisclosure from "@/components/ui/affiliate-disclosure";
 import { ChevronDown, ChevronUp } from "lucide-react";
@@ -32,6 +34,7 @@ export default function RecommendationsStep({ recommendations, isLoading = false
   const [savingBookIds, setSavingBookIds] = useState<number[]>([]);
   const [savedBookIds, setSavedBookIds] = useState<number[]>([]);
   const [expandedBooks, setExpandedBooks] = useState<number[]>([]);
+  const [donationModalOpen, setDonationModalOpen] = useState(false);
   const { toast } = useToast();
   
   // Toggle expanded state of a book description
@@ -583,7 +586,31 @@ export default function RecommendationsStep({ recommendations, isLoading = false
         </div>
       )}
       
+      {/* Donation Section - Show when recommendations are present */}
+      {!isLoading && recommendations.length > 0 && (
+        <div className="mt-12 bg-gradient-to-br from-pink-50 to-purple-50 dark:from-pink-900/20 dark:to-purple-900/20 rounded-xl p-8 text-center border border-pink-200 dark:border-pink-800">
+          <div className="max-w-md mx-auto">
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">
+              Found the perfect book? 🎉
+            </h3>
+            <p className="text-gray-600 dark:text-gray-300 text-sm mb-6 leading-relaxed">
+              Support ShelfScanner and help us recommend more amazing books! 
+              Your contribution keeps our AI recommendations improving.
+            </p>
+            <DonationButton 
+              onClick={() => setDonationModalOpen(true)} 
+              variant="default"
+              className="mx-auto"
+            />
+          </div>
+        </div>
+      )}
 
+      {/* Donation Modal */}
+      <DonationModal 
+        isOpen={donationModalOpen} 
+        onClose={() => setDonationModalOpen(false)} 
+      />
     </div>
   );
 }
