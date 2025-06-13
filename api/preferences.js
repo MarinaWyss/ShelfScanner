@@ -30,8 +30,7 @@ export default async function handler(req, res) {
     // Import storage dynamically to avoid issues with module resolution
     const { storage } = await import('../server/storage.js');
     const { insertPreferenceSchema } = await import('../shared/schema.js');
-    const { logDeviceOperation } = await import('../server/utils/safe-logger.js');
-    const { log } = await import('../server/simple-logger.js');
+    const { logInfo, logError } = await import('../server/simple-error-logger.js');
 
     console.log('Modules imported successfully');
 
@@ -47,9 +46,13 @@ export default async function handler(req, res) {
         const preferences = await storage.getPreferencesByDeviceId(deviceId);
         console.log('Retrieved preferences:', preferences);
         
-        await logDeviceOperation(deviceId, 'preferences_get', { 
-          found: preferences ? 'yes' : 'no',
-          count: preferences ? 1 : 0 
+        logInfo('Preferences retrieved', {
+          deviceId,
+          action: 'preferences_get',
+          metadata: { 
+            found: preferences ? 'yes' : 'no',
+            count: preferences ? 1 : 0 
+          }
         });
         
         return res.status(200).json({ 
@@ -98,12 +101,10 @@ export default async function handler(req, res) {
         const result = await storage.createPreference(preferenceData);
         console.log('Save result:', result);
         
-        await logDeviceOperation(preferenceData.deviceId, 'preferences_save', { 
-          success: 'yes'
-        });
-        
-        log('Preference saved successfully', { 
-          deviceId: preferenceData.deviceId
+        logInfo('Preference saved successfully', {
+          deviceId: preferenceData.deviceId,
+          action: 'preferences_save',
+          metadata: { success: 'yes' }
         });
         
         return res.status(200).json({ 
@@ -115,17 +116,14 @@ export default async function handler(req, res) {
       } catch (error) {
         console.error('POST preferences error:', error);
         
-        // Try to log the device operation even on error
-        try {
-          const deviceId = req.body?.deviceId;
-          if (deviceId) {
-            await logDeviceOperation(deviceId, 'preferences_save', { 
-              success: 'no',
-              error: error.message 
-            });
-          }
-        } catch (logError) {
-          console.error('Failed to log error operation:', logError);
+        // Log the error
+        const deviceId = req.body?.deviceId;
+        if (deviceId) {
+          logError('Failed to save preference', error, {
+            deviceId,
+            action: 'preferences_save',
+            metadata: { success: 'no' }
+          });
         }
         
         return res.status(500).json({ error: 'Failed to save preference' });
