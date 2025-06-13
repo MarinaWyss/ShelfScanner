@@ -104,16 +104,28 @@ export default async function handler(req, res) {
               
               // Now cache/update the book with any new content
               const bookId = `${bookData.title}-${bookData.author || "Unknown"}`.toLowerCase().replace(/[^a-z0-9]/g, '-');
-              let cachedBook = await storage.cacheBook({
-                title: bookData.title,
-                author: bookData.author || "Unknown",
-                isbn: bookData.isbn || null,
-                coverUrl: bookData.coverUrl || null,
-                rating: rating, // Include the rating (cached or new)
-                summary: summary, // Include the summary (cached or new)
-                bookId, // Add required bookId field
-                expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) // 1 year expiration
-              });
+              let cachedBook;
+              
+              // If no new content needed, just use the existing book without updating
+              if (!needsRating && !needsSummary) {
+                cachedBook = existingBook; // Use existing book without updating
+                log(`Using all cached content for "${bookData.title}" - no save needed`, 'books');
+              } else {
+                // Only update if we have new content
+                cachedBook = await storage.cacheBook({
+                  title: bookData.title,
+                  author: bookData.author || "Unknown",
+                  isbn: bookData.isbn || null,
+                  coverUrl: bookData.coverUrl || null,
+                  rating: rating, // Include the rating (cached or new)
+                  summary: summary, // Include the summary (cached or new)
+                  source: 'openai', // Explicitly set source to openai since we have OpenAI content
+                  bookId, // Add required bookId field
+                  expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) // 1 year expiration
+                });
+                log(`Generated OpenAI content for "${bookData.title}": rating=${needsRating ? 'new' : 'cached'}, summary=${needsSummary ? 'new' : 'cached'}`, 'books');
+                log(`Saved/updated book: "${cachedBook.title}" by ${cachedBook.author}`, 'books');
+              }
               
               savedBooks.push({
                 id: cachedBook.id,
@@ -125,13 +137,7 @@ export default async function handler(req, res) {
                 metadata: cachedBook.metadata
               });
               
-              if (needsRating || needsSummary) {
-                log(`Generated OpenAI content for "${bookData.title}": rating=${needsRating ? 'new' : 'cached'}, summary=${needsSummary ? 'new' : 'cached'}`, 'books');
-                log(`Saved/updated book: "${cachedBook.title}" by ${cachedBook.author}`, 'books');
-              } else {
-                log(`Using all cached content for "${bookData.title}" - no save needed`, 'books');
-                // Still add to savedBooks for API response, but don't log as "saved"
-              }
+              // Logging is now handled above
               
             } catch (openaiError) {
               // Don't fail the entire book save if OpenAI fails

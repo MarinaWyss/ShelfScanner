@@ -78,6 +78,11 @@ router.post("/recommendations", async (req: Request, res: Response) => {
           const rating = await bookCacheService.getEnhancedRating(book.title, book.author, isbn);
           log(`Retrieved rating for recommendation "${book.title}": ${rating}`, "openai");
           
+          // Debug the rating value
+          if (!rating || isNaN(parseFloat(rating))) {
+            log(`WARNING: Invalid rating for "${book.title}": ${rating}`, "openai");
+          }
+          
           // Use the match reason provided directly from the recommendation
           // This is now generated within the recommendation prompt and should be more focused
           const matchReason = book.matchReason || "This book matches elements of your reading preferences.";
@@ -115,6 +120,9 @@ router.post("/recommendations", async (req: Request, res: Response) => {
             matchReason: matchReason || "This book aligns with your reading preferences.", // Always use our fresh match reason
             fromAI: true
           };
+          
+          // Log the final enhanced book details for debugging
+          log(`Final enhanced book: ${book.title}, rating=${enhancedBook.rating}, typeof rating=${typeof enhancedBook.rating}`, "openai");
           
           log(`Final recommendation for "${book.title}": rating=${enhancedBook.rating}, summary=${enhancedBook.summary ? 'yes' : 'no'}`, "openai");
           return enhancedBook;
