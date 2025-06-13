@@ -67,8 +67,19 @@ export default async function handler(req, res) {
       keepExtensions: true,
     });
 
-    const [fields, files] = await form.parse(req);
-    console.log('Form parsed successfully');
+    const parseResult = await form.parse(req);
+    console.log('Form parse result:', parseResult);
+    
+    // Handle different formidable versions/formats
+    let fields, files;
+    if (Array.isArray(parseResult)) {
+      [fields, files] = parseResult;
+    } else {
+      fields = parseResult.fields || {};
+      files = parseResult.files || {};
+    }
+    
+    console.log('Form parsed successfully, files:', Object.keys(files));
     
     const file = files.image;
     if (!file) {
