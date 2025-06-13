@@ -49,7 +49,7 @@ router.post("/recommendations", async (req: Request, res: Response) => {
         const cachedBook = await storage.findBookInCache(book.title, book.author);
         
         if (cachedBook && cachedBook.source === 'openai') {
-          log(`Using cached OpenAI data for input book "${book.title}"`, "openai");
+          log(`Using cached OpenAI data for input book "${book.title}": rating=${cachedBook.rating}, summary=${cachedBook.summary ? 'yes' : 'no'}`, "openai");
           
           // Use cached data to enhance the input book
           return {
@@ -57,6 +57,8 @@ router.post("/recommendations", async (req: Request, res: Response) => {
             rating: cachedBook.rating || book.rating,
             summary: cachedBook.summary || book.summary
           };
+        } else {
+          log(`No cached OpenAI data found for input book "${book.title}"`, "openai");
         }
         
         return book;
@@ -95,7 +97,15 @@ router.post("/recommendations", async (req: Request, res: Response) => {
           const { bookCacheService } = await import('./book-cache-service.js');
           
           // First check if we have this recommendation in cache with OpenAI data
-          const cachedBook = await storage.findBookInCache(book.title, book.author);
+          // Sometimes there's a race condition where books are being saved concurrently
+          let cachedBook = await storage.findBookInCache(book.title, book.author);
+          
+          // If no cached book found, wait a moment and try again (handles race condition)
+          if (!cachedBook || cachedBook.source !== 'openai') {
+            log(`No cached OpenAI data found for "${book.title}", waiting and retrying...`, "openai");
+            await new Promise(resolve => setTimeout(resolve, 1000)); // Wait 1 second
+            cachedBook = await storage.findBookInCache(book.title, book.author);
+          }
           
           let description = '';
           let rating = '';
@@ -121,12 +131,16 @@ router.post("/recommendations", async (req: Request, res: Response) => {
           if (!description || description.length < 100) {
             description = await getOpenAIDescription(book.title, book.author);
             log(`Got fresh OpenAI description for recommendation "${book.title}"`, "openai");
+          } else {
+            log(`Using cached description for recommendation "${book.title}"`, "openai");
           }
           
           // If we still don't have a rating, get it from OpenAI
           if (!rating || rating === "0") {
             rating = await bookCacheService.getEnhancedRating(book.title, book.author, isbn);
             log(`Got fresh OpenAI rating for recommendation "${book.title}": ${rating}`, "openai");
+          } else {
+            log(`Using cached rating for recommendation "${book.title}": ${rating}`, "openai");
           }
           
           // Debug the rating value
@@ -163,19 +177,22 @@ router.post("/recommendations", async (req: Request, res: Response) => {
             log(`Cached OpenAI data for recommendation "${book.title}"`, "openai");
           }
           
-          // Return the enhanced recommendation with fresh OpenAI data
+          // Return the enhanced recommendation with OpenAI data
           const enhancedBook = {
             title: book.title,
             author: book.author,
             coverUrl: coverUrl,
-            summary: description || "A compelling book that explores important themes and ideas.", // Always use our fresh OpenAI description
-            rating: rating || '4.0', // Use our fresh OpenAI rating
+            summary: description || "A compelling book that explores important themes and ideas.",
+            rating: rating || '4.0', // Use the rating (cached or fresh)
             isbn: isbn,
             categories: book.categories || [],
             matchScore: (book as any).matchScore || 75, // Default to 75 if no score available
-            matchReason: matchReason || "This book aligns with your reading preferences.", // Always use our fresh match reason
+            matchReason: matchReason || "This book aligns with your reading preferences.",
             fromAI: true
           };
+          
+          // Log the final book data for debugging
+          log(`Final enhanced recommendation: "${book.title}" - rating=${enhancedBook.rating}, summary=${enhancedBook.summary ? 'present' : 'missing'}`, "openai");
           
           // Log the final enhanced book details for debugging
           log(`Final enhanced book: ${book.title}, rating=${enhancedBook.rating}, typeof rating=${typeof enhancedBook.rating}`, "openai");
