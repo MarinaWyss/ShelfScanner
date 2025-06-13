@@ -24,11 +24,11 @@ interface Recommendation {
 
 interface RecommendationsStepProps {
   recommendations: Recommendation[];
-  isLoading: boolean;
+  isLoading?: boolean;
   goodreadsData?: any[];
 }
 
-export default function RecommendationsStep({ recommendations, isLoading, goodreadsData }: RecommendationsStepProps) {
+export default function RecommendationsStep({ recommendations, isLoading = false, goodreadsData }: RecommendationsStepProps) {
   const [savingBookIds, setSavingBookIds] = useState<number[]>([]);
   const [savedBookIds, setSavedBookIds] = useState<number[]>([]);
   const [expandedBooks, setExpandedBooks] = useState<number[]>([]);

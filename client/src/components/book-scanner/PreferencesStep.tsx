@@ -366,188 +366,119 @@ export default function PreferencesStep({ preferences, onSubmit, isLoading }: Pr
   };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h3 className="text-lg font-semibold mb-4 text-foreground">Tell us about your reading preferences</h3>
+    <div>
+      <div className="mb-6">
+        <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Tell us about your reading preferences</h2>
+        <p className="text-gray-600 dark:text-gray-300">Select genres that interest you to help us provide better recommendations.</p>
+      </div>
 
-        {/* Genres */}
-        <div className="mb-6">
-          <Label className="block text-sm font-medium text-foreground mb-2">
-            What genres do you enjoy?
-          </Label>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-            {allGenres.map(genre => (
-              <button
-                key={genre}
-                type="button"
-                onClick={() => toggleGenre(genre)}
-                className={`px-3 py-2 border rounded-md text-sm font-medium transition-colors ${
-                  selectedGenres.includes(genre)
-                    ? 'bg-violet-50 text-violet-600 border-violet-200'
-                    : 'bg-gray-50 text-gray-700 border-gray-200 hover:bg-gray-100'
-                }`}
-              >
-                {genre}
-              </button>
-            ))}
-          </div>
+      <div className="mb-8">
+        <Label className="block mb-2 font-medium text-gray-900 dark:text-white">Select your favorite genres</Label>
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+          {allGenres.map((genre) => (
+            <button
+              key={genre}
+              type="button"
+              onClick={() => toggleGenre(genre)}
+              className={`h-10 px-4 text-sm border rounded-md text-left transition-colors ${
+                selectedGenres.includes(genre)
+                  ? 'bg-violet-100 border-violet-300 text-violet-900 dark:bg-violet-900 dark:border-violet-700 dark:text-violet-100'
+                  : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+              }`}
+            >
+              {genre}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="mb-8">
+        <Label htmlFor="author-input" className="block mb-2 font-medium text-gray-900 dark:text-white">Add favorite authors (optional)</Label>
+        <div className="flex gap-3">
+          <input
+            id="author-input"
+            type="text"
+            value={newAuthor}
+            onChange={(e) => setNewAuthor(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && addAuthor()}
+            className="flex-1 h-10 px-3 border border-gray-200 dark:border-gray-700 rounded-md text-gray-900 dark:text-white bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent"
+            placeholder="Type an author's name"
+          />
+          <Button
+            type="button"
+            onClick={addAuthor}
+            variant="outline"
+            className="border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300"
+          >
+            Add
+          </Button>
         </div>
         
-        {/* Goodreads Import */}
-        <Card className="p-4 mb-6 border-gray-200 bg-gray-50">
-          <div className="flex flex-col">
-            <Label className="block text-sm font-medium text-gray-900 mb-2">
-              Import your Goodreads library (Optional)
-            </Label>
-            
-            <p className="text-sm text-gray-600 mb-3">
-              Upload your Goodreads export to quickly set your preferences based on your reading history.
-            </p>
-            
-            <div className="flex items-center">
-              <div className="relative cursor-pointer">
-                <Button 
-                  variant="outline" 
-                  disabled={uploading}
-                  className="border-slate-600 text-foreground hover:bg-slate-700"
-                  onClick={() => {
-                    // Find the input element and trigger a click
-                    const fileInput = document.getElementById('goodreads-csv-upload');
-                    if (fileInput) {
-                      fileInput.click();
-                    }
-                  }}
+        {authors.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {authors.map(author => (
+              <div key={author} className="bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 px-3 py-1 rounded-full text-sm flex items-center">
+                {author}
+                <button
+                  type="button"
+                  onClick={() => removeAuthor(author)}
+                  className="ml-2 text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-white"
                 >
-                  {uploading ? (
-                    <>
-                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-foreground" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                      </svg>
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      <svg 
-                        xmlns="http://www.w3.org/2000/svg" 
-                        width="24" 
-                        height="24" 
-                        viewBox="0 0 24 24" 
-                        fill="none" 
-                        stroke="currentColor" 
-                        strokeWidth="2" 
-                        strokeLinecap="round" 
-                        strokeLinejoin="round" 
-                        className="h-4 w-4 mr-2"
-                      >
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                        <polyline points="17 8 12 3 7 8" />
-                        <line x1="12" y1="3" x2="12" y2="15" />
-                      </svg>
-                      Upload Goodreads CSV
-                    </>
-                  )}
-                </Button>
-                <input 
-                  id="goodreads-csv-upload"
-                  type="file" 
-                  className="sr-only" 
-                  accept=".csv" 
-                  onChange={handleGoodreadsUpload}
-                  disabled={uploading}
-                />
-              </div>
-              
-              {goodreadsData && (
-                <span className="ml-3 text-sm text-green-400 flex items-center">
                   <svg 
                     xmlns="http://www.w3.org/2000/svg" 
-                    width="24" 
-                    height="24" 
+                    width="16" 
+                    height="16" 
                     viewBox="0 0 24 24" 
                     fill="none" 
                     stroke="currentColor" 
                     strokeWidth="2" 
                     strokeLinecap="round" 
                     strokeLinejoin="round" 
-                    className="h-4 w-4 mr-1"
+                    className="h-3 w-3"
                   >
-                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                    <polyline points="22 4 12 14.01 9 11.01" />
+                    <path d="M18 6 6 18" />
+                    <path d="m6 6 12 12" />
                   </svg>
-                  Imported {goodreadsData.length} books
-                </span>
-              )}
-            </div>
-
-            <div className="mt-2 text-xs text-gray-600">
-              <p><a href="https://www.goodreads.com/review/import" className="text-violet-600 underline" target="_blank" rel="noopener noreferrer">Export your Goodreads library</a> by going to "Import and Export" in your account settings</p>
-              <p className="mt-1 text-amber-600">Note: The Goodreads mobile app does not allow data export. Unfortunately data export must happen on desktop.</p>
-            </div>
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+      
+      <div className="mb-8">
+        <Card className="p-4 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700">
+          <div className="mb-2">
+            <h3 className="font-medium text-gray-900 dark:text-white mb-1">Import your Goodreads library (Optional)</h3>
+            <p className="text-sm text-gray-600 dark:text-gray-300">Upload your Goodreads export to quickly set your preferences based on your reading history.</p>
+          </div>
+          <div className="mt-3">
+            <label className="inline-block">
+              <span className="sr-only">Choose file</span>
+              <input 
+                type="file" 
+                accept=".csv"
+                onChange={handleGoodreadsUpload}
+                className="block w-full text-sm text-gray-500 dark:text-gray-400
+                  file:mr-4 file:py-2 file:px-4
+                  file:rounded-md file:border-0
+                  file:text-sm file:font-medium
+                  file:bg-violet-50 file:text-violet-700
+                  dark:file:bg-violet-900/30 dark:file:text-violet-300
+                  hover:file:bg-violet-100 dark:hover:file:bg-violet-800/30"
+              />
+            </label>
+            {uploading && <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">Processing your file...</p>}
+            {goodreadsData && <p className="mt-2 text-sm text-violet-600 dark:text-violet-400">✓ Goodreads data imported successfully!</p>}
           </div>
         </Card>
-
-        {/* Favorite Authors */}
-        <div>
-          <Label className="block text-sm font-medium text-gray-900 mb-2">
-            Any favorite authors? (Optional)
-          </Label>
-          <div className="flex">
-            <input
-              type="text"
-              value={newAuthor}
-              onChange={e => setNewAuthor(e.target.value)}
-              placeholder="Enter author name"
-              className="flex-1 px-3 py-2 border bg-white border-gray-200 text-gray-900 rounded-l-md focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-violet-500"
-            />
-            <button
-              type="button"
-              onClick={addAuthor}
-              disabled={!newAuthor.trim()}
-              className="bg-violet-600 text-white px-4 py-2 rounded-r-md hover:bg-violet-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Add
-            </button>
-          </div>
-          
-          {authors.length > 0 && (
-            <div className="mt-3 flex flex-wrap gap-2">
-              {authors.map(author => (
-                <div key={author} className="bg-gray-200 text-gray-800 px-3 py-1 rounded-full text-sm flex items-center">
-                  {author}
-                  <button
-                    type="button"
-                    onClick={() => removeAuthor(author)}
-                    className="ml-2 text-gray-500 hover:text-gray-800"
-                  >
-                    <svg 
-                      xmlns="http://www.w3.org/2000/svg" 
-                      width="16" 
-                      height="16" 
-                      viewBox="0 0 24 24" 
-                      fill="none" 
-                      stroke="currentColor" 
-                      strokeWidth="2" 
-                      strokeLinecap="round" 
-                      strokeLinejoin="round" 
-                      className="h-3 w-3"
-                    >
-                      <path d="M18 6 6 18" />
-                      <path d="m6 6 12 12" />
-                    </svg>
-                  </button>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
       </div>
       
       <div className="flex justify-end">
         <Button 
           onClick={handleSubmit}
           disabled={isLoading || selectedGenres.length === 0}
-          className="bg-violet-600 hover:bg-violet-700 text-white"
+          className="bg-violet-600 hover:bg-violet-700 dark:bg-violet-600 dark:hover:bg-violet-500 text-white"
         >
           {isLoading ? 'Saving...' : 'Continue'}
         </Button>
