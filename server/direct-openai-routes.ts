@@ -81,6 +81,7 @@ router.post("/recommendations", async (req: Request, res: Response) => {
       const enhancedRecommendations = await Promise.all(baseRecommendations.map(async (book) => {
         try {
           log(`Processing recommendation: "${book.title}" by ${book.author}`, "openai");
+          log(`Available books for matching: ${books.map(b => `"${b.title}" by ${b.author}`).join(', ')}`, "openai");
           
           // Find the original book from the user's list to get the cover URL
           const originalBook = books.find(b => 
@@ -101,29 +102,42 @@ router.post("/recommendations", async (req: Request, res: Response) => {
           const isbn = originalBook?.isbn || book.isbn || '';
           
           // Import bookCacheService for consistent cache access
-          const { bookCacheService } = await import('./book-cache-service.js');
-          
-          // First check if we have this recommendation in cache with OpenAI data
-          // Sometimes there's a race condition where books are being saved concurrently
-          log(`Checking cache for recommendation "${book.title}" by ${book.author}`, "openai");
-          let cachedBook = await bookCacheService.findInCache(book.title, book.author);
-          
-          // If no cached book found, wait a moment and try again (handles race condition)
-          if (!cachedBook || cachedBook.source !== 'openai') {
-            log(`No cached OpenAI data found for "${book.title}" (source: ${cachedBook?.source || 'none'}), waiting and retrying...`, "openai");
-            await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
-            cachedBook = await bookCacheService.findInCache(book.title, book.author);
-            if (cachedBook?.source === 'openai') {
-              log(`Found cached data after retry for "${book.title}": rating=${cachedBook.rating}, summary=${cachedBook.summary ? 'yes' : 'no'}`, "openai");
-            } else {
-              log(`Still no cached OpenAI data for "${book.title}" after retry (source: ${cachedBook?.source || 'none'})`, "openai");
-            }
-          } else {
-            log(`Found cached OpenAI data immediately for "${book.title}": rating=${cachedBook.rating}, summary=${cachedBook.summary ? 'yes' : 'no'}`, "openai");
-          }
-          
+          let cachedBook = null;
           let description = '';
           let rating = '';
+          
+          try {
+            log(`Importing bookCacheService...`, "openai");
+            const { bookCacheService } = await import('./book-cache-service.js');
+            log(`Successfully imported bookCacheService`, "openai");
+            
+            // First check if we have this recommendation in cache with OpenAI data
+            log(`Checking cache for recommendation "${book.title}" by ${book.author}`, "openai");
+            log(`About to call bookCacheService.findInCache with title="${book.title}", author="${book.author}"`, "openai");
+            cachedBook = await bookCacheService.findInCache(book.title, book.author);
+            log(`Cache lookup result: ${cachedBook ? `found book with source="${cachedBook.source}", rating="${cachedBook.rating}", summary="${cachedBook.summary ? 'present' : 'missing'}"` : 'no book found'}`, "openai");
+            
+            // If no cached book found, wait a moment and try again (handles race condition)
+            if (!cachedBook || cachedBook.source !== 'openai') {
+              log(`No cached OpenAI data found for "${book.title}" (source: ${cachedBook?.source || 'none'}), waiting and retrying...`, "openai");
+              await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
+              try {
+                cachedBook = await bookCacheService.findInCache(book.title, book.author);
+                if (cachedBook?.source === 'openai') {
+                  log(`Found cached data after retry for "${book.title}": rating=${cachedBook.rating}, summary=${cachedBook.summary ? 'yes' : 'no'}`, "openai");
+                } else {
+                  log(`Still no cached OpenAI data for "${book.title}" after retry (source: ${cachedBook?.source || 'none'})`, "openai");
+                }
+              } catch (retryError) {
+                log(`Error in cache retry lookup: ${retryError instanceof Error ? retryError.message : String(retryError)}`, "openai");
+              }
+            } else {
+              log(`Found cached OpenAI data immediately for "${book.title}": rating=${cachedBook.rating}, summary=${cachedBook.summary ? 'yes' : 'no'}`, "openai");
+            }
+          } catch (error) {
+            log(`Error in cache lookup: ${error instanceof Error ? error.message : String(error)}`, "openai");
+            log(`Error stack: ${error instanceof Error ? error.stack : 'No stack trace'}`, "openai");
+          }
           
           if (cachedBook && cachedBook.source === 'openai') {
             // Use cached OpenAI data if available

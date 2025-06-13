@@ -64,116 +64,58 @@ export default async function handler(req, res) {
               continue;
             }
             
-            // First, check if this book already exists and has all content
+            // Simply find the existing cached book (it should already exist from the detection phase)
             try {
               const { bookCacheService } = await import('../server/book-cache-service.js');
               
-              // Check if this book already has OpenAI content
-              const existingBook = await bookCacheService.findInCache(bookData.title, bookData.author || "Unknown");
-              
-              let needsRating = true;
-              let needsSummary = true;
-              
-              if (existingBook) {
-                // Check if we already have a valid rating
-                if (existingBook.rating && parseFloat(existingBook.rating) >= 1.0 && parseFloat(existingBook.rating) <= 5.0) {
-                  needsRating = false;
-                  log(`Book "${bookData.title}" already has cached rating: ${existingBook.rating}`, 'books');
-                }
-                
-                // Check if we already have a valid summary
-                if (existingBook.summary && existingBook.summary.length > 50) {
-                  needsSummary = false;
-                  log(`Book "${bookData.title}" already has cached summary`, 'books');
-                }
-              }
-              
-              // Only generate rating if needed
-              let rating = existingBook?.rating;
-              if (needsRating) {
-                rating = await bookCacheService.getEnhancedRating(bookData.title, bookData.author || "Unknown", bookData.isbn);
-                log(`Generated new rating for "${bookData.title}": ${rating}`, 'books');
-              }
-              
-              // Only generate summary if needed
-              let summary = existingBook?.summary;
-              if (needsSummary) {
-                summary = await bookCacheService.getEnhancedSummary(bookData.title, bookData.author || "Unknown", bookData.isbn);
-                log(`Generated new summary for "${bookData.title}": ${summary ? 'yes' : 'no'}`, 'books');
-              }
-              
-              // Now cache/update the book with any new content
-              const bookId = `${bookData.title}-${bookData.author || "Unknown"}`.toLowerCase().replace(/[^a-z0-9]/g, '-');
-              let cachedBook;
-              
-              // The BookCacheService has already handled caching during getEnhancedRating/getEnhancedSummary
-              // So we just need to get the final cached book data
-              cachedBook = await bookCacheService.findInCache(bookData.title, bookData.author || "Unknown") || existingBook;
+              // Find the existing cached book
+              const cachedBook = await bookCacheService.findInCache(bookData.title, bookData.author || "Unknown");
               
               if (cachedBook) {
-                log(`Using cached book data for "${bookData.title}": rating=${cachedBook.rating}, summary=${cachedBook.summary ? 'yes' : 'no'}`, 'books');
+                log(`Found cached book data for "${bookData.title}": rating=${cachedBook.rating}, summary=${cachedBook.summary ? 'yes' : 'no'}`, 'books');
+                
+                savedBooks.push({
+                  id: cachedBook.id,
+                  userId,
+                  title: cachedBook.title,
+                  author: cachedBook.author,
+                  isbn: cachedBook.isbn,
+                  coverUrl: cachedBook.coverUrl,
+                  rating: cachedBook.rating || '', // Include the rating
+                  summary: cachedBook.summary || '', // Include the summary
+                  metadata: cachedBook.metadata
+                });
               } else {
-                log(`Warning: No cached book found for "${bookData.title}" after enhancement attempts`, 'books');
-                // Fallback: create minimal cache entry
-                const bookId = `${bookData.title}-${bookData.author || "Unknown"}`.toLowerCase().replace(/[^a-z0-9]/g, '-');
-                cachedBook = await storage.cacheBook({
+                log(`Warning: No cached book found for "${bookData.title}" - this should not happen since books are cached during detection`, 'books');
+                
+                // Fallback: use the book data as-is
+                savedBooks.push({
+                  id: Math.random(), // temporary ID for response
+                  userId,
                   title: bookData.title,
                   author: bookData.author || "Unknown",
-                  isbn: bookData.isbn || null,
-                  coverUrl: bookData.coverUrl || null,
-                  bookId,
-                  expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
+                  isbn: bookData.isbn,
+                  coverUrl: bookData.coverUrl,
+                  rating: bookData.rating || '',
+                  summary: bookData.summary || '',
+                  metadata: bookData.metadata
                 });
               }
               
+            } catch (error) {
+              log(`Error finding cached book for "${bookData.title}": ${error instanceof Error ? error.message : String(error)}`, 'books');
+              
+              // Fallback: use the book data as-is
               savedBooks.push({
-                id: cachedBook.id,
+                id: Math.random(), // temporary ID for response
                 userId,
-                title: cachedBook.title,
-                author: cachedBook.author,
-                isbn: cachedBook.isbn,
-                coverUrl: cachedBook.coverUrl,
-                rating: cachedBook.rating || '', // Include the rating
-                summary: cachedBook.summary || '', // Include the summary
-                metadata: cachedBook.metadata
-              });
-              
-              // Logging is now handled above
-              
-            } catch (openaiError) {
-              // Don't fail the entire book save if OpenAI fails
-              log(`Failed to generate OpenAI content for "${bookData.title}": ${openaiError instanceof Error ? openaiError.message : String(openaiError)}`, 'books');
-              
-              // Check if we already have this book cached (maybe from a previous attempt)
-              const { bookCacheService } = await import('../server/book-cache-service.js');
-              let cachedBook = await bookCacheService.findInCache(bookData.title, bookData.author || "Unknown");
-              
-              if (!cachedBook) {
-                // Only create a new cache entry if one doesn't exist
-                const bookId = `${bookData.title}-${bookData.author || "Unknown"}`.toLowerCase().replace(/[^a-z0-9]/g, '-');
-                cachedBook = await storage.cacheBook({
-                  title: bookData.title,
-                  author: bookData.author || "Unknown",
-                  isbn: bookData.isbn || null,
-                  coverUrl: bookData.coverUrl || null,
-                  bookId,
-                  expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
-                });
-                log(`Created new cache entry for "${cachedBook.title}"`, 'books');
-              } else {
-                log(`Using existing cache entry for "${cachedBook.title}"`, 'books');
-              }
-              
-              savedBooks.push({
-                id: cachedBook.id,
-                userId,
-                title: cachedBook.title,
-                author: cachedBook.author,
-                isbn: cachedBook.isbn,
-                coverUrl: cachedBook.coverUrl,
-                rating: cachedBook.rating || '', // Include the rating
-                summary: cachedBook.summary || '', // Include the summary
-                metadata: cachedBook.metadata
+                title: bookData.title,
+                author: bookData.author || "Unknown",
+                isbn: bookData.isbn,
+                coverUrl: bookData.coverUrl,
+                rating: bookData.rating || '',
+                summary: bookData.summary || '',
+                metadata: bookData.metadata
               });
             }
           } catch (bookError) {
