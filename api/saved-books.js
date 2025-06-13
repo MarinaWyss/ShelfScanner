@@ -81,17 +81,11 @@ export default async function handler(req, res) {
         const bookData = validation.data;
         console.log('Saving book for deviceId:', bookData.deviceId);
         
-        // Generate book ID
-        const bookWithId = {
-          ...bookData,
-          id: uuidv4(),
-          createdAt: new Date(),
-          updatedAt: new Date()
-        };
-
-        console.log('Book with ID:', bookWithId);
+        // Don't add an ID - let the database auto-generate the serial ID
+        // Also don't add createdAt/updatedAt - they're not in the schema
+        console.log('Book data to save:', bookData);
         
-        const result = await storage.createSavedBook(bookWithId);
+        const result = await storage.createSavedBook(bookData);
         console.log('Save result:', result);
         
         logInfo('Book saved successfully', {
