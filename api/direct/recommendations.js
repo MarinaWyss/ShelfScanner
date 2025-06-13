@@ -8,10 +8,7 @@ import 'dotenv/config';
  * @param {import('@vercel/node').VercelResponse} res - The response object
  */
 export default async function handler(req, res) {
-  // Add comprehensive logging for debugging
-  console.log('=== DIRECT RECOMMENDATIONS API CALLED ===');
-  console.log('Method:', req.method);
-  console.log('URL:', req.url);
+
   
   // Handle CORS
   res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -32,7 +29,7 @@ export default async function handler(req, res) {
     const { getOpenAIRecommendations } = await import('../../server/openai-recommendations.js');
     const { log } = await import('../../server/simple-logger.js');
 
-    console.log('Modules imported successfully');
+
 
     const { books, preferences } = req.body;
 
@@ -73,36 +70,125 @@ export default async function handler(req, res) {
         });
       }
 
-      // Enhance recommendations with descriptions if needed
-      try {
-        const { getOpenAIDescription } = await import('../../server/openai-descriptions.js');
-        
-        const enhancedRecommendations = await Promise.all(
-          baseRecommendations.map(async (rec) => {
-            try {
-              // If the recommendation doesn't have a summary or has a short one, get it from OpenAI
-              if (!rec.summary || rec.summary.length < 100) {
-                const description = await getOpenAIDescription(rec.title, rec.author);
-                if (description && description.length > 0) {
-                  rec.summary = description;
-                  log(`Enhanced "${rec.title}" with OpenAI description`, "openai");
-                }
+      // Enhance each recommendation with cached or fresh OpenAI data
+      const enhancedRecommendations = await Promise.all(baseRecommendations.map(async (book) => {
+        try {
+          // Find the original book from the user's list to get the cover URL
+          const originalBook = books.find(b => 
+            b.title.toLowerCase() === book.title.toLowerCase() && 
+            b.author.toLowerCase() === book.author.toLowerCase()
+          );
+          
+          // Ensure we have a cover URL from the original scanned book if available
+          const coverUrl = originalBook?.coverUrl || book.coverUrl || '';
+          
+          // Make sure we have an ISBN if it's available in the original book
+          const isbn = originalBook?.isbn || book.isbn || '';
+          
+          // Import bookCacheService for consistent cache access
+          let cachedBook = null;
+          let description = '';
+          let rating = '';
+          
+          try {
+            const { bookCacheService } = await import('../../server/book-cache-service.js');
+            
+            // First check if we have this recommendation in cache with OpenAI data
+            cachedBook = await bookCacheService.findInCache(book.title, book.author);
+            
+            // If no cached book found, wait a moment and try again (handles race condition)
+            if (!cachedBook || cachedBook.source !== 'openai') {
+              await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
+              try {
+                cachedBook = await bookCacheService.findInCache(book.title, book.author);
+              } catch (retryError) {
+                log(`Cache retry lookup error: ${retryError instanceof Error ? retryError.message : String(retryError)}`, "openai");
               }
-              return rec;
-            } catch (error) {
-              log(`Error enhancing recommendation "${rec.title}": ${error instanceof Error ? error.message : String(error)}`, "openai");
-              return rec; // Return original if enhancement fails
             }
-          })
-        );
-
-        log(`Successfully enhanced ${enhancedRecommendations.length} recommendations`, "openai");
-        return res.status(200).json(enhancedRecommendations);
-      } catch (enhancementError) {
-        log(`Error enhancing recommendations: ${enhancementError instanceof Error ? enhancementError.message : String(enhancementError)}`, "openai");
-        // Return base recommendations if enhancement fails
-        return res.status(200).json(baseRecommendations);
-      }
+          } catch (error) {
+            log(`Cache lookup error: ${error instanceof Error ? error.message : String(error)}`, "openai");
+          }
+          
+          if (cachedBook && cachedBook.source === 'openai') {
+            // Use cached OpenAI data if available
+            if (cachedBook.summary) {
+              description = cachedBook.summary;
+            }
+            
+            if (cachedBook.rating) {
+              rating = cachedBook.rating;
+            }
+          }
+          
+          // If we still don't have a description, get it from OpenAI
+          if (!description || description.length < 100) {
+            const { getOpenAIDescription } = await import('../../server/openai-descriptions.js');
+            description = await getOpenAIDescription(book.title, book.author);
+          }
+          
+          // If we still don't have a rating, get it from OpenAI
+          if (!rating || rating === "0") {
+            const { bookCacheService } = await import('../../server/book-cache-service.js');
+            rating = await bookCacheService.getEnhancedRating(book.title, book.author, isbn);
+          }
+          
+          // Validate rating value
+          if (!rating || isNaN(parseFloat(rating))) {
+            log(`Invalid rating detected`, "openai");
+          }
+          
+          // Use the match reason provided directly from the recommendation
+          const matchReason = book.matchReason || "This book matches elements of your reading preferences.";
+          
+          // Return the enhanced recommendation with OpenAI data
+          const enhancedBook = {
+            title: book.title,
+            author: book.author,
+            coverUrl: coverUrl,
+            summary: description || "A compelling book that explores important themes and ideas.",
+            rating: rating || '4.0', // Use the rating (cached or fresh)
+            isbn: isbn,
+            categories: book.categories || [],
+            matchScore: book.matchScore || 75, // Default to 75 if no score available
+            matchReason: matchReason || "This book aligns with your reading preferences.",
+            fromAI: true
+          };
+          
+          // Log completion
+          return enhancedBook;
+        } catch (error) {
+          // If there's an error with OpenAI for this specific book, return basic info
+          log(`Book enhancement error: ${error instanceof Error ? error.message : String(error)}`, "openai");
+          
+          // Find the original book from the user's list to get the cover URL (even in error case)
+          const originalBook = books.find(b => 
+            b.title.toLowerCase() === book.title.toLowerCase() && 
+            b.author.toLowerCase() === book.author.toLowerCase()
+          );
+          
+          // Ensure we have a cover URL from the original scanned book if available
+          const coverUrl = originalBook?.coverUrl || book.coverUrl || '';
+          
+          // Make sure we have an ISBN if it's available in the original book
+          const isbn = originalBook?.isbn || book.isbn || '';
+          
+          return {
+            title: book.title,
+            author: book.author,
+            coverUrl: coverUrl,
+            summary: "A compelling book that explores important themes and ideas.",
+            rating: book.rating || '4.0',
+            isbn: isbn,
+            categories: book.categories || [],
+            matchScore: book.matchScore || 75,
+            matchReason: book.matchReason || "This book includes themes or styles that connect with your reading preferences.",
+            fromAI: true
+          };
+        }
+      }));
+      
+      log(`Successfully enhanced ${enhancedRecommendations.length} recommendations`, "openai");
+      return res.status(200).json(enhancedRecommendations);
     } catch (error) {
       log(`Error generating recommendations: ${error instanceof Error ? error.message : String(error)}`, "openai");
       return res.status(500).json({

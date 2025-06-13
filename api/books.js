@@ -8,10 +8,7 @@ import 'dotenv/config';
  * @param {import('@vercel/node').VercelResponse} res - The response object
  */
 export default async function handler(req, res) {
-  // Add comprehensive logging for debugging
-  console.log('=== BOOKS API CALLED ===');
-  console.log('Method:', req.method);
-  console.log('URL:', req.url);
+
   
   // Handle CORS
   res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -24,11 +21,10 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Import storage dynamically to avoid issues with module resolution
-    const { storage } = await import('../server/storage.js');
+    // Import logger for error handling
     const { log } = await import('../server/simple-logger.js');
 
-    console.log('Modules imported successfully');
+
 
     if (req.method === 'GET') {
       try {
@@ -64,32 +60,61 @@ export default async function handler(req, res) {
               continue;
             }
             
-            // Cache the book data in book_cache to ensure consistent IDs
-            const bookId = `${bookData.title}-${bookData.author || "Unknown"}`.toLowerCase().replace(/[^a-z0-9]/g, '-');
-            const cachedBook = await storage.cacheBook({
-              title: bookData.title,
-              author: bookData.author || "Unknown",
-              isbn: bookData.isbn || null,
-              coverUrl: bookData.coverUrl || null,
-              source: "saved", // Mark as saved by user
-              bookId, // Add required bookId field
-              expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) // 1 year expiration
-            });
-            
-            savedBooks.push({
-              id: cachedBook.id,
-              userId,
-              title: cachedBook.title,
-              author: cachedBook.author,
-              isbn: cachedBook.isbn,
-              coverUrl: cachedBook.coverUrl,
-              metadata: cachedBook.metadata
-            });
-            
-            log(`Saved book: "${cachedBook.title}" by ${cachedBook.author}`, 'books');
+            // Simply find the existing cached book (it should already exist from the detection phase)
+            try {
+              const { bookCacheService } = await import('../server/book-cache-service.js');
+              
+              // Find the existing cached book
+              const cachedBook = await bookCacheService.findInCache(bookData.title, bookData.author || "Unknown");
+              
+              if (cachedBook) {
+                
+                savedBooks.push({
+                  id: cachedBook.id,
+                  userId,
+                  title: cachedBook.title,
+                  author: cachedBook.author,
+                  isbn: cachedBook.isbn,
+                  coverUrl: cachedBook.coverUrl,
+                  rating: cachedBook.rating || '', // Include the rating
+                  summary: cachedBook.summary || '', // Include the summary
+                  metadata: cachedBook.metadata
+                });
+              } else {
+                log(`Warning: Book not found in cache during save`, 'books');
+                
+                // Fallback: use the book data as-is
+                savedBooks.push({
+                  id: Math.random(), // temporary ID for response
+                  userId,
+                  title: bookData.title,
+                  author: bookData.author || "Unknown",
+                  isbn: bookData.isbn,
+                  coverUrl: bookData.coverUrl,
+                  rating: bookData.rating || '',
+                  summary: bookData.summary || '',
+                  metadata: bookData.metadata
+                });
+              }
+              
+            } catch (error) {
+              log(`Book cache lookup error: ${error instanceof Error ? error.message : String(error)}`, 'books');
+              
+              // Fallback: use the book data as-is
+              savedBooks.push({
+                id: Math.random(), // temporary ID for response
+                userId,
+                title: bookData.title,
+                author: bookData.author || "Unknown",
+                isbn: bookData.isbn,
+                coverUrl: bookData.coverUrl,
+                rating: bookData.rating || '',
+                summary: bookData.summary || '',
+                metadata: bookData.metadata
+              });
+            }
           } catch (bookError) {
-            console.error('Error saving individual book:', bookData, bookError);
-            log(`Error saving book "${bookData.title}": ${bookError instanceof Error ? bookError.message : String(bookError)}`, 'books');
+            log(`Book save error: ${bookError instanceof Error ? bookError.message : String(bookError)}`, 'books');
           }
         }
         

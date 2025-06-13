@@ -29,8 +29,7 @@ Have you ever been at a book sale, library, or friend's house looking at shelves
 
 ### Performance & Reliability
 - **Intelligent Caching**: Multi-layer caching reduces API costs and improves speed
-- **Rate Limiting**: Built-in protection against API abuse
-- **Health Monitoring**: Real-time system performance tracking with email alerts
+- **Rate Limiting**: Built-in protection against API abus
 - **Error Handling**: Graceful fallbacks when services are unavailable
 - **Database Monitoring**: PostgreSQL connection and performance tracking
 

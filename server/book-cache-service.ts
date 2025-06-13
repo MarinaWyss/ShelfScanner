@@ -132,22 +132,19 @@ export class BookCacheService {
     source?: 'google' | 'amazon' | 'openai' | 'saved';
     expiresAt?: Date;
   }): Promise<BookCache> {
-    // If source is not explicitly set to 'openai', we will only cache minimal data
-    // (like cover URLs) but never descriptions or ratings
-    const source = bookData.source || 'google';
+    // Determine the source based on the content being cached
+    let source: 'google' | 'amazon' | 'openai' | 'saved';
     
-    // NEVER cache book descriptions that don't come from OpenAI
-    // This ensures our descriptions are always high-quality
-    if (source !== 'openai' && bookData.summary) {
-      log(`Refusing to cache non-OpenAI description for "${bookData.title}" - source: ${source}`, 'cache');
-      bookData.summary = undefined; // Use undefined instead of null to match type
+    // If we have OpenAI-generated content (summary or rating), mark as OpenAI source
+    if (bookData.summary || bookData.rating) {
+      source = 'openai';
+    } else {
+      // Default to google for basic book info without OpenAI content, or use provided source
+      source = bookData.source || 'google';
     }
     
-    // NEVER cache ratings that don't come from OpenAI or verified sources
-    if (source !== 'openai' && bookData.rating) {
-      log(`Refusing to cache non-OpenAI rating for "${bookData.title}" - source: ${source}`, 'cache');
-      bookData.rating = undefined; // Use undefined instead of null to match type
-    }
+    // Note: We now allow caching of OpenAI-generated summaries and ratings regardless of initial source
+    // The source will be automatically set to 'openai' when we have OpenAI content
     
     try {
       // Normalize inputs for consistent matching
@@ -185,7 +182,7 @@ export class BookCacheService {
 
       // If we found an exact match with direct query, use that
       if (directMatch) {
-        log(`Found exact match for "${normalizedTitle}" by ${normalizedAuthor} with ID ${directMatch.id}`, 'cache');
+
         
         // Update the existing entry with any new information
         const [updated] = await db.update(bookCache)
@@ -194,14 +191,14 @@ export class BookCacheService {
             coverUrl: bookData.coverUrl || directMatch.coverUrl,
             rating: bookData.rating || directMatch.rating,
             summary: bookData.summary || directMatch.summary,
-            source: source === 'openai' ? 'openai' : directMatch.source, // Prefer OpenAI source
+            source: source, // Use the determined source based on content
             metadata: bookData.metadata || directMatch.metadata,
             expiresAt: expiresAt
           })
           .where(eq(bookCache.id, directMatch.id))
           .returning();
           
-        log(`Updated cache for "${normalizedTitle}" with ID ${updated.id}`, 'cache');
+
         return updated;
       }
       
@@ -216,14 +213,14 @@ export class BookCacheService {
             coverUrl: bookData.coverUrl || existing.coverUrl,
             rating: bookData.rating || existing.rating,
             summary: bookData.summary || existing.summary,
-            source: source === 'openai' ? 'openai' : existing.source, // Prefer OpenAI source
+            source: source, // Use the determined source based on content
             metadata: bookData.metadata || existing.metadata,
             expiresAt: expiresAt
           })
           .where(eq(bookCache.id, existing.id))
           .returning();
         
-        log(`Updated cache for "${normalizedTitle}" by ${normalizedAuthor} with ID ${updated.id} (fuzzy match)`, 'cache');
+
         return updated;
       }
       
@@ -248,7 +245,7 @@ export class BookCacheService {
       
       const [inserted] = await db.insert(bookCache).values(insertData).returning();
       
-      log(`Added to cache: "${normalizedTitle}" by ${normalizedAuthor} with ID ${inserted.id}`, 'cache');
+
       return inserted;
     } catch (error) {
       log(`Error caching book: ${error instanceof Error ? error.message : String(error)}`, 'cache');
@@ -302,9 +299,10 @@ export class BookCacheService {
         return existingSummary || null;
       }
       
-      // Look for cached summary first
+      // Look for cached summary first - prioritize OpenAI content
       const cachedBook = await this.findInCache(title, author);
       if (cachedBook?.summary && cachedBook.source === 'openai') {
+        // Only use cached summary if it's from OpenAI
         log(`Using cached OpenAI summary for "${title}"`, 'cache');
         return cachedBook.summary;
       }
@@ -346,10 +344,11 @@ export class BookCacheService {
           log(`Updating existing book cache entry (ID: ${existingBook.id}) with new summary`, 'cache');
           
           // Direct database update to ensure we don't create duplicates
+          // Also update source to openai since we're adding OpenAI content
           const [updated] = await db.update(bookCache)
             .set({
               summary: summary,
-              source: 'openai',
+              source: 'openai', // Mark as OpenAI source since we're adding OpenAI content
               expiresAt
             })
             .where(eq(bookCache.id, existingBook.id))
@@ -403,29 +402,34 @@ export class BookCacheService {
     isbn?: string
   ): Promise<string> {
     try {
-      // Check for cached rating first - but only use if it's from OpenAI
+      // Check for cached rating first - prioritize OpenAI content
       const cachedBook = await this.findInCache(title, author);
       if (cachedBook?.rating && cachedBook.source === 'openai') {
+        // Only use cached rating if it's from OpenAI
         log(`Using cached OpenAI rating for "${title}": ${cachedBook.rating}`, 'cache');
         return cachedBook.rating;
       }
       
-      // If we have an ISBN, try looking up by that - but only use if it's from OpenAI
+      // If we have an ISBN, try looking up by that
       if (isbn) {
         const isbnBook = await this.findByISBN(isbn);
-        if (isbnBook?.rating && isbnBook.source === 'openai') {
-          log(`Using cached OpenAI ISBN rating for "${title}": ${isbnBook.rating}`, 'cache');
-          
-          // Also cache under title/author for future lookups
-          await this.cacheBook({
-            title,
-            author,
-            isbn,
-            rating: isbnBook.rating,
-            source: 'openai'
-          });
-          
-          return isbnBook.rating;
+        if (isbnBook?.rating) {
+          // Check if it's a valid rating regardless of source
+          const ratingNum = parseFloat(isbnBook.rating);
+          if (!isNaN(ratingNum) && ratingNum >= 1.0 && ratingNum <= 5.0) {
+            log(`Using cached ISBN rating for "${title}": ${isbnBook.rating}`, 'cache');
+            
+            // Also cache under title/author for future lookups
+            await this.cacheBook({
+              title,
+              author,
+              isbn,
+              rating: isbnBook.rating,
+              source: isbnBook.source || 'openai'
+            });
+            
+            return isbnBook.rating;
+          }
         }
       }
       
@@ -466,21 +470,33 @@ export class BookCacheService {
       rateLimiter.increment('openai');
       
       const ratingText = response.choices[0].message.content?.trim() || '';
+      log(`OpenAI response for "${title}" rating: "${ratingText}"`, 'cache');
       
-      // Extract the numeric rating (looking for patterns like "4.5" or "4.5 stars")
-      const ratingMatch = ratingText.match(/(\d+\.\d+)/);
+      // Extract the numeric rating (looking for patterns like "4.5", "4.0", "4", etc.)
+      const ratingMatch = ratingText.match(/(\d+(?:\.\d+)?)/);
       let rating = ratingMatch ? ratingMatch[1] : '';
+      log(`Extracted rating for "${title}": "${rating}"`, 'cache');
       
-      // Validate that rating is in the correct range
+      // Validate that rating is in the correct range and determine if it's actually from OpenAI
+      let isOpenAIRating = false;
       if (rating) {
         const ratingNumber = parseFloat(rating);
-        if (ratingNumber < 1.0 || ratingNumber > 5.0) {
+        if (ratingNumber >= 1.0 && ratingNumber <= 5.0) {
+          // Valid rating from OpenAI - ensure it has one decimal place
+          rating = ratingNumber.toFixed(1);
+          isOpenAIRating = true;
+          log(`Got valid OpenAI rating: ${rating}`, 'cache');
+        } else {
           // Invalid range, use a fallback
+          log(`Invalid rating range from OpenAI: ${ratingNumber}, using fallback`, 'cache');
           rating = getEstimatedBookRating(title, author);
+          isOpenAIRating = false;
         }
       } else {
         // No valid rating extracted, use a fallback
+        log(`Could not extract rating from OpenAI response: "${ratingText}", using fallback`, 'cache');
         rating = getEstimatedBookRating(title, author);
+        isOpenAIRating = false;
       }
       
       // First check if we already have this book in cache to preserve its data
@@ -492,11 +508,14 @@ export class BookCacheService {
       if (existingBook) {
         log(`Updating existing book cache entry (ID: ${existingBook.id}) with new rating: ${rating}`, 'cache');
         
+        // Only mark as OpenAI source if we actually got a valid rating from OpenAI
+        const sourceToUse = isOpenAIRating ? 'openai' : existingBook.source || 'google';
+        
         // Direct database update to ensure we don't create duplicates
         const [updated] = await db.update(bookCache)
           .set({
             rating: rating,
-            source: 'openai',
+            source: sourceToUse, // This will be 'openai' if rating came from OpenAI
             isbn: isbn || existingBook.isbn,
             expiresAt
           })
@@ -506,15 +525,15 @@ export class BookCacheService {
         log(`Updated rating for "${title}" in cache ID ${updated.id}`, 'cache');
       } else {
         // No existing entry - create a new one
-        // Generate a unique book ID
-        const _bookId = isbn || `${title.trim()}-${author.trim()}`.toLowerCase().replace(/[^a-z0-9]/g, '-');
+        // Only mark as OpenAI source if we actually got a valid rating from OpenAI
+        const sourceToUse = isOpenAIRating ? 'openai' : 'google';
         
         const cacheData = {
           title: title.trim(),
           author: author.trim(),
           isbn: isbn || undefined,
           rating: rating,
-          source: 'openai' as const,
+          source: sourceToUse as 'google' | 'amazon' | 'openai' | 'saved',
           coverUrl: undefined,
           summary: undefined,
           metadata: undefined,
