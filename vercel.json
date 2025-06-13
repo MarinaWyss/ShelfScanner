@@ -1,7 +1,15 @@
 {
   "buildCommand": "npm run build",
   "outputDirectory": "dist/public",
+  "functions": {
+    "api/**/*.cjs": {
+      "memory": 1024,
+      "maxDuration": 60
+    }
+  },
   "rewrites": [
-    { "source": "/api/:path*", "destination": "/api/:path*.cjs" }
+    { "source": "/api/books/analyze", "destination": "/api/books/analyze.cjs" },
+    { "source": "/api/saved-books/:id", "destination": "/api/saved-books/[id].cjs" },
+    { "source": "/api/:path", "destination": "/api/:path.cjs" }
   ]
 } 

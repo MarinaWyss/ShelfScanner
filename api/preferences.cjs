@@ -1,19 +1,19 @@
 /* eslint-disable no-undef */
-// Import using ES modules for Vercel compatibility
-import 'dotenv/config';
-import '@vercel/node';
-import { storage } from '../server/storage.js';
-import { insertPreferenceSchema } from '../shared/schema.js';
-import { v4 as uuidv4 } from 'uuid';
-import { logDeviceOperation } from '../server/utils/safe-logger.js';
-import { log } from '../server/simple-logger.js';
+// Import using CommonJS require for Vercel compatibility
+require('dotenv/config');
+require('@vercel/node'); // Import but don't assign to variables
+const { storage } = require('../server/storage');
+const { insertPreferenceSchema } = require('../shared/schema');
+const { v4: uuidv4 } = require('uuid');
+const { logDeviceOperation } = require('../server/utils/safe-logger');
+const { log } = require('../server/simple-logger');
 
 /**
  * API handler for preferences
  * @param {import('@vercel/node').VercelRequest} req - The request object
  * @param {import('@vercel/node').VercelResponse} res - The response object
  */
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   // Handle CORS
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -82,4 +82,4 @@ export default async function handler(req, res) {
       error: error instanceof Error ? error.message : String(error)
     });
   }
-} 
+}; 
