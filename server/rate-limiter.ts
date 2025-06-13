@@ -4,7 +4,7 @@ import { logError, logWarning, logRateLimit } from './simple-error-logger.js';
 // Define interfaces for better type safety
 interface KVStore {
   get(key: string): Promise<number | null>;
-  set(key: string, value: number): Promise<string>;
+  set(key: string, value: number): Promise<number | "OK" | null>;
   incr(key: string): Promise<number>;
   expire(key: string, seconds: number): Promise<number>;
 }
@@ -20,7 +20,7 @@ interface UsageStats {
 // Dynamic import for Vercel KV - only available in Vercel environment
 let kv: KVStore | null = null;
 
-async function getKV() {
+async function getKV(): Promise<KVStore> {
   if (kv === null) {
     try {
       if (process.env.VERCEL || process.env.KV_URL) {
@@ -33,7 +33,7 @@ async function getKV() {
         const localStore = new Map<string, number>();
         kv = {
           get: (key: string) => Promise.resolve(localStore.get(key) || null),
-          set: (key: string, value: number) => { localStore.set(key, value); return Promise.resolve('OK'); },
+          set: (key: string, value: number) => { localStore.set(key, value); return Promise.resolve('OK' as const); },
           incr: (key: string) => {
             const current = localStore.get(key) || 0;
             const newValue = current + 1;
@@ -46,16 +46,16 @@ async function getKV() {
       }
     } catch (error) {
       log(`KV not available, using local fallback: ${error}`, 'rate-limiter');
-      // Fallback to basic object
+      // Fallback to basic object - ensure we never return null
       kv = {
-        get: () => Promise.resolve(null),
-        set: () => Promise.resolve('OK'),
-        incr: () => Promise.resolve(1),
-        expire: () => Promise.resolve(1),
+        get: (_key: string) => Promise.resolve(null),
+        set: (_key: string, _value: number) => Promise.resolve('OK' as const),
+        incr: (_key: string) => Promise.resolve(1),
+        expire: (_key: string, _seconds: number) => Promise.resolve(1),
       };
     }
   }
-  return kv;
+  return kv!; // We ensure kv is never null above
 }
 
 /**
