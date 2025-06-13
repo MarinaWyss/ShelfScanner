@@ -123,6 +123,12 @@ async function parseMultipart(req) {
  * @param {import('@vercel/node').VercelResponse} res - The response object
  */
 module.exports = async function handler(req, res) {
+  // Add comprehensive logging for debugging
+  console.log('=== BOOKS ANALYZE API CALLED ===');
+  console.log('Method:', req.method);
+  console.log('URL:', req.url);
+  console.log('Content-Type:', req.headers['content-type']);
+  
   // Basic CORS headers – mirrors other API routes
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -130,12 +136,16 @@ module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
 
   if (req.method === 'OPTIONS') {
+    console.log('Handling OPTIONS request');
     return res.status(200).end();
   }
 
   if (req.method !== 'POST') {
+    console.log('Invalid method:', req.method);
     return res.status(405).json({ message: 'Method not allowed' });
   }
+  
+  console.log('Starting POST request processing...');
 
   try {
     // Check for environment variables
