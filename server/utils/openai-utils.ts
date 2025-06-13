@@ -3,8 +3,6 @@
  * Moved from demo-openai.ts during code cleanup
  */
 import OpenAI from "openai";
-import { z } from "zod";
-import { zodResponseFormat } from "openai/helpers/zod";
 import { log } from "../simple-logger.js";
 import { rateLimiter } from "../rate-limiter.js";
 

@@ -139,7 +139,8 @@ export default [
       'playwright-report/**',
       'test-results/**',
       '*.min.js',
-      'vitest.config.*.ts'
+      'vitest.config.*.ts',
+      'migrations/**'
     ]
   }
 ]; 

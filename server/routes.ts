@@ -12,8 +12,6 @@ import multer from "multer";
 import { insertPreferenceSchema, insertSavedBookSchema } from "../shared/schema.js";
 import { getApiUsageStats } from "./api-stats.js";
 import { log } from './simple-logger.js';
-import { Router } from "express";
-import { z } from "zod";
 
 // In-memory storage for multer
 const upload = multer({

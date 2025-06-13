@@ -36,8 +36,6 @@ export default async function handler(req, res) {
     if (req.method === 'GET') {
       try {
         // For GET requests, return user's books
-        const userId = 1; // Default user ID
-        
         log('Books GET request received', 'books');
         
         // Return empty array for now - this endpoint is mainly for compatibility

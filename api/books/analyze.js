@@ -79,7 +79,7 @@ export default async function handler(req, res) {
     });
     
     console.log('Form parse result:', parseResult);
-    const { fields, files } = parseResult;
+    const { files } = parseResult;
     console.log('Form parsed successfully, files:', Object.keys(files));
     
     const file = files.image;

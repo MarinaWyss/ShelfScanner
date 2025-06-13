@@ -1,7 +1,6 @@
 /* eslint-disable no-undef */
 // Import using ES modules for Vercel compatibility
 import 'dotenv/config';
-import { v4 as uuidv4 } from 'uuid';
 
 /**
  * API handler for saved books
