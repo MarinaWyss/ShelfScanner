@@ -8,10 +8,7 @@ import 'dotenv/config';
  * @param {import('@vercel/node').VercelResponse} res - The response object
  */
 export default async function handler(req, res) {
-  // Add comprehensive logging for debugging
-  console.log('=== DIRECT RECOMMENDATIONS API CALLED ===');
-  console.log('Method:', req.method);
-  console.log('URL:', req.url);
+
   
   // Handle CORS
   res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -32,7 +29,7 @@ export default async function handler(req, res) {
     const { getOpenAIRecommendations } = await import('../../server/openai-recommendations.js');
     const { log } = await import('../../server/simple-logger.js');
 
-    console.log('Modules imported successfully');
+
 
     const { books, preferences } = req.body;
 
@@ -76,20 +73,11 @@ export default async function handler(req, res) {
       // Enhance each recommendation with cached or fresh OpenAI data
       const enhancedRecommendations = await Promise.all(baseRecommendations.map(async (book) => {
         try {
-          log(`Processing recommendation: "${book.title}" by ${book.author}`, "openai");
-          log(`Available books for matching: ${books.map(b => `"${b.title}" by ${b.author}`).join(', ')}`, "openai");
-          
           // Find the original book from the user's list to get the cover URL
           const originalBook = books.find(b => 
             b.title.toLowerCase() === book.title.toLowerCase() && 
             b.author.toLowerCase() === book.author.toLowerCase()
           );
-          
-          if (originalBook) {
-            log(`Found original book data: title="${originalBook.title}", author="${originalBook.author}"`, "openai");
-          } else {
-            log(`No original book found for recommendation "${book.title}" by ${book.author}`, "openai");
-          }
           
           // Ensure we have a cover URL from the original scanned book if available
           const coverUrl = originalBook?.coverUrl || book.coverUrl || '';
@@ -103,76 +91,50 @@ export default async function handler(req, res) {
           let rating = '';
           
           try {
-            log(`Importing bookCacheService...`, "openai");
             const { bookCacheService } = await import('../../server/book-cache-service.js');
-            log(`Successfully imported bookCacheService`, "openai");
             
             // First check if we have this recommendation in cache with OpenAI data
-            log(`Checking cache for recommendation "${book.title}" by ${book.author}`, "openai");
-            log(`About to call bookCacheService.findInCache with title="${book.title}", author="${book.author}"`, "openai");
             cachedBook = await bookCacheService.findInCache(book.title, book.author);
-            log(`Cache lookup result: ${cachedBook ? `found book with source="${cachedBook.source}", rating="${cachedBook.rating}", summary="${cachedBook.summary ? 'present' : 'missing'}"` : 'no book found'}`, "openai");
             
             // If no cached book found, wait a moment and try again (handles race condition)
             if (!cachedBook || cachedBook.source !== 'openai') {
-              log(`No cached OpenAI data found for "${book.title}" (source: ${cachedBook?.source || 'none'}), waiting and retrying...`, "openai");
               await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds
               try {
                 cachedBook = await bookCacheService.findInCache(book.title, book.author);
-                if (cachedBook?.source === 'openai') {
-                  log(`Found cached data after retry for "${book.title}": rating=${cachedBook.rating}, summary=${cachedBook.summary ? 'yes' : 'no'}`, "openai");
-                } else {
-                  log(`Still no cached OpenAI data for "${book.title}" after retry (source: ${cachedBook?.source || 'none'})`, "openai");
-                }
               } catch (retryError) {
-                log(`Error in cache retry lookup: ${retryError instanceof Error ? retryError.message : String(retryError)}`, "openai");
+                log(`Cache retry lookup error: ${retryError instanceof Error ? retryError.message : String(retryError)}`, "openai");
               }
-            } else {
-              log(`Found cached OpenAI data immediately for "${book.title}": rating=${cachedBook.rating}, summary=${cachedBook.summary ? 'yes' : 'no'}`, "openai");
             }
           } catch (error) {
-            log(`Error in cache lookup: ${error instanceof Error ? error.message : String(error)}`, "openai");
-            log(`Error stack: ${error instanceof Error ? error.stack : 'No stack trace'}`, "openai");
+            log(`Cache lookup error: ${error instanceof Error ? error.message : String(error)}`, "openai");
           }
           
           if (cachedBook && cachedBook.source === 'openai') {
             // Use cached OpenAI data if available
-            log(`Found cached OpenAI data for recommendation "${book.title}": rating=${cachedBook.rating}, summary=${cachedBook.summary ? 'yes' : 'no'}`, "openai");
-            
             if (cachedBook.summary) {
               description = cachedBook.summary;
-              log(`Using cached OpenAI summary for recommendation "${book.title}"`, "openai");
             }
             
             if (cachedBook.rating) {
               rating = cachedBook.rating;
-              log(`Using cached OpenAI rating for recommendation "${book.title}": ${rating}`, "openai");
             }
-          } else {
-            log(`No cached OpenAI data found for recommendation "${book.title}"`, "openai");
           }
           
           // If we still don't have a description, get it from OpenAI
           if (!description || description.length < 100) {
             const { getOpenAIDescription } = await import('../../server/openai-descriptions.js');
             description = await getOpenAIDescription(book.title, book.author);
-            log(`Got fresh OpenAI description for recommendation "${book.title}"`, "openai");
-          } else {
-            log(`Using cached description for recommendation "${book.title}"`, "openai");
           }
           
           // If we still don't have a rating, get it from OpenAI
           if (!rating || rating === "0") {
             const { bookCacheService } = await import('../../server/book-cache-service.js');
             rating = await bookCacheService.getEnhancedRating(book.title, book.author, isbn);
-            log(`Got fresh OpenAI rating for recommendation "${book.title}": ${rating}`, "openai");
-          } else {
-            log(`Using cached rating for recommendation "${book.title}": ${rating}`, "openai");
           }
           
-          // Debug the rating value
+          // Validate rating value
           if (!rating || isNaN(parseFloat(rating))) {
-            log(`WARNING: Invalid rating for "${book.title}": ${rating}`, "openai");
+            log(`Invalid rating detected`, "openai");
           }
           
           // Use the match reason provided directly from the recommendation
@@ -192,14 +154,11 @@ export default async function handler(req, res) {
             fromAI: true
           };
           
-          // Log the final book data for debugging
-          log(`Final enhanced recommendation: "${book.title}" - rating=${enhancedBook.rating}, summary=${enhancedBook.summary ? 'present' : 'missing'}`, "openai");
-          
-          log(`Final recommendation for "${book.title}": rating=${enhancedBook.rating}, summary=${enhancedBook.summary ? 'yes' : 'no'}`, "openai");
+          // Log completion
           return enhancedBook;
         } catch (error) {
           // If there's an error with OpenAI for this specific book, return basic info
-          log(`Error enhancing book ${book.title}: ${error instanceof Error ? error.message : String(error)}`, "openai");
+          log(`Book enhancement error: ${error instanceof Error ? error.message : String(error)}`, "openai");
           
           // Find the original book from the user's list to get the cover URL (even in error case)
           const originalBook = books.find(b => 

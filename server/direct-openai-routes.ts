@@ -80,8 +80,7 @@ router.post("/recommendations", async (req: Request, res: Response) => {
       // Enhance each recommendation with cached or fresh OpenAI data
       const enhancedRecommendations = await Promise.all(baseRecommendations.map(async (book) => {
         try {
-          log(`Processing recommendation: "${book.title}" by ${book.author}`, "openai");
-          log(`Available books for matching: ${books.map(b => `"${b.title}" by ${b.author}`).join(', ')}`, "openai");
+
           
           // Find the original book from the user's list to get the cover URL
           const originalBook = books.find(b => 
@@ -89,11 +88,7 @@ router.post("/recommendations", async (req: Request, res: Response) => {
             b.author.toLowerCase() === book.author.toLowerCase()
           );
           
-          if (originalBook) {
-            log(`Found original book data: title="${originalBook.title}", author="${originalBook.author}"`, "openai");
-          } else {
-            log(`No original book found for recommendation "${book.title}" by ${book.author}`, "openai");
-          }
+
           
           // Ensure we have a cover URL from the original scanned book if available
           const coverUrl = originalBook?.coverUrl || book.coverUrl || '';

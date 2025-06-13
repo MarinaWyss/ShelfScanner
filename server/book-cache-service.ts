@@ -182,7 +182,7 @@ export class BookCacheService {
 
       // If we found an exact match with direct query, use that
       if (directMatch) {
-        log(`Found exact match for "${normalizedTitle}" by ${normalizedAuthor} with ID ${directMatch.id}`, 'cache');
+
         
         // Update the existing entry with any new information
         const [updated] = await db.update(bookCache)
@@ -198,7 +198,7 @@ export class BookCacheService {
           .where(eq(bookCache.id, directMatch.id))
           .returning();
           
-        log(`Updated cache for "${normalizedTitle}" with ID ${updated.id}`, 'cache');
+
         return updated;
       }
       
@@ -220,7 +220,7 @@ export class BookCacheService {
           .where(eq(bookCache.id, existing.id))
           .returning();
         
-        log(`Updated cache for "${normalizedTitle}" by ${normalizedAuthor} with ID ${updated.id} (fuzzy match)`, 'cache');
+
         return updated;
       }
       
@@ -245,7 +245,7 @@ export class BookCacheService {
       
       const [inserted] = await db.insert(bookCache).values(insertData).returning();
       
-      log(`Added to cache: "${normalizedTitle}" by ${normalizedAuthor} with ID ${inserted.id}`, 'cache');
+
       return inserted;
     } catch (error) {
       log(`Error caching book: ${error instanceof Error ? error.message : String(error)}`, 'cache');

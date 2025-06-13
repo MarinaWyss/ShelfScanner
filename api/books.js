@@ -8,10 +8,7 @@ import 'dotenv/config';
  * @param {import('@vercel/node').VercelResponse} res - The response object
  */
 export default async function handler(req, res) {
-  // Add comprehensive logging for debugging
-  console.log('=== BOOKS API CALLED ===');
-  console.log('Method:', req.method);
-  console.log('URL:', req.url);
+
   
   // Handle CORS
   res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -28,7 +25,7 @@ export default async function handler(req, res) {
     const { storage } = await import('../server/storage.js');
     const { log } = await import('../server/simple-logger.js');
 
-    console.log('Modules imported successfully');
+
 
     if (req.method === 'GET') {
       try {
@@ -72,7 +69,6 @@ export default async function handler(req, res) {
               const cachedBook = await bookCacheService.findInCache(bookData.title, bookData.author || "Unknown");
               
               if (cachedBook) {
-                log(`Found cached book data for "${bookData.title}": rating=${cachedBook.rating}, summary=${cachedBook.summary ? 'yes' : 'no'}`, 'books');
                 
                 savedBooks.push({
                   id: cachedBook.id,
@@ -86,7 +82,7 @@ export default async function handler(req, res) {
                   metadata: cachedBook.metadata
                 });
               } else {
-                log(`Warning: No cached book found for "${bookData.title}" - this should not happen since books are cached during detection`, 'books');
+                log(`Warning: Book not found in cache during save`, 'books');
                 
                 // Fallback: use the book data as-is
                 savedBooks.push({
@@ -103,7 +99,7 @@ export default async function handler(req, res) {
               }
               
             } catch (error) {
-              log(`Error finding cached book for "${bookData.title}": ${error instanceof Error ? error.message : String(error)}`, 'books');
+              log(`Book cache lookup error: ${error instanceof Error ? error.message : String(error)}`, 'books');
               
               // Fallback: use the book data as-is
               savedBooks.push({
@@ -119,8 +115,7 @@ export default async function handler(req, res) {
               });
             }
           } catch (bookError) {
-            console.error('Error saving individual book:', bookData, bookError);
-            log(`Error saving book "${bookData.title}": ${bookError instanceof Error ? bookError.message : String(bookError)}`, 'books');
+            log(`Book save error: ${bookError instanceof Error ? bookError.message : String(bookError)}`, 'books');
           }
         }
         
