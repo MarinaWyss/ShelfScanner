@@ -1,14 +1,10 @@
 {
   "buildCommand": "npm run build",
   "outputDirectory": "dist/public",
-  "routes": [
-    { "src": "/api/health-check", "dest": "/api/health-check.cjs" },
-    { "src": "/api/books/analyze", "dest": "/api/books/analyze.cjs" },
-    { "src": "/api/saved-books/([^/]+)", "dest": "/api/saved-books/[id].cjs?id=$1" },
-    { "src": "/api/saved-books", "dest": "/api/saved-books.cjs" },
-    { "src": "/api/preferences", "dest": "/api/preferences.cjs" },
-    { "src": "/api/(.+)", "dest": "/api/index.cjs" },
-    { "handle": "filesystem" },
-    { "src": "/(.*)", "dest": "/index.html" }
+  "rewrites": [
+    {
+      "source": "/((?!api/.*).*)",
+      "destination": "/index.html"
+    }
   ]
 } 
