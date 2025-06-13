@@ -1,14 +1,67 @@
 import { log } from './simple-logger.js';
-import { logError, logWarning, logInfo, logRateLimit } from './simple-error-logger.js';
-import { db } from './db.js';
-import { rateLimits } from '../shared/schema.js';
-import { eq, and, sql } from 'drizzle-orm';
+import { logError, logWarning, logRateLimit } from './simple-error-logger.js';
+
+// Define interfaces for better type safety
+interface KVStore {
+  get(key: string): Promise<number | null>;
+  set(key: string, value: number): Promise<string>;
+  incr(key: string): Promise<number>;
+  expire(key: string, seconds: number): Promise<number>;
+}
+
+interface UsageStats {
+  windowUsage: number;
+  windowSeconds: number;
+  dailyUsage: number;
+  dailyLimit: number;
+  withinLimits: boolean;
+}
+
+// Dynamic import for Vercel KV - only available in Vercel environment
+let kv: KVStore | null = null;
+
+async function getKV() {
+  if (kv === null) {
+    try {
+      if (process.env.VERCEL || process.env.KV_URL) {
+        // Only import in Vercel environment or when KV is available
+        const { kv: vercelKV } = await import('@vercel/kv');
+        kv = vercelKV;
+        log('Using Vercel KV for rate limiting', 'rate-limiter');
+      } else {
+        // Local development fallback - use in-memory store
+        const localStore = new Map<string, number>();
+        kv = {
+          get: (key: string) => Promise.resolve(localStore.get(key) || null),
+          set: (key: string, value: number) => { localStore.set(key, value); return Promise.resolve('OK'); },
+          incr: (key: string) => {
+            const current = localStore.get(key) || 0;
+            const newValue = current + 1;
+            localStore.set(key, newValue);
+            return Promise.resolve(newValue);
+          },
+          expire: (_key: string, _seconds: number) => Promise.resolve(1), // No-op for local
+        };
+        log('Using local fallback for rate limiting (development)', 'rate-limiter');
+      }
+    } catch (error) {
+      log(`KV not available, using local fallback: ${error}`, 'rate-limiter');
+      // Fallback to basic object
+      kv = {
+        get: () => Promise.resolve(null),
+        set: () => Promise.resolve('OK'),
+        incr: () => Promise.resolve(1),
+        expire: () => Promise.resolve(1),
+      };
+    }
+  }
+  return kv;
+}
 
 /**
- * Database-based rate limiter for serverless environments
- * Uses PostgreSQL to persist rate limiting data across function invocations
+ * Vercel KV-based rate limiter for serverless environments
  */
-export class DatabaseRateLimiter {
+export class VercelKVRateLimiter {
   private readonly limits = {
     'openai': { perMinute: 60, perDay: 15000 },
     'google-books': { perMinute: 100, perDay: 7500 },
@@ -24,9 +77,10 @@ export class DatabaseRateLimiter {
    */
   public async isAllowed(apiName: string, windowSeconds = 60): Promise<boolean> {
     try {
-      const now = new Date();
-      const windowStart = new Date(Math.floor(now.getTime() / (windowSeconds * 1000)) * windowSeconds * 1000);
-      const dailyDate = now.toISOString().split('T')[0]; // YYYY-MM-DD format
+      const kvStore = await getKV();
+      const now = Date.now();
+      const windowStart = Math.floor(now / (windowSeconds * 1000));
+      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
       
       const limits = this.limits[apiName as keyof typeof this.limits];
       if (!limits) {
@@ -34,32 +88,18 @@ export class DatabaseRateLimiter {
         return true;
       }
 
-      // Get or create current window and daily records
-      const existing = await db
-        .select()
-        .from(rateLimits)
-        .where(
-          and(
-            eq(rateLimits.apiName, apiName),
-            eq(rateLimits.windowStart, windowStart),
-            eq(rateLimits.windowSeconds, windowSeconds)
-          )
-        )
-        .limit(1);
+      // Keys for window and daily limits
+      const windowKey = `rate:${apiName}:${windowStart}`;
+      const dailyKey = `rate:${apiName}:daily:${today}`;
 
-      const dailyRecord = await db
-        .select()
-        .from(rateLimits)
-        .where(
-          and(
-            eq(rateLimits.apiName, apiName),
-            eq(rateLimits.dailyDate, dailyDate)
-          )
-        )
-        .limit(1);
+      // Get current counts
+      const [windowCount, dailyCount] = await Promise.all([
+        kvStore.get(windowKey),
+        kvStore.get(dailyKey),
+      ]);
 
-      const currentWindowCount = existing[0]?.requestCount || 0;
-      const currentDailyCount = dailyRecord[0]?.dailyCount || 0;
+      const currentWindowCount = windowCount || 0;
+      const currentDailyCount = dailyCount || 0;
 
       // Check limits
       const withinWindowLimit = currentWindowCount < limits.perMinute;
@@ -91,49 +131,30 @@ export class DatabaseRateLimiter {
    */
   public async increment(apiName: string, windowSeconds = 60): Promise<void> {
     try {
-      const now = new Date();
-      const windowStart = new Date(Math.floor(now.getTime() / (windowSeconds * 1000)) * windowSeconds * 1000);
-      const dailyDate = now.toISOString().split('T')[0]; // YYYY-MM-DD format
+      const kvStore = await getKV();
+      const now = Date.now();
+      const windowStart = Math.floor(now / (windowSeconds * 1000));
+      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
 
-      // Use PostgreSQL's UPSERT (INSERT ... ON CONFLICT) for atomic increment
-      await db
-        .insert(rateLimits)
-        .values({
-          apiName,
-          windowStart,
-          windowSeconds,
-          requestCount: 1,
-          dailyDate,
-          dailyCount: 1,
-        })
-        .onConflictDoUpdate({
-          target: [rateLimits.apiName, rateLimits.windowStart, rateLimits.windowSeconds],
-          set: {
-            requestCount: sql`${rateLimits.requestCount} + 1`,
-            updatedAt: new Date(),
-          },
-        });
+      // Keys for window and daily limits
+      const windowKey = `rate:${apiName}:${windowStart}`;
+      const dailyKey = `rate:${apiName}:daily:${today}`;
 
-      // Separate upsert for daily count
-      await db
-        .insert(rateLimits)
-        .values({
-          apiName,
-          windowStart: now, // Use current time for daily records
-          windowSeconds: 86400, // 24 hours in seconds
-          requestCount: 0,
-          dailyDate,
-          dailyCount: 1,
-        })
-        .onConflictDoUpdate({
-          target: [rateLimits.apiName, rateLimits.dailyDate],
-          set: {
-            dailyCount: sql`${rateLimits.dailyCount} + 1`,
-            updatedAt: new Date(),
-          },
-        });
+      // Increment both counters atomically
+      const [windowCount, dailyCount] = await Promise.all([
+        kvStore.incr(windowKey),
+        kvStore.incr(dailyKey),
+      ]);
 
-      log(`API call to ${apiName}: incremented counters`, 'rate-limiter');
+      // Set expiry on first increment
+      if (windowCount === 1) {
+        await kvStore.expire(windowKey, windowSeconds);
+      }
+      if (dailyCount === 1) {
+        await kvStore.expire(dailyKey, 86400); // 24 hours
+      }
+
+      log(`API call to ${apiName}: window=${windowCount}, daily=${dailyCount}`, 'rate-limiter');
     } catch (error) {
       log(`Rate limiter increment error: ${error instanceof Error ? error.message : String(error)}`, 'rate-limiter');
     }
@@ -174,49 +195,32 @@ export class DatabaseRateLimiter {
   /**
    * Get current API usage statistics
    */
-  public async getUsageStats(): Promise<Record<string, any>> {
+  public async getUsageStats(): Promise<Record<string, UsageStats>> {
     try {
-      const stats: Record<string, any> = {};
+      const kvStore = await getKV();
+      const stats: Record<string, UsageStats> = {};
+      const now = Date.now();
+      const currentWindow = Math.floor(now / 60000); // 1-minute window
       const today = new Date().toISOString().split('T')[0];
 
       for (const [apiName, limits] of Object.entries(this.limits)) {
-        // Get current window usage
-        const now = new Date();
-        const windowStart = new Date(Math.floor(now.getTime() / 60000) * 60000); // 1-minute window
-        
-        const windowRecord = await db
-          .select()
-          .from(rateLimits)
-          .where(
-            and(
-              eq(rateLimits.apiName, apiName),
-              eq(rateLimits.windowStart, windowStart),
-              eq(rateLimits.windowSeconds, 60)
-            )
-          )
-          .limit(1);
+        const windowKey = `rate:${apiName}:${currentWindow}`;
+        const dailyKey = `rate:${apiName}:daily:${today}`;
 
-        // Get daily usage
-        const dailyRecord = await db
-          .select()
-          .from(rateLimits)
-          .where(
-            and(
-              eq(rateLimits.apiName, apiName),
-              eq(rateLimits.dailyDate, today)
-            )
-          )
-          .limit(1);
+        const [windowUsage, dailyUsage] = await Promise.all([
+          kvStore.get(windowKey),
+          kvStore.get(dailyKey),
+        ]);
 
-        const windowUsage = windowRecord[0]?.requestCount || 0;
-        const dailyUsage = dailyRecord[0]?.dailyCount || 0;
+        const currentWindowUsage = windowUsage || 0;
+        const currentDailyUsage = dailyUsage || 0;
 
         stats[apiName] = {
-          windowUsage,
+          windowUsage: currentWindowUsage,
           windowSeconds: 60,
-          dailyUsage,
+          dailyUsage: currentDailyUsage,
           dailyLimit: limits.perDay,
-          withinLimits: windowUsage < limits.perMinute && dailyUsage < limits.perDay
+          withinLimits: currentWindowUsage < limits.perMinute && currentDailyUsage < limits.perDay
         };
       }
 
@@ -228,23 +232,29 @@ export class DatabaseRateLimiter {
   }
 
   /**
-   * Clean up old rate limiting records (optional maintenance)
+   * Reset a specific API's rate limits (useful for testing or manual reset)
    */
-  public async cleanup(): Promise<void> {
+  public async resetLimits(apiName: string): Promise<void> {
     try {
-      const threeDaysAgo = new Date();
-      threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+      const kvStore = await getKV();
+      const now = Date.now();
+      const currentWindow = Math.floor(now / 60000);
+      const today = new Date().toISOString().split('T')[0];
 
-      await db
-        .delete(rateLimits)
-        .where(sql`${rateLimits.windowStart} < ${threeDaysAgo}`);
+      const windowKey = `rate:${apiName}:${currentWindow}`;
+      const dailyKey = `rate:${apiName}:daily:${today}`;
 
-      log('Cleaned up old rate limiting records', 'rate-limiter');
+      await Promise.all([
+        kvStore.set(windowKey, 0),
+        kvStore.set(dailyKey, 0),
+      ]);
+
+      log(`Reset rate limits for ${apiName}`, 'rate-limiter');
     } catch (error) {
-      log(`Cleanup error: ${error instanceof Error ? error.message : String(error)}`, 'rate-limiter');
+      log(`Error resetting limits for ${apiName}: ${error instanceof Error ? error.message : String(error)}`, 'rate-limiter');
     }
   }
 }
 
 // Create a singleton instance
-export const rateLimiter = new DatabaseRateLimiter();
+export const rateLimiter = new VercelKVRateLimiter();

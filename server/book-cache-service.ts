@@ -294,7 +294,7 @@ export class BookCacheService {
       }
       
       // Check rate limits
-      if (!rateLimiter.isAllowed('openai')) {
+      if (!(await rateLimiter.isAllowed('openai'))) {
         log('Rate limit reached for OpenAI, skipping summary enhancement', 'cache');
         return existingSummary || null;
       }
@@ -327,7 +327,7 @@ export class BookCacheService {
       });
       
       // Increment OpenAI API counter
-      rateLimiter.increment('openai');
+      await rateLimiter.increment('openai');
       
       const summary = response.choices[0].message.content?.trim() || null;
       
@@ -441,7 +441,7 @@ export class BookCacheService {
       }
       
       // Check rate limits
-      if (!rateLimiter.isAllowed('openai')) {
+      if (!(await rateLimiter.isAllowed('openai'))) {
         log('Rate limit reached for OpenAI, using estimate for rating', 'cache');
         const estimatedRating = getEstimatedBookRating(title, author);
         return estimatedRating;
@@ -467,7 +467,7 @@ export class BookCacheService {
       });
       
       // Increment OpenAI API counter
-      rateLimiter.increment('openai');
+      await rateLimiter.increment('openai');
       
       const ratingText = response.choices[0].message.content?.trim() || '';
       log(`OpenAI response for "${title}" rating: "${ratingText}"`, 'cache');
