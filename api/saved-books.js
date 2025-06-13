@@ -31,8 +31,7 @@ export default async function handler(req, res) {
     // Import storage dynamically to avoid issues with module resolution
     const { storage } = await import('../server/storage.js');
     const { insertSavedBookSchema } = await import('../shared/schema.js');
-    const { logDeviceOperation } = await import('../server/utils/safe-logger.js');
-    const { log } = await import('../server/simple-logger.js');
+    const { logInfo, logError } = await import('../server/simple-error-logger.js');
 
     console.log('Modules imported successfully');
 
@@ -48,8 +47,10 @@ export default async function handler(req, res) {
         const books = await storage.getSavedBooksByDeviceId(deviceId);
         console.log('Retrieved books count:', books?.length || 0);
         
-        await logDeviceOperation(deviceId, 'books_get', { 
-          count: books?.length || 0 
+        logInfo('Books retrieved', {
+          deviceId,
+          action: 'books_get',
+          metadata: { count: books?.length || 0 }
         });
         
         return res.status(200).json({ 
@@ -93,14 +94,13 @@ export default async function handler(req, res) {
         const result = await storage.createSavedBook(bookWithId);
         console.log('Save result:', result);
         
-        await logDeviceOperation(bookData.deviceId, 'books_save', { 
-          success: 'yes',
-          isbn: bookData.isbn 
-        });
-        
-        log('Book saved successfully', { 
+        logInfo('Book saved successfully', {
           deviceId: bookData.deviceId,
-          isbn: bookData.isbn 
+          action: 'books_save',
+          metadata: { 
+            success: 'yes',
+            isbn: bookData.isbn 
+          }
         });
         
         return res.status(200).json({ 
@@ -112,17 +112,14 @@ export default async function handler(req, res) {
       } catch (error) {
         console.error('POST saved books error:', error);
         
-        // Try to log the device operation even on error
-        try {
-          const deviceId = req.body?.deviceId;
-          if (deviceId) {
-            await logDeviceOperation(deviceId, 'books_save', { 
-              success: 'no',
-              error: error.message 
-            });
-          }
-        } catch (logError) {
-          console.error('Failed to log error operation:', logError);
+        // Log the error
+        const deviceId = req.body?.deviceId;
+        if (deviceId) {
+          logError('Failed to save book', error, {
+            deviceId,
+            action: 'books_save',
+            metadata: { success: 'no' }
+          });
         }
         
         return res.status(500).json({ error: 'Failed to save book' });
@@ -141,15 +138,14 @@ export default async function handler(req, res) {
         const result = await storage.deleteSavedBook(bookId, deviceId);
         console.log('Delete result:', result);
         
-        await logDeviceOperation(deviceId, 'books_delete', { 
-          success: result ? 'yes' : 'no',
-          bookId: bookId 
-        });
-        
         if (result) {
-          log('Book deleted successfully', { 
-            deviceId: deviceId,
-            bookId: bookId 
+          logInfo('Book deleted successfully', {
+            deviceId,
+            action: 'books_delete',
+            metadata: { 
+              success: 'yes',
+              bookId 
+            }
           });
           
           return res.status(200).json({ 
