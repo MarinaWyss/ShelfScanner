@@ -326,6 +326,11 @@ export default function PreferencesStep({ preferences, onSubmit, isLoading }: Pr
   const mapShelfToGenre = (shelf: string): string | null => {
     shelf = shelf.toLowerCase();
     
+    // Handle Science Fiction first to avoid confusion with Science
+    if (shelf.includes('sci-fi') || shelf.includes('scifi') || shelf.includes('science-fiction') || shelf.includes('science_fiction')) {
+      return 'Science Fiction';
+    }
+    
     // Direct matches
     for (const genre of allGenres) {
       if (shelf.includes(genre.toLowerCase())) {
@@ -333,16 +338,21 @@ export default function PreferencesStep({ preferences, onSubmit, isLoading }: Pr
       }
     }
     
-    // Common mappings
+    // Common mappings (put Science after Science Fiction check)
     if (shelf.includes('ya') || shelf.includes('young-adult')) {return 'Young Adult';}
-    if (shelf.includes('sci-fi')) {return 'Science Fiction';}
-    if (shelf.includes('scifi')) {return 'Science Fiction';}
     if (shelf.includes('biograph')) {return 'Biography';}
     if (shelf.includes('historic')) {return 'History';}
     if (shelf.includes('classic')) {return 'Classics';}
     if (shelf.includes('comic') || shelf.includes('graphic')) {return 'Comics';}
     if (shelf.includes('business') || shelf.includes('finance')) {return 'Business';}
-    if (shelf.includes('tech') || shelf.includes('science')) {return 'Science';}
+    
+    // Be more specific about Science - only match pure science terms, not science fiction
+    if (shelf === 'science' || shelf.includes('physics') || shelf.includes('chemistry') || 
+        shelf.includes('biology') || shelf.includes('mathematics') || shelf.includes('technology') ||
+        shelf === 'tech' || shelf.includes('engineering') || shelf.includes('popular-science') ||
+        shelf.includes('popular_science')) {
+      return 'Science';
+    }
     
     return null;
   };
