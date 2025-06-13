@@ -67,18 +67,19 @@ export default async function handler(req, res) {
       keepExtensions: true,
     });
 
-    const parseResult = await form.parse(req);
+    // Use the promise-based parsing approach for formidable
+    const parseResult = await new Promise((resolve, reject) => {
+      form.parse(req, (err, fields, files) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve({ fields, files });
+        }
+      });
+    });
+    
     console.log('Form parse result:', parseResult);
-    
-    // Handle different formidable versions/formats
-    let fields, files;
-    if (Array.isArray(parseResult)) {
-      [fields, files] = parseResult;
-    } else {
-      fields = parseResult.fields || {};
-      files = parseResult.files || {};
-    }
-    
+    const { fields, files } = parseResult;
     console.log('Form parsed successfully, files:', Object.keys(files));
     
     const file = files.image;
