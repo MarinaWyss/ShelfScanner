@@ -451,6 +451,37 @@ export default function PreferencesStep({ preferences, onSubmit, isLoading }: Pr
           <div className="mb-2">
             <h3 className="font-medium text-gray-900 dark:text-white mb-1">Import your Goodreads library (Optional)</h3>
             <p className="text-sm text-gray-600 dark:text-gray-300">Upload your Goodreads export to quickly set your preferences based on your reading history.</p>
+            
+            {/* Download link and desktop notice */}
+            <div className="mt-3 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-md border border-purple-200 dark:border-purple-800">
+              <div className="flex items-start gap-2">
+                <svg 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  className="h-4 w-4 text-purple-500 mt-0.5 flex-shrink-0" 
+                  fill="none" 
+                  viewBox="0 0 24 24" 
+                  stroke="currentColor"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div className="text-sm">
+                  <p className="text-purple-800 dark:text-purple-300 font-medium mb-1">Need your Goodreads data?</p>
+                  <p className="text-purple-700 dark:text-purple-400 mb-2">
+                    <a 
+                      href="https://www.goodreads.com/review/import" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="underline hover:text-purple-900 dark:hover:text-purple-200 font-medium"
+                    >
+                      Download your library here →
+                    </a>
+                  </p>
+                  <p className="text-purple-600 dark:text-purple-400 text-xs">
+                    📱 Goodreads data can only be downloaded from desktop, sorry for the inconvenience &lt;3
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
           <div className="mt-3">
             <label className="inline-block">

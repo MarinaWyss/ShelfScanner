@@ -1,5 +1,8 @@
 import { Link, useLocation } from "wouter";
 import { ThemeToggle } from "../ui/ThemeToggle";
+import DonationButton from "../ui/DonationButton";
+import DonationModal from "../ui/DonationModal";
+import { useState } from "react";
 
 interface NavbarProps {
   sidebarOpen: boolean;
@@ -9,6 +12,7 @@ interface NavbarProps {
 
 export default function Navbar({ sidebarOpen, toggleSidebar, toggleContact }: NavbarProps) {
   const [location] = useLocation();
+  const [donationModalOpen, setDonationModalOpen] = useState(false);
 
   return (
     <>
@@ -52,6 +56,11 @@ export default function Navbar({ sidebarOpen, toggleSidebar, toggleContact }: Na
           </div>
           
           <div className="flex items-center gap-4">
+            <DonationButton 
+              onClick={() => setDonationModalOpen(true)} 
+              variant="small"
+              className="hidden sm:flex"
+            />
             <ThemeToggle />
             <button onClick={toggleContact} className="text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white flex items-center gap-2 transition-colors">
               <svg 
@@ -160,8 +169,23 @@ export default function Navbar({ sidebarOpen, toggleSidebar, toggleContact }: Na
               </div>
             </div>
           </div>
+          
+          {/* Donation section at bottom of sidebar */}
+          <div className="p-3 border-t border-gray-200 dark:border-gray-700">
+            <DonationButton 
+              onClick={() => setDonationModalOpen(true)} 
+              variant="small"
+              className="w-full justify-center"
+            />
+          </div>
         </nav>
       </aside>
+      
+      {/* Donation Modal */}
+      <DonationModal 
+        isOpen={donationModalOpen} 
+        onClose={() => setDonationModalOpen(false)} 
+      />
     </>
   );
 }
