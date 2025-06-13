@@ -73,6 +73,7 @@ router.post("/recommendations", async (req: Request, res: Response) => {
           const description = await getOpenAIDescription(book.title, book.author);
           
           // Get cached or fresh OpenAI-generated rating
+          log(`About to get rating for "${book.title}" by ${book.author} with ISBN: ${isbn}`, "openai");
           const bookCacheService = (await import('./book-cache-service.js')).bookCacheService;
           const rating = await bookCacheService.getEnhancedRating(book.title, book.author, isbn);
           log(`Retrieved rating for recommendation "${book.title}": ${rating}`, "openai");

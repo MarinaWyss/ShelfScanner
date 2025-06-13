@@ -64,19 +64,7 @@ export default async function handler(req, res) {
               continue;
             }
             
-            // First, cache the basic book data
-            const bookId = `${bookData.title}-${bookData.author || "Unknown"}`.toLowerCase().replace(/[^a-z0-9]/g, '-');
-            let cachedBook = await storage.cacheBook({
-              title: bookData.title,
-              author: bookData.author || "Unknown",
-              isbn: bookData.isbn || null,
-              coverUrl: bookData.coverUrl || null,
-              // Don't set source to 'saved' - it will be set to 'openai' when actual OpenAI content is added
-              bookId, // Add required bookId field
-              expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) // 1 year expiration
-            });
-            
-            // Only generate OpenAI content if the book doesn't already have it
+            // First, check if this book already exists and has all content
             try {
               const { bookCacheService } = await import('../server/book-cache-service.js');
               
@@ -114,28 +102,64 @@ export default async function handler(req, res) {
                 log(`Generated new summary for "${bookData.title}": ${summary ? 'yes' : 'no'}`, 'books');
               }
               
+              // Now cache/update the book with any new content
+              const bookId = `${bookData.title}-${bookData.author || "Unknown"}`.toLowerCase().replace(/[^a-z0-9]/g, '-');
+              let cachedBook = await storage.cacheBook({
+                title: bookData.title,
+                author: bookData.author || "Unknown",
+                isbn: bookData.isbn || null,
+                coverUrl: bookData.coverUrl || null,
+                rating: rating, // Include the rating (cached or new)
+                summary: summary, // Include the summary (cached or new)
+                bookId, // Add required bookId field
+                expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) // 1 year expiration
+              });
+              
+              savedBooks.push({
+                id: cachedBook.id,
+                userId,
+                title: cachedBook.title,
+                author: cachedBook.author,
+                isbn: cachedBook.isbn,
+                coverUrl: cachedBook.coverUrl,
+                metadata: cachedBook.metadata
+              });
+              
               if (needsRating || needsSummary) {
                 log(`Generated OpenAI content for "${bookData.title}": rating=${needsRating ? 'new' : 'cached'}, summary=${needsSummary ? 'new' : 'cached'}`, 'books');
+                log(`Saved/updated book: "${cachedBook.title}" by ${cachedBook.author}`, 'books');
               } else {
-                log(`Using all cached content for "${bookData.title}"`, 'books');
+                log(`Using all cached content for "${bookData.title}" - no save needed`, 'books');
+                // Still add to savedBooks for API response, but don't log as "saved"
               }
               
             } catch (openaiError) {
               // Don't fail the entire book save if OpenAI fails
               log(`Failed to generate OpenAI content for "${bookData.title}": ${openaiError instanceof Error ? openaiError.message : String(openaiError)}`, 'books');
+              
+              // Still try to cache basic book data
+              const bookId = `${bookData.title}-${bookData.author || "Unknown"}`.toLowerCase().replace(/[^a-z0-9]/g, '-');
+              let cachedBook = await storage.cacheBook({
+                title: bookData.title,
+                author: bookData.author || "Unknown",
+                isbn: bookData.isbn || null,
+                coverUrl: bookData.coverUrl || null,
+                bookId,
+                expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
+              });
+              
+              savedBooks.push({
+                id: cachedBook.id,
+                userId,
+                title: cachedBook.title,
+                author: cachedBook.author,
+                isbn: cachedBook.isbn,
+                coverUrl: cachedBook.coverUrl,
+                metadata: cachedBook.metadata
+              });
+              
+              log(`Saved book with error: "${cachedBook.title}" by ${cachedBook.author}`, 'books');
             }
-            
-            savedBooks.push({
-              id: cachedBook.id,
-              userId,
-              title: cachedBook.title,
-              author: cachedBook.author,
-              isbn: cachedBook.isbn,
-              coverUrl: cachedBook.coverUrl,
-              metadata: cachedBook.metadata
-            });
-            
-            log(`Saved book: "${cachedBook.title}" by ${cachedBook.author}`, 'books');
           } catch (bookError) {
             console.error('Error saving individual book:', bookData, bookError);
             log(`Error saving book "${bookData.title}": ${bookError instanceof Error ? bookError.message : String(bookError)}`, 'books');
