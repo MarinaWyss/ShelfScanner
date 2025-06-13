@@ -1,7 +1,7 @@
 import OpenAI from "openai";
-import { log } from "./vite";
-import { rateLimiter } from "./rate-limiter";
-import { analyzeImage } from "./vision"; // Import Google Vision fallback
+import { log } from "./simple-logger.js";
+import { rateLimiter } from "./rate-limiter.js";
+import { analyzeImage } from "./vision.js"; // Import Google Vision fallback
 
 // Configure OpenAI client
 const openai = new OpenAI({ 

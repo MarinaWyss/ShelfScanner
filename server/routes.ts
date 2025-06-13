@@ -1,18 +1,17 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage";
-import { analyzeBookshelfImage } from "./openai-vision";
-import { searchBooksByTitle, getRecommendations } from "./books";
-import { searchEnhancedBooks } from "./enhanced-book-api";
-import { bookCacheService } from "./book-cache-service";
-import { bookEnhancer } from "./book-enhancer";
-import { getOpenAIBookDetails } from "./openai-books";
-import { getOpenAIBookRating, getOpenAIBookSummary } from "./utils/openai-utils";
+import { storage } from "./storage.js";
+import { analyzeBookshelfImage } from "./openai-vision.js";
+import { searchBooksByTitle, getRecommendations } from "./books.js";
+import { searchEnhancedBooks } from "./enhanced-book-api.js";
+import { bookCacheService } from "./book-cache-service.js";
+import { bookEnhancer } from "./book-enhancer.js";
+import { getOpenAIBookDetails } from "./openai-books.js";
+import { getOpenAIBookRating, getOpenAIBookSummary } from "./utils/openai-utils.js";
 import multer from "multer";
-import { insertPreferenceSchema, insertSavedBookSchema } from "@shared/schema";
-import { getApiUsageStats } from "./api-stats";
-import { logDeviceOperation, logBookOperation } from './utils/safe-logger';
-import { log } from './vite';
+import { insertPreferenceSchema, insertSavedBookSchema } from "../shared/schema.js";
+import { getApiUsageStats } from "./api-stats.js";
+import { log } from './simple-logger.js';
 
 // In-memory storage for multer
 const upload = multer({
@@ -22,16 +21,12 @@ const upload = multer({
   },
 });
 
-import { registerEnvRoutes } from './env-routes';
-import { adminMonitoringRoutes } from './admin-monitoring';
+import { registerEnvRoutes } from './env-routes.js';
 
-import { directOpenAIRoutes } from './direct-openai-routes';
+import { directOpenAIRoutes } from './direct-openai-routes.js';
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth routes have been removed
-  
-  // Register admin monitoring routes (protected by authentication)
-  app.use('/api/admin', adminMonitoringRoutes);
   
   // Register direct OpenAI routes for fresh, high-quality book recommendations
   app.use('/api/direct', directOpenAIRoutes);
@@ -134,10 +129,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'No image file provided' });
       }
 
-      const userId = 1; // Default user ID
+      // Extract deviceId from request
+      const deviceId = req.deviceId;
+      
+      if (!deviceId) {
+        return res.status(400).json({ message: 'Device ID is required' });
+      }
       
       // Get user preferences to match with detected books
-      const preferences = await storage.getPreferencesByUserId(userId);
+      const preferences = await storage.getPreferencesByDeviceId(deviceId);
       
       // Convert buffer to base64
       const base64Image = req.file.buffer.toString('base64');
@@ -357,13 +357,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Device ID is required' });
       }
       
-      // For backward compatibility we still include userId but use deviceId as primary identifier
-      const userId = 1;
-      
       // Validate request body
       const validatedData = insertPreferenceSchema.parse({
         ...req.body,
-        userId,
         deviceId
       });
       
@@ -469,10 +465,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get recommendations
   app.post('/api/recommendations', async (req: Request, res: Response) => {
     try {
-      const userId = 1; // Default user ID
+      // Extract deviceId from request
+      const deviceId = req.deviceId;
+      
+      if (!deviceId) {
+        return res.status(400).json({ message: 'Device ID is required' });
+      }
       
       // Get user preferences
-      const preferences = await storage.getPreferencesByUserId(userId);
+      const preferences = await storage.getPreferencesByDeviceId(deviceId);
       
       if (!preferences) {
         return res.status(404).json({ message: 'Preferences not found' });
@@ -489,25 +490,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Process books: First check cache, then get OpenAI data if needed, and store in cache
       books = await Promise.all(books.map(async (book: any) => {
-        logBookOperation('Processing book', book.title, book.author);
+        log(`Processing book: "${book.title}" by ${book.author}`);
         
         // First check if we have this book in cache with OpenAI data
         const cachedBook = await storage.findBookInCache(book.title, book.author);
         
         if (cachedBook && cachedBook.source === 'openai') {
           // We have cache hit - use cached data
-          logBookOperation('Using cached OpenAI data', book.title);
+          log(`Using cached OpenAI data for book "${book.title}"`);
           
           // Apply cached rating if available
           if (cachedBook.rating) {
             book.rating = cachedBook.rating;
-            logBookOperation('Using cached OpenAI rating', book.title, book.author, `rating: ${cachedBook.rating}`);
+            log(`Using cached OpenAI rating for book "${book.title}": ${cachedBook.rating}`);
           }
           
           // Apply cached summary if available
           if (cachedBook.summary) {
             book.summary = cachedBook.summary;
-            logBookOperation('Using cached OpenAI summary', book.title);
+            log(`Using cached OpenAI summary for book "${book.title}"`);
           }
         }
         
@@ -517,10 +518,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const rating = await bookCacheService.getEnhancedRating(book.title, book.author, book.isbn);
             if (rating) {
               book.rating = rating;
-              logBookOperation('Got fresh OpenAI rating', book.title, book.author, `rating: ${rating}`);
+              log(`Got fresh OpenAI rating for book "${book.title}": ${rating}`);
             }
           } catch (error) {
-            logBookOperation('Error getting OpenAI rating', book.title, book.author, error instanceof Error ? error.message : String(error));
+            log(`Error getting OpenAI rating for book "${book.title}": ${error instanceof Error ? error.message : String(error)}`);
             book.rating = '';  // Leave empty rather than using fallbacks
           }
         }
@@ -531,10 +532,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const summary = await bookCacheService.getEnhancedSummary(book.title, book.author);
             if (summary) {
               book.summary = summary;
-              logBookOperation('Got fresh OpenAI summary', book.title);
+              log(`Got fresh OpenAI summary for book "${book.title}"`);
             }
           } catch (error) {
-            logBookOperation('Error getting OpenAI summary', book.title, book.author, error instanceof Error ? error.message : String(error));
+            log(`Error getting OpenAI summary for book "${book.title}": ${error instanceof Error ? error.message : String(error)}`);
             book.summary = '';  // Leave empty rather than using fallbacks
           }
         }
@@ -558,10 +559,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
               },
               expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) // 365 days cache
             });
-            logBookOperation('Cached OpenAI data', book.title);
+            log(`Cached OpenAI data for book "${book.title}"`);
           }
         } catch (cacheError) {
-          logBookOperation('Error caching book data', book.title, book.author, cacheError instanceof Error ? cacheError.message : String(cacheError));
+          log(`Error caching book data for "${book.title}": ${cacheError instanceof Error ? cacheError.message : String(cacheError)}`);
         }
         
         return book;
@@ -707,7 +708,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       // Extract deviceId from cookie
       const deviceId = req.cookies.deviceId || '';
-      logDeviceOperation('GetSavedBooks - Retrieved device ID from cookie', deviceId);
+      log(`GetSavedBooks - Retrieved device ID from cookie: ${deviceId}`);
       
       // Validate deviceId
       if (!deviceId) {
@@ -717,7 +718,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Get saved books
       const savedBooks = await storage.getSavedBooksByDeviceId(deviceId);
-      logDeviceOperation('GetSavedBooks - Found books', deviceId, `${savedBooks.length} books`);
+      log(`GetSavedBooks - Found books: ${savedBooks.length} books`);
       
       // Enhance saved books with the latest data from book_cache
       const enhancedSavedBooks = await Promise.all(
@@ -776,14 +777,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Book title and author are required' });
       }
       
-      logDeviceOperation('Saving book', deviceId, `"${title}" by ${author}`);
+      log(`Saving book: "${title}" by ${author}`);
       
       // First, check if book exists in cache or create it if not
       let bookCacheEntry = await storage.findBookInCache(title, author);
       
       // If not in cache, add it to cache first
       if (!bookCacheEntry) {
-        logBookOperation('Book not in cache, adding it first', title);
+        log(`Book not in cache, adding it first: "${title}" by ${author}`);
         
         // Create an expiration date (90 days)
         const expiresAt = new Date(Date.now() + 90 * 24 * 60 * 60 * 1000);
@@ -804,9 +805,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           expiresAt
         });
         
-        logBookOperation('Created cache entry', title, author, `ID ${bookCacheEntry.id}`);
+        log(`Created cache entry: "${title}" by ${author}, ID ${bookCacheEntry.id}`);
       } else {
-        logBookOperation('Found existing cache entry', title, author, `ID ${bookCacheEntry.id}`);
+        log(`Found existing cache entry: "${title}" by ${author}, ID ${bookCacheEntry.id}`);
       }
       
       // Now create the saved book with a reference to the cache entry
@@ -826,7 +827,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Save book
       const savedBook = await storage.createSavedBook(validatedData);
       
-      logBookOperation('Saved book', title, author, `ID ${savedBook.id}, linked to cache ID ${bookCacheEntry.id}`);
+      log(`Saved book: "${title}" by ${author}, ID ${savedBook.id}, linked to cache ID ${bookCacheEntry.id}`);
       
       return res.status(201).json(savedBook);
     } catch (error) {
@@ -888,7 +889,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Device ID is required' });
       }
       
-      logDeviceOperation('Enhancing saved books', deviceId);
+      log(`Enhancing saved books: ${deviceId}`);
       
       // Call the book enhancer to improve book data using OpenAI
       const enhancedCount = await bookEnhancer.enhanceSavedBooks(deviceId);
@@ -1034,7 +1035,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Import the OpenAI recommendations function
-      const { getOpenAIRecommendations } = await import('./openai-recommendations');
+      const { getOpenAIRecommendations } = await import('./openai-recommendations.js');
       
       log(`Testing AI recommendations with ${books.length} books`);
       

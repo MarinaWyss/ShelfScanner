@@ -28,6 +28,7 @@ export interface IStorage {
   
   // Saved Books methods
   getSavedBooksByDeviceId(deviceId: string): Promise<SavedBook[]>;
+  findSavedBook(deviceId: string, title: string, author: string): Promise<SavedBook | undefined>;
   createSavedBook(savedBook: InsertSavedBook): Promise<SavedBook>;
   updateSavedBook(id: number, updates: Partial<InsertSavedBook>): Promise<SavedBook | undefined>;
   deleteSavedBook(id: number): Promise<boolean>;
@@ -97,6 +98,27 @@ export class DatabaseStorage implements IStorage {
   // Saved Books methods
   async getSavedBooksByDeviceId(deviceId: string): Promise<SavedBook[]> {
     return db.select().from(savedBooks).where(eq(savedBooks.deviceId, deviceId));
+  }
+
+  async findSavedBook(deviceId: string, title: string, author: string): Promise<SavedBook | undefined> {
+    try {
+      const [book] = await db.select().from(savedBooks).where(
+        and(
+          eq(savedBooks.deviceId, deviceId),
+          eq(sql`LOWER(${savedBooks.title})`, title.toLowerCase().trim()),
+          eq(sql`LOWER(${savedBooks.author})`, author.toLowerCase().trim())
+        )
+      );
+      
+      if (book) {
+        log(`Found existing saved book: "${title}" by ${author} for device ${deviceId}`, 'storage');
+      }
+      
+      return book;
+    } catch (error) {
+      log(`Error finding saved book: ${error instanceof Error ? error.message : String(error)}`, 'storage');
+      return undefined;
+    }
   }
 
   async createSavedBook(insertSavedBook: InsertSavedBook): Promise<SavedBook> {
