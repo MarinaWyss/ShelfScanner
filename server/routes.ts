@@ -111,6 +111,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         bookData.summary = summary;
       }
       
+      // Note: The getEnhancedRating and getEnhancedSummary methods already handle caching
+      // The data is automatically saved to cache with source='openai' when generated
+      
       // Return the enhanced book data
       res.json({
         ...bookData,
@@ -430,13 +433,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       for (const bookData of booksToSave) {
         // Cache the book data in book_cache to ensure consistent IDs
+        // Don't set source to "saved" - let it default to maintain compatibility with OpenAI caching
         const bookId = `${bookData.title}-${bookData.author || "Unknown"}`.toLowerCase().replace(/[^a-z0-9]/g, '-');
         const cachedBook = await storage.cacheBook({
           title: bookData.title,
           author: bookData.author || "Unknown",
           isbn: bookData.isbn || null,
           coverUrl: bookData.coverUrl || null,
-          source: "saved", // Mark as saved by user
+          // Don't set source here - it will be set to 'openai' when actual OpenAI content is added
           bookId, // Add required bookId field
           expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) // 1 year expiration
         });
@@ -799,7 +803,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           coverUrl: coverUrl || null,
           rating: rating || null,
           summary: summary || null,
-          source: 'saved', // Source is 'saved' for user-saved books
+          // Don't set source to 'saved' - it will be set to 'openai' when actual OpenAI content is added
           bookId, // Add required bookId field
           metadata: req.body.metadata || null,
           expiresAt

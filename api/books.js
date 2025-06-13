@@ -71,7 +71,7 @@ export default async function handler(req, res) {
               author: bookData.author || "Unknown",
               isbn: bookData.isbn || null,
               coverUrl: bookData.coverUrl || null,
-              source: "saved", // Mark as saved by user
+              // Don't set source to 'saved' - it will be set to 'openai' when actual OpenAI content is added
               bookId, // Add required bookId field
               expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) // 1 year expiration
             });
