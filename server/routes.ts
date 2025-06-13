@@ -195,13 +195,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             if (cachedBook && cachedBook.source === 'openai') {
               // Use cached OpenAI data if available
-              log(`Using cached OpenAI data for detected book "${bestMatch.title}"`);
+              log(`Using cached OpenAI data for detected book "${bestMatch.title}": rating=${cachedBook.rating}, summary=${cachedBook.summary ? 'yes' : 'no'}`);
               if (cachedBook.rating) {
                 bestMatch.rating = cachedBook.rating;
+                log(`Applied cached rating to "${bestMatch.title}": ${cachedBook.rating}`);
               }
               if (cachedBook.summary) {
                 bestMatch.summary = cachedBook.summary;
+                log(`Applied cached summary to "${bestMatch.title}"`);
               }
+            } else {
+              log(`No cached OpenAI data found for "${bestMatch.title}"`);
             }
             
             detectedBooks.push(bestMatch);

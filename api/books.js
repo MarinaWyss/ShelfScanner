@@ -106,25 +106,24 @@ export default async function handler(req, res) {
               const bookId = `${bookData.title}-${bookData.author || "Unknown"}`.toLowerCase().replace(/[^a-z0-9]/g, '-');
               let cachedBook;
               
-              // If no new content needed, just use the existing book without updating
-              if (!needsRating && !needsSummary) {
-                cachedBook = existingBook; // Use existing book without updating
-                log(`Using all cached content for "${bookData.title}" - no save needed`, 'books');
+              // The BookCacheService has already handled caching during getEnhancedRating/getEnhancedSummary
+              // So we just need to get the final cached book data
+              cachedBook = await bookCacheService.findInCache(bookData.title, bookData.author || "Unknown") || existingBook;
+              
+              if (cachedBook) {
+                log(`Using cached book data for "${bookData.title}": rating=${cachedBook.rating}, summary=${cachedBook.summary ? 'yes' : 'no'}`, 'books');
               } else {
-                // Only update if we have new content
+                log(`Warning: No cached book found for "${bookData.title}" after enhancement attempts`, 'books');
+                // Fallback: create minimal cache entry
+                const bookId = `${bookData.title}-${bookData.author || "Unknown"}`.toLowerCase().replace(/[^a-z0-9]/g, '-');
                 cachedBook = await storage.cacheBook({
                   title: bookData.title,
                   author: bookData.author || "Unknown",
                   isbn: bookData.isbn || null,
                   coverUrl: bookData.coverUrl || null,
-                  rating: rating, // Include the rating (cached or new)
-                  summary: summary, // Include the summary (cached or new)
-                  source: 'openai', // Explicitly set source to openai since we have OpenAI content
-                  bookId, // Add required bookId field
-                  expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) // 1 year expiration
+                  bookId,
+                  expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
                 });
-                log(`Generated OpenAI content for "${bookData.title}": rating=${needsRating ? 'new' : 'cached'}, summary=${needsSummary ? 'new' : 'cached'}`, 'books');
-                log(`Saved/updated book: "${cachedBook.title}" by ${cachedBook.author}`, 'books');
               }
               
               savedBooks.push({
@@ -134,6 +133,8 @@ export default async function handler(req, res) {
                 author: cachedBook.author,
                 isbn: cachedBook.isbn,
                 coverUrl: cachedBook.coverUrl,
+                rating: cachedBook.rating || '', // Include the rating
+                summary: cachedBook.summary || '', // Include the summary
                 metadata: cachedBook.metadata
               });
               
@@ -143,16 +144,25 @@ export default async function handler(req, res) {
               // Don't fail the entire book save if OpenAI fails
               log(`Failed to generate OpenAI content for "${bookData.title}": ${openaiError instanceof Error ? openaiError.message : String(openaiError)}`, 'books');
               
-              // Still try to cache basic book data
-              const bookId = `${bookData.title}-${bookData.author || "Unknown"}`.toLowerCase().replace(/[^a-z0-9]/g, '-');
-              let cachedBook = await storage.cacheBook({
-                title: bookData.title,
-                author: bookData.author || "Unknown",
-                isbn: bookData.isbn || null,
-                coverUrl: bookData.coverUrl || null,
-                bookId,
-                expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
-              });
+              // Check if we already have this book cached (maybe from a previous attempt)
+              const { bookCacheService } = await import('../server/book-cache-service.js');
+              let cachedBook = await bookCacheService.findInCache(bookData.title, bookData.author || "Unknown");
+              
+              if (!cachedBook) {
+                // Only create a new cache entry if one doesn't exist
+                const bookId = `${bookData.title}-${bookData.author || "Unknown"}`.toLowerCase().replace(/[^a-z0-9]/g, '-');
+                cachedBook = await storage.cacheBook({
+                  title: bookData.title,
+                  author: bookData.author || "Unknown",
+                  isbn: bookData.isbn || null,
+                  coverUrl: bookData.coverUrl || null,
+                  bookId,
+                  expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
+                });
+                log(`Created new cache entry for "${cachedBook.title}"`, 'books');
+              } else {
+                log(`Using existing cache entry for "${cachedBook.title}"`, 'books');
+              }
               
               savedBooks.push({
                 id: cachedBook.id,
@@ -161,10 +171,10 @@ export default async function handler(req, res) {
                 author: cachedBook.author,
                 isbn: cachedBook.isbn,
                 coverUrl: cachedBook.coverUrl,
+                rating: cachedBook.rating || '', // Include the rating
+                summary: cachedBook.summary || '', // Include the summary
                 metadata: cachedBook.metadata
               });
-              
-              log(`Saved book with error: "${cachedBook.title}" by ${cachedBook.author}`, 'books');
             }
           } catch (bookError) {
             console.error('Error saving individual book:', bookData, bookError);

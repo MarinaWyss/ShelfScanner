@@ -102,7 +102,7 @@ router.post("/recommendations", async (req: Request, res: Response) => {
           
           if (cachedBook && cachedBook.source === 'openai') {
             // Use cached OpenAI data if available
-            log(`Using cached OpenAI data for recommendation "${book.title}"`, "openai");
+            log(`Found cached OpenAI data for recommendation "${book.title}": rating=${cachedBook.rating}, summary=${cachedBook.summary ? 'yes' : 'no'}`, "openai");
             
             if (cachedBook.summary) {
               description = cachedBook.summary;
@@ -113,6 +113,8 @@ router.post("/recommendations", async (req: Request, res: Response) => {
               rating = cachedBook.rating;
               log(`Using cached OpenAI rating for recommendation "${book.title}": ${rating}`, "openai");
             }
+          } else {
+            log(`No cached OpenAI data found for recommendation "${book.title}"`, "openai");
           }
           
           // If we still don't have a description, get it from OpenAI
