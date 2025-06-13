@@ -12,11 +12,11 @@ export default function Navbar({ sidebarOpen, toggleSidebar, toggleContact }: Na
 
   return (
     <>
-      {/* Top Navigation Bar - Notion-style */}
-      <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-20">
+      {/* Top Navigation Bar */}
+      <header className="bg-white dark:bg-black border-b border-gray-200 dark:border-gray-800 sticky top-0 z-20">
         <div className="px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
           <div className="flex items-center">
-            <button onClick={toggleSidebar} className="mr-4 text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors">
+            <button onClick={toggleSidebar} className="mr-4 text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white transition-colors">
               <svg 
                 xmlns="http://www.w3.org/2000/svg" 
                 width="24" 
@@ -53,7 +53,7 @@ export default function Navbar({ sidebarOpen, toggleSidebar, toggleContact }: Na
           
           <div className="flex items-center gap-4">
             <ThemeToggle />
-            <button onClick={toggleContact} className="text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white flex items-center gap-2 transition-colors">
+            <button onClick={toggleContact} className="text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white flex items-center gap-2 transition-colors">
               <svg 
                 xmlns="http://www.w3.org/2000/svg" 
                 width="24" 
@@ -77,7 +77,7 @@ export default function Navbar({ sidebarOpen, toggleSidebar, toggleContact }: Na
       
       {/* Sidebar Navigation - Notion-style */}
       <aside 
-        className={`w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 fixed top-[57px] bottom-0 left-0 z-20 transition-transform duration-300 ease-in-out ${
+        className={`w-64 bg-white dark:bg-black border-r border-gray-200 dark:border-gray-800 fixed top-[57px] bottom-0 left-0 z-20 transition-transform duration-300 ease-in-out ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
@@ -89,8 +89,8 @@ export default function Navbar({ sidebarOpen, toggleSidebar, toggleContact }: Na
                   <li>
                     <Link href="/" className={`flex items-center gap-2 w-full px-3 py-1.5 rounded-md font-medium text-sm transition-colors duration-150 ${
                         location === '/' 
-                          ? 'bg-violet-50 dark:bg-violet-900/30 text-violet-600 dark:text-violet-300' 
-                          : 'text-gray-800 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                          ? 'bg-violet-50 dark:bg-violet-900 text-violet-600 dark:text-violet-200' 
+                          : 'text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
                       }`}>
                         <svg 
                           xmlns="http://www.w3.org/2000/svg" 
@@ -113,8 +113,8 @@ export default function Navbar({ sidebarOpen, toggleSidebar, toggleContact }: Na
                   <li>
                     <Link href="/books" className={`flex items-center gap-2 w-full px-3 py-1.5 rounded-md font-medium text-sm transition-colors duration-150 ${
                         location === '/books' 
-                          ? 'bg-violet-50 dark:bg-violet-900/30 text-violet-600 dark:text-violet-300' 
-                          : 'text-gray-800 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                          ? 'bg-violet-50 dark:bg-violet-900 text-violet-600 dark:text-violet-200' 
+                          : 'text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
                       }`}>
                         <svg 
                           xmlns="http://www.w3.org/2000/svg" 
@@ -136,8 +136,8 @@ export default function Navbar({ sidebarOpen, toggleSidebar, toggleContact }: Na
                   <li>
                     <Link href="/reading-list" className={`flex items-center gap-2 w-full px-3 py-1.5 rounded-md font-medium text-sm transition-colors duration-150 ${
                         location === '/reading-list' 
-                          ? 'bg-violet-50 dark:bg-violet-900/30 text-violet-600 dark:text-violet-300' 
-                          : 'text-gray-800 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
+                          ? 'bg-violet-50 dark:bg-violet-900 text-violet-600 dark:text-violet-200' 
+                          : 'text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
                       }`}>
                         <svg 
                           xmlns="http://www.w3.org/2000/svg" 
