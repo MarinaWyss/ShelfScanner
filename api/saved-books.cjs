@@ -14,6 +14,16 @@ const { log } = require('../server/simple-logger');
  * @param {import('@vercel/node').VercelResponse} res - The response object
  */
 module.exports = async function handler(req, res) {
+  // Add comprehensive logging for debugging
+  console.log('=== SAVED BOOKS API CALLED ===');
+  console.log('Method:', req.method);
+  console.log('URL:', req.url);
+  console.log('Headers:', JSON.stringify(req.headers, null, 2));
+  console.log('Cookies:', req.cookies);
+  console.log('Body:', req.body);
+  console.log('Environment:', process.env.NODE_ENV);
+  console.log('Database URL exists:', !!process.env.DATABASE_URL);
+  
   // Handle CORS
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -21,25 +31,37 @@ module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
 
   if (req.method === 'OPTIONS') {
+    console.log('Handling OPTIONS request');
     return res.status(200).end();
   }
 
   try {
+    console.log('Starting saved books processing...');
+    
     // Extract device ID from cookies or generate new one
     let deviceId = req.cookies?.deviceId;
+    console.log('Initial deviceId from cookies:', deviceId);
     
     if (!deviceId) {
       deviceId = uuidv4();
+      console.log('Generated new deviceId:', deviceId);
       // Set cookie
       res.setHeader('Set-Cookie', `deviceId=${deviceId}; Path=/; Max-Age=${365 * 24 * 60 * 60}; SameSite=Strict; ${process.env.NODE_ENV === 'production' ? 'Secure;' : ''}`);
     }
 
+    console.log('Using deviceId:', deviceId);
+
     if (req.method === 'GET') {
+      console.log('Processing GET request for saved books');
       // Get saved books
       logDeviceOperation('Getting saved books', deviceId);
+      
+      console.log('Calling storage.getSavedBooksByDeviceId...');
       const savedBooks = await storage.getSavedBooksByDeviceId(deviceId);
+      console.log('Retrieved saved books count:', savedBooks.length);
       
       // Enhance saved books with the latest data from book_cache
+      console.log('Enhancing saved books with cache data...');
       const enhancedSavedBooks = await Promise.all(
         savedBooks.map(async (book) => {
           // If book has a bookCacheId, fetch the latest cache data
@@ -59,6 +81,7 @@ module.exports = async function handler(req, res) {
                 };
               }
             } catch (error) {
+              console.error(`Error fetching cache data for book ID ${book.id}:`, error);
               log(`Error fetching cache data for book ID ${book.id}: ${error instanceof Error ? error.message : String(error)}`, 'saved-books');
             }
           }
@@ -68,24 +91,32 @@ module.exports = async function handler(req, res) {
         })
       );
       
+      console.log('Enhanced saved books count:', enhancedSavedBooks.length);
+      console.log('Returning saved books successfully');
       return res.status(200).json(enhancedSavedBooks);
     }
     
     if (req.method === 'POST') {
+      console.log('Processing POST request for saved books');
       // Save a book
       const { title, author, coverUrl, rating, summary } = req.body;
+      console.log('Book to save:', { title, author, coverUrl, rating, summary });
       
       if (!title || !author) {
+        console.log('Missing required fields: title or author');
         return res.status(400).json({ message: 'Book title and author are required' });
       }
       
       logDeviceOperation('Saving book', deviceId, `"${title}" by ${author}`);
       
+      console.log('Checking if book exists in cache...');
       // First, check if book exists in cache or create it if not
       let bookCacheEntry = await storage.findBookInCache(title, author);
+      console.log('Book cache entry found:', !!bookCacheEntry);
       
       // If not in cache, add it to cache first
       if (!bookCacheEntry) {
+        console.log('Book not in cache, adding it first...');
         logBookOperation('Book not in cache, adding it first', title);
         
         // Create an expiration date (90 days)
@@ -107,11 +138,14 @@ module.exports = async function handler(req, res) {
           expiresAt
         });
         
+        console.log('Created cache entry with ID:', bookCacheEntry.id);
         logBookOperation('Created cache entry', title, author, `ID ${bookCacheEntry.id}`);
       } else {
+        console.log('Found existing cache entry with ID:', bookCacheEntry.id);
         logBookOperation('Found existing cache entry', title, author, `ID ${bookCacheEntry.id}`);
       }
       
+      console.log('Creating saved book record...');
       // Now create the saved book with a reference to the cache entry
       const bookToSave = {
         deviceId,
@@ -123,23 +157,39 @@ module.exports = async function handler(req, res) {
         bookCacheId: bookCacheEntry.id
       };
       
+      console.log('Book data to save:', bookToSave);
+      
       // Validate book data
       const validatedData = insertSavedBookSchema.parse(bookToSave);
+      console.log('Validated data:', validatedData);
       
       // Save book
       const savedBook = await storage.createSavedBook(validatedData);
+      console.log('Saved book with ID:', savedBook.id);
       
       logBookOperation('Saved book', title, author, `ID ${savedBook.id}, linked to cache ID ${bookCacheEntry.id}`);
       
+      console.log('Returning success response');
       return res.status(201).json(savedBook);
     }
     
+    console.log('Method not allowed:', req.method);
     return res.status(405).json({ message: 'Method not allowed' });
   } catch (error) {
+    console.error('=== ERROR IN SAVED BOOKS API ===');
+    console.error('Error type:', error.constructor.name);
+    console.error('Error message:', error.message);
+    console.error('Error stack:', error.stack);
+    console.error('==============================');
+    
     log(`Error in saved-books API: ${error instanceof Error ? error.message : String(error)}`, 'api-error');
     return res.status(500).json({ 
       message: 'Error handling saved books',
-      error: error instanceof Error ? error.message : String(error)
+      error: error instanceof Error ? error.message : String(error),
+      debug: {
+        type: error.constructor.name,
+        stack: error.stack
+      }
     });
   }
 }; 

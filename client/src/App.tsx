@@ -15,6 +15,7 @@ import ContactForm from "@/components/contact/ContactForm";
 import { DeviceProvider } from "./contexts/DeviceContext";
 import { syncDeviceIdCookie } from "./lib/deviceId";
 import AdminPage from "@/pages/admin";
+import Debug from "@/pages/debug";
 
 
 // Google script loading removed
@@ -29,6 +30,7 @@ function Router() {
         <Route path="/privacy-policy" component={PrivacyPolicy} />
         <Route path="/terms-conditions" component={TermsConditions} />
         <Route path="/admin" component={AdminPage} />
+        <Route path="/debug" component={Debug} />
         <Route component={NotFound} />
       </Switch>
     </WouterRouter>
