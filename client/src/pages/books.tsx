@@ -147,7 +147,6 @@ export default function Books() {
     }
   });
 
-  // No longer fetching recommendations with a GET request - using state directly instead
 
   const handlePreferencesSubmit = (preferences: Preference) => {
     setUserPreferences(preferences);
@@ -178,12 +177,6 @@ export default function Books() {
   const nextStep = () => {
     if (currentStep < 3) {
       setCurrentStep(currentStep + 1);
-    }
-  };
-
-  const prevStep = () => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
     }
   };
 
