@@ -1,7 +1,6 @@
 /* eslint-disable no-undef */
 // Import using ES modules for Vercel compatibility
 import 'dotenv/config';
-import { v4 as uuidv4 } from 'uuid';
 
 /**
  * API handler for preferences
@@ -94,17 +93,9 @@ export default async function handler(req, res) {
         const preferenceData = validation.data;
         console.log('Saving preference for deviceId:', preferenceData.deviceId);
         
-        // Generate preference ID
-        const preferenceWithId = {
-          ...preferenceData,
-          id: uuidv4(),
-          createdAt: new Date(),
-          updatedAt: new Date()
-        };
-
-        console.log('Preference with ID:', preferenceWithId);
+        console.log('Preference data to save:', preferenceData);
         
-        const result = await storage.createPreference(preferenceWithId);
+        const result = await storage.createPreference(preferenceData);
         console.log('Save result:', result);
         
         await logDeviceOperation(preferenceData.deviceId, 'preferences_save', { 
