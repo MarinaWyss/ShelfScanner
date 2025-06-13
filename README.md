@@ -24,12 +24,12 @@ Have you ever been at a book sale, library, or friend's house looking at shelves
 
 ### User Experience
 - **Mobile-First Design**: Optimized for smartphones and tablets
-- **Progressive Web App**: Install on your device for native app-like experience
-- **Offline Capability**: Access cached book data without internet
+- **Device-Based Sessions**: No account required - preferences stored per device
+- **Responsive Design**: Works well on all screen sizes
 
 ### Performance & Reliability
 - **Intelligent Caching**: Multi-layer caching reduces API costs and improves speed
-- **Rate Limiting**: Built-in protection against API abus
+- **Rate Limiting**: Built-in protection against API abuse
 - **Error Handling**: Graceful fallbacks when services are unavailable
 - **Database Monitoring**: PostgreSQL connection and performance tracking
 
@@ -37,8 +37,8 @@ Have you ever been at a book sale, library, or friend's house looking at shelves
 
 **Frontend**: React + TypeScript, TailwindCSS, Shadcn/ui, Wouter routing  
 **Backend**: Express.js + TypeScript, PostgreSQL, Drizzle ORM  
-**AI Services**: OpenAI GPT-4, Google Vision API  
-**Infrastructure**: Vite build tool, Winston logging, Session auth  
+**AI Services**: OpenAI GPT-4o for recommendations and descriptions  
+**Infrastructure**: Vite build tool, Winston logging, Device-based auth  
 **Deployment**: Vercel (Frontend & API), PostgreSQL database
 
 ## 🚀 Quick Setup
@@ -48,7 +48,6 @@ Have you ever been at a book sale, library, or friend's house looking at shelves
 - Node.js 18+ and npm
 - PostgreSQL database (local or cloud)
 - OpenAI API key
-- Google Vision API key
 
 ### Local Development
 
@@ -62,8 +61,7 @@ Have you ever been at a book sale, library, or friend's house looking at shelves
 2. **Set Up Environment Variables**
    Create a `.env` file in the root directory:
    ```bash
-   cp .env.example .env
-   # Edit .env with your actual credentials (see Environment Configuration below)
+   # See Environment Configuration section below for all variables
    ```
 
 3. **Database Setup**
@@ -84,7 +82,7 @@ Have you ever been at a book sale, library, or friend's house looking at shelves
 
 ### Production Deployment
 
-#### Option 1: Vercel (Recommended)
+#### Vercel Deployment (Recommended)
 
 1. **Deploy to Vercel**
    ```bash
@@ -98,18 +96,6 @@ Have you ever been at a book sale, library, or friend's house looking at shelves
 2. **Configure Environment Variables**
    In your Vercel dashboard, add all required environment variables (see Environment Configuration below)
 
-#### Option 2: Docker Deployment
-
-1. **Build Production Bundle**
-   ```bash
-   npm run build
-   ```
-
-2. **Start Production Server**
-   ```bash
-   npm start
-   ```
-
 ## 🔐 Environment Configuration
 
 ### Required Variables
@@ -120,71 +106,21 @@ Create a `.env` file with these required variables:
 # Database (Required)
 DATABASE_URL=postgresql://user:password@host:port/database
 
-# Admin Access (Required)
-ADMIN_USERNAME=your_admin_username
-ADMIN_PASSWORD_HASH=your_hashed_password
-
-# API Keys (Optional but recommended)
+# OpenAI API (Required for AI features)
 OPENAI_API_KEY=sk-your_openai_key_here
+
+# Optional: Google Vision API (minimal implementation)
 GOOGLE_VISION_API_KEY=your_google_vision_key
-
-# Monitoring & Alerting (Required for production alerts)
-SMTP_SMARTHOST=smtp.gmail.com:587
-SMTP_FROM=alerts@yourdomain.com
-SMTP_AUTH_USERNAME=your_email@gmail.com
-SMTP_AUTH_PASSWORD=your_app_password
-ADMIN_EMAIL=your_email@gmail.com
-HOST=https://yourdomain.com
-```
-
-### Monitoring & Alerting Setup
-
-**Email Alerts Configuration:**
-```env
-# Gmail SMTP (recommended)
-SMTP_SMARTHOST=smtp.gmail.com:587
-SMTP_FROM=alerts@yourdomain.com
-SMTP_AUTH_USERNAME=your_email@gmail.com
-SMTP_AUTH_PASSWORD=your_gmail_app_password
-ADMIN_EMAIL=your_email@gmail.com
-
-# Alternative SMTP providers
-# SendGrid: smtp.sendgrid.net:587
-# AWS SES: email-smtp.us-east-1.amazonaws.com:587
-# Mailgun: smtp.mailgun.org:587
-```
-
-**Alert Types:**
-- **Critical System Health**: Memory >90%, CPU >90%, Disk >95%
-- **API Rate Limits**: OpenAI/Google APIs approaching daily limits (80%+)
-- **Database Issues**: Connection failures, slow queries
-- **API Failures**: Multiple failures affecting users
-- **Daily Reports**: System performance summaries
-
-**Alert Frequency:**
-- Critical alerts: 30-minute cooldown
-- Warning alerts: 60-minute cooldown
-- Rate limit alerts: Once per day per API
-- Daily summaries: 12:00 AM system time
-
-### Generating Admin Password Hash
-
-```javascript
-// Run this in Node.js to generate your password hash
-const crypto = require('crypto');
-const password = 'your_secure_password';
-const hash = crypto.createHash('sha256').update(password).digest('hex');
-console.log('ADMIN_PASSWORD_HASH=' + hash);
 ```
 
 ### API Key Setup
 
-**OpenAI API** (for book summaries and recommendations):
+**OpenAI API** (Required - for book summaries and recommendations):
 1. Visit [OpenAI Platform](https://platform.openai.com)
 2. Create an account and add billing
 3. Generate an API key in the API Keys section
 
-**Google Vision API** (for book spine text recognition):
+**Google Vision API** (Optional - limited implementation):
 1. Go to [Google Cloud Console](https://console.cloud.google.com)
 2. Enable the Vision API
 3. Create credentials and get your API key
@@ -197,18 +133,21 @@ ShelfScanner/
 │   ├── components/         # Reusable UI components
 │   │   ├── ui/            # Shadcn/ui base components
 │   │   ├── book-scanner/  # Book scanning interface
-│   │   └── admin/         # Admin dashboard
+│   │   └── layout/        # Navigation and layout
 │   ├── pages/             # Application routes/pages
 │   ├── hooks/             # Custom React hooks
+│   ├── contexts/          # React contexts (Theme, Device)
 │   └── lib/               # Utilities and API clients
 ├── server/                # Express.js backend
 │   ├── routes.ts          # Main API routes
-│   ├── admin-*.ts         # Admin authentication & monitoring
-│   ├── book-*.ts          # Book data services
+│   ├── books.ts           # Book data services
 │   ├── openai-*.ts        # AI integration services
-│   └── storage.ts         # Database operations
+│   ├── book-cache-service.ts # Caching layer
+│   ├── storage.ts         # Database operations
+│   └── middleware/        # Express middleware
 ├── shared/                # Shared TypeScript types
 │   └── schema.ts          # Database schema definitions
+├── api/                   # Vercel API routes
 ├── public/                # Static assets
 ├── tests/                 # Test files
 └── scripts/               # Utility scripts
@@ -218,35 +157,36 @@ ShelfScanner/
 
 ### 1. Book Detection
 - Users photograph bookshelves using their device camera
-- Google Vision API extracts text from book spines
+- Image is processed to extract text from book spines
 - Custom parsing algorithms identify book titles and authors
+- Book metadata fetched from external APIs
 
 ### 2. Data Enhancement
-- Basic book metadata fetched from multiple book APIs
-- OpenAI generates rich summaries and ratings
+- Basic book metadata fetched from Google Books API
+- OpenAI generates rich summaries and enhanced ratings
 - All data cached in PostgreSQL for performance
 
 ### 3. Personalized Recommendations
-- Users import reading history from Goodreads or manually input preferences
+- Users can import reading history from Goodreads CSV export
+- Users can manually input reading preferences
 - AI analyzes user's reading patterns and preferences
 - Generates personalized match scores with detailed reasoning
 
 ### 4. Smart Caching
 - **Database Layer**: Stores enhanced book data permanently
-- **Memory Cache**: Frequently accessed data for speed
-- **API Rate Limiting**: Prevents expensive API overuse
+- **Rate Limiting**: Prevents expensive API overuse
+- **Device Identification**: Preferences linked to device cookies
 
 ## 📊 Performance Features
 
 - **Lazy Loading**: Images and data load as needed
-- **Request Batching**: Multiple book lookups in single API calls
+- **Request Batching**: Efficient API usage
 - **Progressive Enhancement**: App works even if AI services are down
-- **Offline Support**: Cached data accessible without internet
+- **Caching Strategy**: Multi-level caching reduces costs
 
 ## 🛡 Security & Privacy
 
-- **No Personal Data Storage**: Reading preferences stored locally or optionally in session
-- **Secure Admin Access**: SHA-256 hashed passwords, session-based auth
+- **Device-Based Storage**: Reading preferences stored per device, no accounts required
 - **API Key Protection**: All sensitive keys in environment variables
 - **Input Validation**: Zod schemas validate all user inputs
 - **Rate Limiting**: Prevents API abuse and reduces costs
@@ -268,9 +208,9 @@ npm run db:setup        # Initial database setup
 
 # Testing
 npm run test            # Run all tests
-npm run test:client     # Client-side tests
-npm run test:server     # Server-side tests
-npm run test:e2e        # End-to-end tests
+npm run test:client     # Client-side tests (Vitest)
+npm run test:server     # Server-side tests (Jest)
+npm run test:e2e        # End-to-end tests (Playwright)
 npm run test:ui         # Test UI
 
 # Code Quality
@@ -283,13 +223,12 @@ npm run build           # Build for production
 npm start               # Start production server
 ```
 
-## 📈 Monitoring & Admin
+## 📈 Admin Features
 
-Access the admin dashboard at `/admin` to monitor:
-- API usage and costs
-- System health and performance
-- Error rates and logs
-- User activity patterns
+Basic admin functionality is available at `/admin` for monitoring:
+- API usage statistics
+- Basic system information
+- Debug information
 
 ## 📄 License
 

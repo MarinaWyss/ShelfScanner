@@ -265,8 +265,7 @@ export default function SavedBooks() {
                 Love ShelfScanner? 💖
               </h3>
               <p className="text-gray-600 dark:text-gray-300 text-sm mb-6 leading-relaxed">
-                Help us keep your reading list growing! Your support keeps our book recommendations 
-                flowing and ShelfScanner free for everyone.
+                Help us keep your reading list growing! Your support keeps ShelfScanner free for everyone.
               </p>
               <DonationButton 
                 onClick={() => setDonationModalOpen(true)} 
