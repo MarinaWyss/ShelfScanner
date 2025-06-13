@@ -277,7 +277,7 @@ export default function UploadStep({ onBooksDetected, detectedBooks, onGetRecomm
               </div>
             ) : isProcessing ? (
               <div className="py-12 flex flex-col items-center">
-                <div className="animate-spin h-10 w-10 border-4 border-violet-600 dark:border-violet-400 border-t-transparent rounded-full mb-4"></div>
+                <div className="animate-spin h-10 w-10 border-4 border-violet-600 dark:border-violet-400 border-t-transparent dark:border-t-transparent rounded-full mb-4"></div>
                 <p className="text-violet-600 dark:text-violet-400 font-medium mb-1">Analyzing your books</p>
                 <p className="text-gray-600 dark:text-gray-300">This may take a moment...</p>
               </div>
@@ -359,13 +359,6 @@ export default function UploadStep({ onBooksDetected, detectedBooks, onGetRecomm
                 </Button>
               </div>
             )}
-          </div>
-
-          <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 rounded-md">
-            <h4 className="font-medium text-blue-800 dark:text-blue-300 mb-1">Want more accurate recommendations?</h4>
-            <p className="text-sm text-blue-600 dark:text-blue-300">
-              Try uploading another image with clearer book covers or go back to update your preferences.
-            </p>
           </div>
         </>
       )}

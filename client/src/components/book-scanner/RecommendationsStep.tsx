@@ -254,7 +254,7 @@ export default function RecommendationsStep({ recommendations, isLoading = false
       {isLoading && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {[...Array(3)].map((_, i) => (
-            <div key={i} className="bg-white border border-neutral-200 rounded-xl overflow-hidden shadow-sm">
+            <div key={i} className="bg-white dark:bg-gray-800 border border-neutral-200 dark:border-neutral-700 rounded-xl overflow-hidden shadow-sm">
               <div className="p-4 flex">
                 <Skeleton className="w-24 h-36 rounded-md" />
                 <div className="ml-4 space-y-2 flex-1">
@@ -263,7 +263,7 @@ export default function RecommendationsStep({ recommendations, isLoading = false
                   <Skeleton className="h-4 w-24" />
                 </div>
               </div>
-              <div className="p-4 border-t border-neutral-200 space-y-2">
+              <div className="p-4 border-t border-neutral-200 dark:border-neutral-700 space-y-2">
                 <Skeleton className="h-4 w-full" />
                 <Skeleton className="h-4 w-full" />
                 <Skeleton className="h-4 w-3/4" />
@@ -285,13 +285,13 @@ export default function RecommendationsStep({ recommendations, isLoading = false
             strokeWidth="2" 
             strokeLinecap="round" 
             strokeLinejoin="round" 
-            className="h-12 w-12 text-neutral-400 mx-auto mb-4"
+            className="h-12 w-12 text-neutral-400 dark:text-neutral-500 mx-auto mb-4"
           >
             <circle cx="12" cy="12" r="10" />
             <path d="M12 8v4" />
             <path d="M12 16h.01" />
           </svg>
-          <p className="text-neutral-600 mb-4">
+          <p className="text-neutral-600 dark:text-neutral-400 mb-4">
             No recommendations available yet. Try scanning some books first!
           </p>
           <Button onClick={() => window.location.reload()}>Start Over</Button>
@@ -328,10 +328,10 @@ export default function RecommendationsStep({ recommendations, isLoading = false
                     .map((book, index) => (
                       <div 
                         key={index} 
-                        className="bg-gray-100 border border-slate-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                        className="bg-gray-100 dark:bg-gray-800 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
                       >
                         <div className="md:flex">
-                          <div className="p-5 flex md:flex-col md:items-center md:w-1/4 md:border-r border-slate-200">
+                          <div className="p-5 flex md:flex-col md:items-center md:w-1/4 md:border-r border-slate-200 dark:border-slate-700">
                             {book.coverUrl ? (
                               <div className="relative">
                                 <img 
@@ -352,7 +352,7 @@ export default function RecommendationsStep({ recommendations, isLoading = false
                                 <div className="absolute inset-0 rounded-md shadow-inner"></div>
                               </div>
                             ) : (
-                              <div className="w-24 h-36 md:w-32 md:h-48 bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center rounded-md shadow-sm">
+                              <div className="w-24 h-36 md:w-32 md:h-48 bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-700 dark:to-slate-800 flex items-center justify-center rounded-md shadow-sm">
                                 <svg 
                                   xmlns="http://www.w3.org/2000/svg" 
                                   width="24" 
@@ -391,14 +391,14 @@ export default function RecommendationsStep({ recommendations, isLoading = false
                           
                           <div className="md:w-3/4 flex flex-col">
                             <div className="p-5 pb-3">
-                              <h4 className="font-semibold text-black text-xl mb-1">{book.title}</h4>
-                              <p className="text-black text-sm mb-3">by {book.author}</p>
+                              <h4 className="font-semibold text-black dark:text-white text-xl mb-1">{book.title}</h4>
+                              <p className="text-black dark:text-gray-300 text-sm mb-3">by {book.author}</p>
                               
                               {/* Display match reason in second person format only when available */}
                               {book.matchReason && book.matchReason.trim() !== "" && book.matchReason !== "using fallback algo" && (
-                                <div className="mt-2 mb-3 text-sm bg-gradient-to-r from-purple-50 to-violet-50 p-3 rounded-md border border-purple-100">
-                                  <p className="text-purple-800 font-medium mb-1">Why This Matches You:</p>
-                                  <p className="text-purple-700">
+                                <div className="mt-2 mb-3 text-sm bg-gradient-to-r from-purple-50 to-violet-50 dark:from-purple-900/30 dark:to-violet-900/30 p-3 rounded-md border border-purple-100 dark:border-purple-800">
+                                  <p className="text-purple-800 dark:text-purple-300 font-medium mb-1">Why This Matches You:</p>
+                                  <p className="text-purple-700 dark:text-purple-400">
                                     {book.matchReason.replace(/the user's/gi, "your")
                                       .replace(/user has/gi, "you have")
                                       .replace(/user likes/gi, "you like")
@@ -409,14 +409,14 @@ export default function RecommendationsStep({ recommendations, isLoading = false
                                   </p>
                                 </div>
                               )}
-                              <div className="text-sm text-black">
+                              <div className="text-sm text-black dark:text-gray-300">
                                 <p className={expandedBooks.includes(index) ? '' : 'line-clamp-3'}>
                                   {book.summary}
                                 </p>
                                 {book.summary && book.summary.length > 240 && (
                                   <button 
                                     onClick={() => toggleExpand(index)}
-                                    className="mt-2 text-indigo-600 hover:text-indigo-800 text-sm flex items-center font-medium"
+                                    className="mt-2 text-indigo-600 dark:text-indigo-400 hover:text-indigo-800 dark:hover:text-indigo-300 text-sm flex items-center font-medium"
                                   >
                                     {expandedBooks.includes(index) ? (
                                       <>
@@ -434,13 +434,13 @@ export default function RecommendationsStep({ recommendations, isLoading = false
                               </div>
                             </div>
                             
-                            <div className="mt-auto p-5 pt-3 border-t border-slate-200">
+                            <div className="mt-auto p-5 pt-3 border-t border-slate-200 dark:border-slate-700">
                               <div className="flex justify-between gap-3">
                                 <button 
                                   className={`
                                     ${savedBookIds.includes(index) 
-                                      ? 'bg-indigo-100 border border-indigo-300 text-indigo-700 hover:bg-indigo-200' 
-                                      : 'bg-white border border-slate-300 hover:bg-slate-50 text-slate-800'} 
+                                      ? 'bg-indigo-100 dark:bg-indigo-900/30 border border-indigo-300 dark:border-indigo-700 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-200 dark:hover:bg-indigo-800/40' 
+                                      : 'bg-white dark:bg-gray-700 border border-slate-300 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-600 text-slate-800 dark:text-slate-300'} 
                                     text-sm font-medium flex items-center px-3 py-1 rounded ${savingBookIds.includes(index) ? 'opacity-50 cursor-not-allowed' : ''}
                                   `}
                                   onClick={() => toggleBookSave(book, index)}
@@ -484,7 +484,7 @@ export default function RecommendationsStep({ recommendations, isLoading = false
               {/* Books You've Already Read section */}
               {goodreadsData && goodreadsData.length > 0 && recommendations.some(book => isBookAlreadyRead(book)) && (
                 <div className="mt-12">
-                  <h3 className="text-xl font-semibold mb-4 text-purple-700">Books You've Already Read</h3>
+                  <h3 className="text-xl font-semibold mb-4 text-purple-700 dark:text-purple-400">Books You've Already Read</h3>
                   <p className="text-slate-400 mb-4">
                     We detected these books in your photo, but it looks like you've already read them according to your Goodreads data.
                   </p>
@@ -494,10 +494,10 @@ export default function RecommendationsStep({ recommendations, isLoading = false
                       .map((book, index) => (
                         <div 
                           key={`read-${index}`} 
-                          className="bg-purple-50 border border-purple-200 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
+                          className="bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800 rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
                         >
                           <div className="md:flex">
-                            <div className="p-5 flex md:flex-col md:items-center md:w-1/4 md:border-r border-purple-200">
+                            <div className="p-5 flex md:flex-col md:items-center md:w-1/4 md:border-r border-purple-200 dark:border-purple-800">
                               {book.coverUrl ? (
                                 <div className="relative">
                                   <img 
@@ -515,7 +515,7 @@ export default function RecommendationsStep({ recommendations, isLoading = false
                                   <div className="absolute inset-0 rounded-md shadow-inner"></div>
                                 </div>
                               ) : (
-                                <div className="w-24 h-36 md:w-32 md:h-48 bg-gradient-to-br from-purple-100 to-purple-200 flex items-center justify-center rounded-md shadow-sm">
+                                <div className="w-24 h-36 md:w-32 md:h-48 bg-gradient-to-br from-purple-100 to-purple-200 dark:from-purple-900/30 dark:to-purple-800/30 flex items-center justify-center rounded-md shadow-sm">
                                   <svg 
                                     xmlns="http://www.w3.org/2000/svg" 
                                     width="24" 
@@ -537,7 +537,7 @@ export default function RecommendationsStep({ recommendations, isLoading = false
                                 <div className="mt-3 flex items-center">
                                   {renderRating(book.rating)}
                                 </div>
-                                <span className="mt-2 text-xs font-medium px-2 py-0.5 rounded bg-purple-200 text-purple-800">
+                                <span className="mt-2 text-xs font-medium px-2 py-0.5 rounded bg-purple-200 dark:bg-purple-900/50 text-purple-800 dark:text-purple-300">
                                   Already Read
                                 </span>
                               </div>
@@ -545,9 +545,9 @@ export default function RecommendationsStep({ recommendations, isLoading = false
                             
                             <div className="md:w-3/4 flex flex-col">
                               <div className="p-5 pb-3">
-                                <h4 className="font-semibold text-black text-xl mb-1">{book.title}</h4>
-                                <p className="text-black text-sm mb-3">by {book.author}</p>
-                                <div className="text-sm text-black">
+                                <h4 className="font-semibold text-black dark:text-white text-xl mb-1">{book.title}</h4>
+                                <p className="text-black dark:text-gray-300 text-sm mb-3">by {book.author}</p>
+                                <div className="text-sm text-black dark:text-gray-300">
                                   <p className={expandedBooks.includes(index + 1000) ? '' : 'line-clamp-3'}>
                                     {book.summary}
                                   </p>
