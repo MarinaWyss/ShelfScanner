@@ -66,19 +66,20 @@ router.post("/recommendations", async (req: Request, res: Response) => {
           // Ensure we have a cover URL from the original scanned book if available
           const coverUrl = originalBook?.coverUrl || book.coverUrl || '';
           
+          // Make sure we have an ISBN if it's available in the original book
+          const isbn = originalBook?.isbn || book.isbn || '';
+          
           // Get fresh OpenAI-generated description
           const description = await getOpenAIDescription(book.title, book.author);
           
-          // Get fresh OpenAI-generated rating - we don't want to use fallbacks
+          // Get cached or fresh OpenAI-generated rating
           const bookCacheService = (await import('./book-cache-service.js')).bookCacheService;
-          const rating = await bookCacheService.getEnhancedRating(book.title, book.author, book.isbn);
+          const rating = await bookCacheService.getEnhancedRating(book.title, book.author, isbn);
+          log(`Retrieved rating for recommendation "${book.title}": ${rating}`, "openai");
           
           // Use the match reason provided directly from the recommendation
           // This is now generated within the recommendation prompt and should be more focused
           const matchReason = book.matchReason || "This book matches elements of your reading preferences.";
-          
-          // Make sure we have an ISBN if it's available in the original book
-          const isbn = originalBook?.isbn || book.isbn || '';
           
           // Cache this book with OpenAI data for future use
           if (description || rating) {
@@ -101,7 +102,7 @@ router.post("/recommendations", async (req: Request, res: Response) => {
           }
           
           // Return the enhanced recommendation with fresh OpenAI data
-          return {
+          const enhancedBook = {
             title: book.title,
             author: book.author,
             coverUrl: coverUrl,
@@ -113,6 +114,9 @@ router.post("/recommendations", async (req: Request, res: Response) => {
             matchReason: matchReason || "This book aligns with your reading preferences.", // Always use our fresh match reason
             fromAI: true
           };
+          
+          log(`Final recommendation for "${book.title}": rating=${enhancedBook.rating}, summary=${enhancedBook.summary ? 'yes' : 'no'}`, "openai");
+          return enhancedBook;
         } catch (error) {
           // If there's an error with OpenAI for this specific book, return basic info
           log(`Error enhancing book ${book.title}: ${error instanceof Error ? error.message : String(error)}`, "openai");

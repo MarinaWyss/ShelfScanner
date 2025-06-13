@@ -299,11 +299,20 @@ export class BookCacheService {
         return existingSummary || null;
       }
       
-      // Look for cached summary first
+      // Look for cached summary first - accept any valid summary
       const cachedBook = await this.findInCache(title, author);
-      if (cachedBook?.summary && cachedBook.source === 'openai') {
-        log(`Using cached OpenAI summary for "${title}"`, 'cache');
-        return cachedBook.summary;
+      if (cachedBook?.summary) {
+        // If the source is already OpenAI, use it immediately
+        if (cachedBook.source === 'openai') {
+          log(`Using cached OpenAI summary for "${title}"`, 'cache');
+          return cachedBook.summary;
+        }
+        // If summary exists but source isn't OpenAI, still use it if it looks valid
+        // This prevents regenerating summaries that were already created
+        if (cachedBook.summary.length > 50) { // Basic validity check
+          log(`Using cached summary for "${title}" (source: ${cachedBook.source})`, 'cache');
+          return cachedBook.summary;
+        }
       }
       
       // Generate a new summary using OpenAI's knowledge
@@ -343,10 +352,11 @@ export class BookCacheService {
           log(`Updating existing book cache entry (ID: ${existingBook.id}) with new summary`, 'cache');
           
           // Direct database update to ensure we don't create duplicates
+          // Also update source to openai since we're adding OpenAI content
           const [updated] = await db.update(bookCache)
             .set({
               summary: summary,
-              source: 'openai',
+              source: 'openai', // Mark as OpenAI source since we're adding OpenAI content
               expiresAt
             })
             .where(eq(bookCache.id, existingBook.id))
@@ -522,7 +532,7 @@ export class BookCacheService {
         const [updated] = await db.update(bookCache)
           .set({
             rating: rating,
-            source: sourceToUse,
+            source: sourceToUse, // This will be 'openai' if rating came from OpenAI
             isbn: isbn || existingBook.isbn,
             expiresAt
           })

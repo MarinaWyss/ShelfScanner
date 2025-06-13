@@ -76,17 +76,49 @@ export default async function handler(req, res) {
               expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) // 1 year expiration
             });
             
-            // Generate OpenAI rating and summary for this book
+            // Only generate OpenAI content if the book doesn't already have it
             try {
               const { bookCacheService } = await import('../server/book-cache-service.js');
               
-              // Generate rating
-              const rating = await bookCacheService.getEnhancedRating(bookData.title, bookData.author || "Unknown", bookData.isbn);
+              // Check if this book already has OpenAI content
+              const existingBook = await bookCacheService.findInCache(bookData.title, bookData.author || "Unknown");
               
-              // Generate summary  
-              const summary = await bookCacheService.getEnhancedSummary(bookData.title, bookData.author || "Unknown", bookData.isbn);
+              let needsRating = true;
+              let needsSummary = true;
               
-              log(`Generated OpenAI content for "${bookData.title}": rating=${rating}, summary=${summary ? 'yes' : 'no'}`, 'books');
+              if (existingBook) {
+                // Check if we already have a valid rating
+                if (existingBook.rating && parseFloat(existingBook.rating) >= 1.0 && parseFloat(existingBook.rating) <= 5.0) {
+                  needsRating = false;
+                  log(`Book "${bookData.title}" already has cached rating: ${existingBook.rating}`, 'books');
+                }
+                
+                // Check if we already have a valid summary
+                if (existingBook.summary && existingBook.summary.length > 50) {
+                  needsSummary = false;
+                  log(`Book "${bookData.title}" already has cached summary`, 'books');
+                }
+              }
+              
+              // Only generate rating if needed
+              let rating = existingBook?.rating;
+              if (needsRating) {
+                rating = await bookCacheService.getEnhancedRating(bookData.title, bookData.author || "Unknown", bookData.isbn);
+                log(`Generated new rating for "${bookData.title}": ${rating}`, 'books');
+              }
+              
+              // Only generate summary if needed
+              let summary = existingBook?.summary;
+              if (needsSummary) {
+                summary = await bookCacheService.getEnhancedSummary(bookData.title, bookData.author || "Unknown", bookData.isbn);
+                log(`Generated new summary for "${bookData.title}": ${summary ? 'yes' : 'no'}`, 'books');
+              }
+              
+              if (needsRating || needsSummary) {
+                log(`Generated OpenAI content for "${bookData.title}": rating=${needsRating ? 'new' : 'cached'}, summary=${needsSummary ? 'new' : 'cached'}`, 'books');
+              } else {
+                log(`Using all cached content for "${bookData.title}"`, 'books');
+              }
               
             } catch (openaiError) {
               // Don't fail the entire book save if OpenAI fails
