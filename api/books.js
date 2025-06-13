@@ -21,8 +21,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Import storage dynamically to avoid issues with module resolution
-    const { storage } = await import('../server/storage.js');
+    // Import logger for error handling
     const { log } = await import('../server/simple-logger.js');
 
 
