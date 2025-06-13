@@ -16,14 +16,24 @@ const SYSTEM_LOG_FILE = path.join(LOG_DIR, 'system-status.log');
 const MAX_LOG_SIZE = 5 * 1024 * 1024; // 5MB
 const MAX_ENTRIES = 1000; // Maximum number of entries to keep
 
-// Make sure the log directory exists
-if (!fs.existsSync(LOG_DIR)) {
-  fs.mkdirSync(LOG_DIR, { recursive: true });
-}
+// Check if we're in a serverless environment (like Vercel)
+const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME || process.env.FUNCTION_NAME;
 
-// Initialize the system log file if it doesn't exist
-if (!fs.existsSync(SYSTEM_LOG_FILE)) {
-  fs.writeFileSync(SYSTEM_LOG_FILE, '');
+// Only try to create log directory and files if not in serverless environment
+if (!isServerless) {
+  try {
+    // Make sure the log directory exists
+    if (!fs.existsSync(LOG_DIR)) {
+      fs.mkdirSync(LOG_DIR, { recursive: true });
+    }
+
+    // Initialize the system log file if it doesn't exist
+    if (!fs.existsSync(SYSTEM_LOG_FILE)) {
+      fs.writeFileSync(SYSTEM_LOG_FILE, '');
+    }
+  } catch (error) {
+    log(`Warning: Could not initialize log files (running in serverless environment): ${error}`, 'monitor');
+  }
 }
 
 // Types for monitoring
@@ -165,46 +175,46 @@ export function logEvent(level: LogLevel, message: string, details?: any): void 
   // Format for log file
   const logLine = `[${timestamp}] [${level}] ${message}${details ? ' ' + JSON.stringify(details) : ''}\n`;
   
-  // Write to log file (with basic rotation if needed)
-  try {
-    // Check file size and rotate if needed
-    let stats;
+  // Write to log file (with basic rotation if needed) - only if not in serverless environment
+  if (!isServerless) {
     try {
-      stats = fs.statSync(SYSTEM_LOG_FILE);
-    } catch {
-      // If file doesn't exist, create it
-      fs.writeFileSync(SYSTEM_LOG_FILE, '');
-      stats = fs.statSync(SYSTEM_LOG_FILE);
-    }
-    
-    if (stats.size > MAX_LOG_SIZE) {
-      // Create backup file
-      const backupFile = `${SYSTEM_LOG_FILE}.${Date.now()}.bak`;
-      fs.renameSync(SYSTEM_LOG_FILE, backupFile);
-      fs.writeFileSync(SYSTEM_LOG_FILE, '');
-      
-      // Remove old backup files (keep last 5)
-      const backupFiles = fs.readdirSync(LOG_DIR)
-        .filter(file => file.startsWith('system-status.log.') && file.endsWith('.bak'))
-        .sort((a, b) => b.localeCompare(a)); // Sort in reverse order
-      
-      if (backupFiles.length > 5) {
-        backupFiles.slice(5).forEach(file => {
-          fs.unlinkSync(path.join(LOG_DIR, file));
-        });
+      // Check file size and rotate if needed
+      let stats;
+      try {
+        stats = fs.statSync(SYSTEM_LOG_FILE);
+      } catch {
+        // If file doesn't exist, create it
+        fs.writeFileSync(SYSTEM_LOG_FILE, '');
+        stats = fs.statSync(SYSTEM_LOG_FILE);
       }
+      
+      if (stats.size > MAX_LOG_SIZE) {
+        // Create backup file
+        const backupFile = `${SYSTEM_LOG_FILE}.${Date.now()}.bak`;
+        fs.renameSync(SYSTEM_LOG_FILE, backupFile);
+        fs.writeFileSync(SYSTEM_LOG_FILE, '');
+        
+        // Remove old backup files (keep last 5)
+        const backupFiles = fs.readdirSync(LOG_DIR)
+          .filter(file => file.startsWith('system-status.log.') && file.endsWith('.bak'))
+          .sort((a, b) => b.localeCompare(a)); // Sort in reverse order
+        
+        if (backupFiles.length > 5) {
+          backupFiles.slice(5).forEach(file => {
+            fs.unlinkSync(path.join(LOG_DIR, file));
+          });
+        }
+      }
+      
+      // Append to log file
+      fs.appendFileSync(SYSTEM_LOG_FILE, logLine);
+    } catch (error) {
+      log(`Error writing to monitoring log: ${error}`, 'monitor');
     }
-    
-    // Append to log file
-    fs.appendFileSync(SYSTEM_LOG_FILE, logLine);
-    
-    // Also log to console for development
-    if (process.env.NODE_ENV === 'development') {
-      log(`[MONITOR] ${level}: ${message}`, 'monitor');
-    }
-  } catch (error) {
-    log(`Error writing to monitoring log: ${error}`, 'monitor');
   }
+  
+  // Always log to console (especially important in serverless environments)
+  log(`[MONITOR] ${level}: ${message}`, 'monitor');
 }
 
 /**
@@ -268,6 +278,13 @@ export function getRecentEvents(count = 50, level?: LogLevel): LogEntry[] {
  * @returns Array of log lines
  */
 export function getLogs(maxLines = 100): string[] {
+  // In serverless environments, return recent events as log lines
+  if (isServerless) {
+    return getRecentEvents(maxLines).map(entry => 
+      `[${entry.timestamp}] [${entry.level}] ${entry.message}${entry.details ? ' ' + entry.details : ''}`
+    );
+  }
+  
   try {
     // Read the log file
     const content = fs.readFileSync(SYSTEM_LOG_FILE, 'utf8');
