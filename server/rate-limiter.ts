@@ -1,115 +1,146 @@
 import { log } from './simple-logger.js';
 import { logError, logWarning, logInfo, logRateLimit } from './simple-error-logger.js';
+import { db } from './db.js';
+import { rateLimits } from '../shared/schema.js';
+import { eq, and, sql } from 'drizzle-orm';
 
 /**
- * Simple in-memory rate limiter to control API usage
- * Enhanced with monitoring and alerting capabilities
+ * Database-based rate limiter for serverless environments
+ * Uses PostgreSQL to persist rate limiting data across function invocations
  */
-export class RateLimiter {
-  private requestCounts: Map<string, number> = new Map();
-  private timestamps: Map<string, number> = new Map();
-  private dailyLimits: Map<string, number> = new Map();
-  private dailyUsage: Map<string, number> = new Map();
-  private lastResetDay: Map<string, number> = new Map();
-  private alertsSent: Map<string, boolean> = new Map();
-  
-  constructor() {
-    // Set rate limits based on expected usage of 100 users per day, each scanning 5 shelves
-    this.setLimit('openai', 60, 60); // Updated: 60 requests per minute for OpenAI (up from 10)
-    this.setDailyLimit('openai', 15000); // Updated: 15,000 requests per day for OpenAI (up from 1000)
-    
-    this.setLimit('google-books', 100, 60); // Maintained: 100 requests per minute for Google Books
-    this.setDailyLimit('google-books', 7500); // Updated: 7,500 requests per day for Google Books (up from 1000)
-    
-    this.setLimit('google-vision', 20, 60); // Maintained: 20 requests per minute for Google Vision
-    this.setDailyLimit('google-vision', 1000); // Restored to original 1000 requests per day for Google Vision
-  }
-  
-  /**
-   * Set rate limit for a specific API
-   * @param apiName API identifier
-   * @param limit Number of requests allowed
-   * @param windowSeconds Time window in seconds
-   */
-  public setLimit(apiName: string, limit: number, windowSeconds: number): void {
-    const key = `${apiName}_${windowSeconds}`;
-    this.requestCounts.set(key, 0);
-    this.timestamps.set(key, Date.now());
-    this.dailyLimits.set(apiName, 0);
-  }
-  
-  /**
-   * Set daily limit for a specific API
-   * @param apiName API identifier
-   * @param limit Number of requests allowed per day
-   */
-  public setDailyLimit(apiName: string, limit: number): void {
-    this.dailyLimits.set(apiName, limit);
-    this.dailyUsage.set(apiName, 0);
-    this.lastResetDay.set(apiName, new Date().getDate());
-  }
-  
+export class DatabaseRateLimiter {
+  private readonly limits = {
+    'openai': { perMinute: 60, perDay: 15000 },
+    'google-books': { perMinute: 100, perDay: 7500 },
+    'google-vision': { perMinute: 20, perDay: 1000 },
+    'open-library': { perMinute: 60, perDay: 1000 }
+  };
+
   /**
    * Check if a request to the API is allowed based on rate limits
-   * Enhanced with monitoring and alerting
    * @param apiName API identifier
-   * @param windowSeconds Time window in seconds
+   * @param windowSeconds Time window in seconds (default: 60)
    * @returns boolean indicating if the request is allowed
    */
-  public isAllowed(apiName: string, windowSeconds = 60): boolean {
-    this.checkAndResetDaily(apiName);
-    
-    const key = `${apiName}_${windowSeconds}`;
-    
-    // Initialize if not exists
-    if (!this.requestCounts.has(key)) {
-      this.requestCounts.set(key, 0);
-      this.timestamps.set(key, Date.now());
+  public async isAllowed(apiName: string, windowSeconds = 60): Promise<boolean> {
+    try {
+      const now = new Date();
+      const windowStart = new Date(Math.floor(now.getTime() / (windowSeconds * 1000)) * windowSeconds * 1000);
+      const dailyDate = now.toISOString().split('T')[0]; // YYYY-MM-DD format
+      
+      const limits = this.limits[apiName as keyof typeof this.limits];
+      if (!limits) {
+        log(`Unknown API: ${apiName}, allowing request`, 'rate-limiter');
+        return true;
+      }
+
+      // Get or create current window and daily records
+      const existing = await db
+        .select()
+        .from(rateLimits)
+        .where(
+          and(
+            eq(rateLimits.apiName, apiName),
+            eq(rateLimits.windowStart, windowStart),
+            eq(rateLimits.windowSeconds, windowSeconds)
+          )
+        )
+        .limit(1);
+
+      const dailyRecord = await db
+        .select()
+        .from(rateLimits)
+        .where(
+          and(
+            eq(rateLimits.apiName, apiName),
+            eq(rateLimits.dailyDate, dailyDate)
+          )
+        )
+        .limit(1);
+
+      const currentWindowCount = existing[0]?.requestCount || 0;
+      const currentDailyCount = dailyRecord[0]?.dailyCount || 0;
+
+      // Check limits
+      const withinWindowLimit = currentWindowCount < limits.perMinute;
+      const withinDailyLimit = currentDailyCount < limits.perDay;
+
+      if (!withinWindowLimit) {
+        logRateLimit(apiName, 'window', limits.perMinute, currentWindowCount);
+      }
+
+      if (!withinDailyLimit) {
+        logRateLimit(apiName, 'daily', limits.perDay, currentDailyCount);
+      }
+
+      // Check for alerts
+      this.checkForAlerts(apiName, currentWindowCount, limits.perMinute, currentDailyCount, limits.perDay);
+
+      return withinWindowLimit && withinDailyLimit;
+    } catch (error) {
+      log(`Rate limiter error: ${error instanceof Error ? error.message : String(error)}`, 'rate-limiter');
+      // On error, allow the request (fail open)
+      return true;
     }
-    
-    const currentTime = Date.now();
-    const windowMs = windowSeconds * 1000;
-    const windowStart = currentTime - windowMs;
-    
-    // Reset counter if window has passed
-    if (this.timestamps.get(key)! < windowStart) {
-      this.requestCounts.set(key, 0);
-      this.timestamps.set(key, currentTime);
-    }
-    
-    // Check rate limit
-    const currentCount = this.requestCounts.get(key) || 0;
-    const limit = apiName === 'openai' ? 60 : 
-                 apiName === 'google-vision' ? 20 : 100; // Get appropriate limits
-    
-    // Check daily limit
-    const dailyUsage = this.dailyUsage.get(apiName) || 0;
-    const dailyLimit = this.dailyLimits.get(apiName) || Infinity;
-    
-    const isWithinRateLimit = currentCount < limit;
-    const isWithinDailyLimit = dailyUsage < dailyLimit;
-    
-    // Check if we need to send alerts
-    this.checkForAlerts(apiName, currentCount, limit, dailyUsage, dailyLimit);
-    
-    if (!isWithinRateLimit) {
-      logRateLimit(apiName, 'window', limit, currentCount);
-    }
-    
-    if (!isWithinDailyLimit) {
-      logRateLimit(apiName, 'daily', dailyLimit, dailyUsage);
-    }
-    
-    return isWithinRateLimit && isWithinDailyLimit;
   }
-  
+
+  /**
+   * Increment the count for an API after successful usage
+   * @param apiName API identifier
+   * @param windowSeconds Time window in seconds (default: 60)
+   */
+  public async increment(apiName: string, windowSeconds = 60): Promise<void> {
+    try {
+      const now = new Date();
+      const windowStart = new Date(Math.floor(now.getTime() / (windowSeconds * 1000)) * windowSeconds * 1000);
+      const dailyDate = now.toISOString().split('T')[0]; // YYYY-MM-DD format
+
+      // Use PostgreSQL's UPSERT (INSERT ... ON CONFLICT) for atomic increment
+      await db
+        .insert(rateLimits)
+        .values({
+          apiName,
+          windowStart,
+          windowSeconds,
+          requestCount: 1,
+          dailyDate,
+          dailyCount: 1,
+        })
+        .onConflictDoUpdate({
+          target: [rateLimits.apiName, rateLimits.windowStart, rateLimits.windowSeconds],
+          set: {
+            requestCount: sql`${rateLimits.requestCount} + 1`,
+            updatedAt: new Date(),
+          },
+        });
+
+      // Separate upsert for daily count
+      await db
+        .insert(rateLimits)
+        .values({
+          apiName,
+          windowStart: now, // Use current time for daily records
+          windowSeconds: 86400, // 24 hours in seconds
+          requestCount: 0,
+          dailyDate,
+          dailyCount: 1,
+        })
+        .onConflictDoUpdate({
+          target: [rateLimits.apiName, rateLimits.dailyDate],
+          set: {
+            dailyCount: sql`${rateLimits.dailyCount} + 1`,
+            updatedAt: new Date(),
+          },
+        });
+
+      log(`API call to ${apiName}: incremented counters`, 'rate-limiter');
+    } catch (error) {
+      log(`Rate limiter increment error: ${error instanceof Error ? error.message : String(error)}`, 'rate-limiter');
+    }
+  }
+
   /**
    * Check if alerts should be logged based on usage thresholds
-   * @param apiName API name
-   * @param currentCount Current count in window
-   * @param limit Window limit
-   * @param dailyUsage Daily usage
-   * @param dailyLimit Daily limit
    */
   private checkForAlerts(
     apiName: string, 
@@ -119,23 +150,16 @@ export class RateLimiter {
     dailyLimit: number
   ): void {
     const usagePercent = (dailyUsage / dailyLimit) * 100;
-    const _windowPercent = (currentCount / limit) * 100;
-    const alertKey = `${apiName}_alert`;
-    
-    // Check if we've already sent an alert for this API today
-    const alreadySentAlert = this.alertsSent.get(alertKey) || false;
-    
-    // Alert on high daily usage (only log once per day)
-    if (usagePercent >= 80 && !alreadySentAlert) {
-      // Log the high usage
+
+    // Alert on high daily usage
+    if (usagePercent >= 80) {
       logWarning(`High API usage for ${apiName}: ${usagePercent.toFixed(1)}%`, {
         api: apiName,
         current: dailyUsage,
         limit: dailyLimit,
         metadata: { type: 'daily', usagePercent }
       });
-      
-      // Log a critical event if usage is very high
+
       if (usagePercent >= 90) {
         logError(`${apiName} API quota is nearly exhausted (${usagePercent.toFixed(1)}%)`, undefined, {
           api: apiName,
@@ -144,103 +168,83 @@ export class RateLimiter {
           metadata: { usagePercent, critical: true }
         });
       }
-      
-      // Mark that we've alerted for this API today
-      this.alertsSent.set(alertKey, true);
-    }
-    
-    // Reset alert flag at midnight
-    const currentDay = new Date().getDate();
-    const lastAlertDay = this.lastResetDay.get(apiName) || currentDay;
-    if (currentDay !== lastAlertDay) {
-      this.alertsSent.set(alertKey, false);
     }
   }
-  
-  /**
-   * Increment the count for an API after successful usage
-   * @param apiName API identifier
-   * @param windowSeconds Time window in seconds
-   */
-  public increment(apiName: string, windowSeconds = 60): void {
-    this.checkAndResetDaily(apiName);
-    
-    const key = `${apiName}_${windowSeconds}`;
-    
-    // Increment request count
-    const currentCount = this.requestCounts.get(key) || 0;
-    this.requestCounts.set(key, currentCount + 1);
-    
-    // Increment daily usage
-    const dailyUsage = this.dailyUsage.get(apiName) || 0;
-    this.dailyUsage.set(apiName, dailyUsage + 1);
-    
-    log(`API call to ${apiName}: ${currentCount + 1} requests in current window, daily total: ${dailyUsage + 1}`, 'rate-limiter');
-    
-    // Check if we need to log high usage warning
-    const limit = apiName === 'openai' ? 60 : 
-                 apiName === 'google-vision' ? 20 : 100;
-    const dailyLimit = this.dailyLimits.get(apiName) || Infinity;
-    
-    // Only log when usage reaches significant thresholds
-    if (dailyUsage + 1 >= dailyLimit * 0.5 && (dailyUsage + 1) % 5 === 0) {
-      // Log usage milestone every 5 requests once we're past 50%
-      logInfo(`API usage milestone for ${apiName}: ${dailyUsage + 1}/${dailyLimit}`, {
-        api: apiName,
-        current: dailyUsage + 1,
-        limit: dailyLimit,
-        metadata: { 
-          windowUsage: currentCount + 1,
-          windowLimit: limit,
-          milestone: true
-        }
-      });
-    }
-  }
-  
-  /**
-   * Reset daily counters if day has changed
-   * @param apiName API identifier
-   */
-  private checkAndResetDaily(apiName: string): void {
-    const currentDay = new Date().getDate();
-    const lastResetDay = this.lastResetDay.get(apiName) || currentDay;
-    
-    if (currentDay !== lastResetDay) {
-      this.dailyUsage.set(apiName, 0);
-      this.lastResetDay.set(apiName, currentDay);
-      log(`Reset daily usage counter for ${apiName}`, 'rate-limiter');
-    }
-  }
-  
+
   /**
    * Get current API usage statistics
-   * @returns Object with usage statistics
    */
-  public getUsageStats(): Record<string, any> {
-    const stats: Record<string, any> = {};
-    
-    // Manually get keys and iterate to avoid TypeScript iterator issues
-    const keys = Array.from(this.requestCounts.keys());
-    
-    for (const key of keys) {
-      const count = this.requestCounts.get(key) || 0;
-      const [apiName, windowSeconds] = key.split('_');
-      const dailyUsage = this.dailyUsage.get(apiName) || 0;
-      const dailyLimit = this.dailyLimits.get(apiName) || Infinity;
-      
-      stats[apiName] = {
-        windowUsage: count,
-        windowSeconds: parseInt(windowSeconds),
-        dailyUsage,
-        dailyLimit,
-        withinLimits: count < (apiName === 'openai' ? 60 : apiName === 'google-vision' ? 20 : 100) && dailyUsage < dailyLimit
-      };
+  public async getUsageStats(): Promise<Record<string, any>> {
+    try {
+      const stats: Record<string, any> = {};
+      const today = new Date().toISOString().split('T')[0];
+
+      for (const [apiName, limits] of Object.entries(this.limits)) {
+        // Get current window usage
+        const now = new Date();
+        const windowStart = new Date(Math.floor(now.getTime() / 60000) * 60000); // 1-minute window
+        
+        const windowRecord = await db
+          .select()
+          .from(rateLimits)
+          .where(
+            and(
+              eq(rateLimits.apiName, apiName),
+              eq(rateLimits.windowStart, windowStart),
+              eq(rateLimits.windowSeconds, 60)
+            )
+          )
+          .limit(1);
+
+        // Get daily usage
+        const dailyRecord = await db
+          .select()
+          .from(rateLimits)
+          .where(
+            and(
+              eq(rateLimits.apiName, apiName),
+              eq(rateLimits.dailyDate, today)
+            )
+          )
+          .limit(1);
+
+        const windowUsage = windowRecord[0]?.requestCount || 0;
+        const dailyUsage = dailyRecord[0]?.dailyCount || 0;
+
+        stats[apiName] = {
+          windowUsage,
+          windowSeconds: 60,
+          dailyUsage,
+          dailyLimit: limits.perDay,
+          withinLimits: windowUsage < limits.perMinute && dailyUsage < limits.perDay
+        };
+      }
+
+      return stats;
+    } catch (error) {
+      log(`Error getting usage stats: ${error instanceof Error ? error.message : String(error)}`, 'rate-limiter');
+      return {};
     }
-    
-    return stats;
+  }
+
+  /**
+   * Clean up old rate limiting records (optional maintenance)
+   */
+  public async cleanup(): Promise<void> {
+    try {
+      const threeDaysAgo = new Date();
+      threeDaysAgo.setDate(threeDaysAgo.getDate() - 3);
+
+      await db
+        .delete(rateLimits)
+        .where(sql`${rateLimits.windowStart} < ${threeDaysAgo}`);
+
+      log('Cleaned up old rate limiting records', 'rate-limiter');
+    } catch (error) {
+      log(`Cleanup error: ${error instanceof Error ? error.message : String(error)}`, 'rate-limiter');
+    }
   }
 }
 
 // Create a singleton instance
-export const rateLimiter = new RateLimiter();
+export const rateLimiter = new DatabaseRateLimiter();

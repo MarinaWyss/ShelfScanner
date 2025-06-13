@@ -166,3 +166,27 @@ export interface Recommendation {
   matchScore?: number;
   matchReason?: string;
 }
+
+// Rate limiting schema for tracking API usage across serverless functions
+export const rateLimits = createTable("rate_limits", {
+  id: serial("id").primaryKey(),
+  apiName: varchar("api_name", { length: 50 }).notNull(),
+  windowStart: timestamp("window_start").notNull(),
+  windowSeconds: integer("window_seconds").notNull(),
+  requestCount: integer("request_count").default(0).notNull(),
+  dailyDate: varchar("daily_date", { length: 10 }).notNull(), // YYYY-MM-DD format
+  dailyCount: integer("daily_count").default(0).notNull(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+export const insertRateLimitSchema = createInsertSchema(rateLimits).pick({
+  apiName: true,
+  windowStart: true,
+  windowSeconds: true,
+  requestCount: true,
+  dailyDate: true,
+  dailyCount: true,
+});
+
+export type RateLimit = typeof rateLimits.$inferSelect;
+export type InsertRateLimit = z.infer<typeof insertRateLimitSchema>;
