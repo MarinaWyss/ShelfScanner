@@ -1,18 +1,20 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
-import { storage } from "./storage";
-import { analyzeBookshelfImage } from "./openai-vision";
-import { searchBooksByTitle, getRecommendations } from "./books";
-import { searchEnhancedBooks } from "./enhanced-book-api";
-import { bookCacheService } from "./book-cache-service";
-import { bookEnhancer } from "./book-enhancer";
-import { getOpenAIBookDetails } from "./openai-books";
-import { getOpenAIBookRating, getOpenAIBookSummary } from "./utils/openai-utils";
+import { storage } from "./storage.js";
+import { analyzeBookshelfImage } from "./openai-vision.js";
+import { searchBooksByTitle, getRecommendations } from "./books.js";
+import { searchEnhancedBooks } from "./enhanced-book-api.js";
+import { bookCacheService } from "./book-cache-service.js";
+import { bookEnhancer } from "./book-enhancer.js";
+import { getOpenAIBookDetails } from "./openai-books.js";
+import { getOpenAIBookRating, getOpenAIBookSummary } from "./utils/openai-utils.js";
 import multer from "multer";
-import { insertPreferenceSchema, insertSavedBookSchema } from "@shared/schema";
-import { getApiUsageStats } from "./api-stats";
-import { logDeviceOperation, logBookOperation } from './utils/safe-logger';
-import { log } from './vite';
+import { insertPreferenceSchema, insertSavedBookSchema } from "../shared/schema.js";
+import { getApiUsageStats } from "./api-stats.js";
+import { logDeviceOperation, logBookOperation } from './utils/safe-logger.js';
+import { log } from './vite.js';
+import { Router } from "express";
+import { z } from "zod";
 
 // In-memory storage for multer
 const upload = multer({
@@ -22,10 +24,10 @@ const upload = multer({
   },
 });
 
-import { registerEnvRoutes } from './env-routes';
-import { adminMonitoringRoutes } from './admin-monitoring';
+import { registerEnvRoutes } from './env-routes.js';
+import { adminMonitoringRoutes } from './admin-monitoring.js';
 
-import { directOpenAIRoutes } from './direct-openai-routes';
+import { directOpenAIRoutes } from './direct-openai-routes.js';
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth routes have been removed
@@ -1034,7 +1036,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Import the OpenAI recommendations function
-      const { getOpenAIRecommendations } = await import('./openai-recommendations');
+      const { getOpenAIRecommendations } = await import('./openai-recommendations.js');
       
       log(`Testing AI recommendations with ${books.length} books`);
       

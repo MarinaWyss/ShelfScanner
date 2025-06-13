@@ -14,11 +14,11 @@
 import 'dotenv/config';
 import express, { type Request, Response, NextFunction } from "express";
 import cookieParser from "cookie-parser";
-import { registerRoutes } from "./routes";
-import { setupVite, serveStatic, log } from "./vite";
-import { ensureDeviceId } from "./middleware/deviceId";
-import { startHealthMonitoring } from "./health-monitor";
-import { sendStartupNotification } from "./notification";
+import { registerRoutes } from "./routes.js";
+import { setupVite, serveStatic, log } from "./vite.js";
+import { ensureDeviceId } from "./middleware/deviceId.js";
+import { startHealthMonitoring } from "./health-monitor.js";
+import { sendStartupNotification } from "./notification.js";
 
 const app = express();
 

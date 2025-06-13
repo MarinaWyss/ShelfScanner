@@ -1,7 +1,7 @@
 import { Router, Request, Response } from "express";
-import { getOpenAIRecommendations } from "./openai-recommendations";
-import { getOpenAIDescription } from "./openai-descriptions";
-import { log } from './vite';
+import { getOpenAIRecommendations } from "./openai-recommendations.js";
+import { getOpenAIDescription } from "./openai-descriptions.js";
+import { log } from './vite.js';
 
 const router = Router();
 
@@ -70,7 +70,7 @@ router.post("/recommendations", async (req: Request, res: Response) => {
           const description = await getOpenAIDescription(book.title, book.author);
           
           // Get fresh OpenAI-generated rating - we don't want to use fallbacks
-          const bookCacheService = (await import('./book-cache-service')).bookCacheService;
+          const bookCacheService = (await import('./book-cache-service.js')).bookCacheService;
           const rating = await bookCacheService.getEnhancedRating(book.title, book.author, book.isbn);
           
           // Use the match reason provided directly from the recommendation

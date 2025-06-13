@@ -3,8 +3,10 @@
  * Moved from demo-openai.ts during code cleanup
  */
 import OpenAI from "openai";
-import { log } from "../vite";
-import { rateLimiter } from "../rate-limiter";
+import { z } from "zod";
+import { zodResponseFormat } from "openai/helpers/zod";
+import { log } from "../vite.js";
+import { rateLimiter } from "../rate-limiter.js";
 
 // Configure OpenAI client
 const openai = new OpenAI({ 
