@@ -147,7 +147,6 @@ export default function Books() {
     }
   });
 
-  // No longer fetching recommendations with a GET request - using state directly instead
 
   const handlePreferencesSubmit = (preferences: Preference) => {
     setUserPreferences(preferences);
@@ -181,98 +180,86 @@ export default function Books() {
     }
   };
 
-  const prevStep = () => {
-    if (currentStep > 1) {
-      setCurrentStep(currentStep - 1);
-    }
-  };
-
   return (
     <div className="p-6 sm:p-8 lg:p-10 max-w-6xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Book Scanner</h1>
-        <p className="text-gray-600 text-lg">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Book Scanner</h1>
+        <p className="text-gray-600 dark:text-gray-300 text-lg">
           Scan books to get personalized recommendations
         </p>
       </div>
 
       {/* Progress Bar */}
-      <Card className="mb-8 border border-gray-200 bg-white shadow-sm">
-        <CardContent className="pt-6">
-          <div className="flex items-center mb-6">
-            <div className="flex-1">
-              <div className="relative">
-                <div className="h-1 bg-gray-100 rounded-full w-full"></div>
-                <div 
-                  className="absolute inset-y-0 left-0 bg-violet-600 rounded-full"
-                  style={{ width: `${(currentStep / 3) * 100}%` }}
-                ></div>
+      <Card className="mb-8 border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm">
+        <CardContent className="p-4">
+          <div className="w-full max-w-4xl mx-auto">
+            <div className="flex justify-between items-center relative">
+              {/* Progress Bar Line */}
+              <div className="absolute top-1/2 transform -translate-y-1/2 h-0.5 bg-gray-200 dark:bg-gray-700 w-full"></div>
+              <div className="absolute top-1/2 transform -translate-y-1/2 h-0.5 bg-violet-600 dark:bg-violet-500" style={{ width: `${((currentStep - 1) / 2) * 100}%` }}></div>
+
+              {/* Steps */}
+              <div className="relative flex items-center justify-center w-10 h-10 rounded-full bg-violet-600 dark:bg-violet-500 text-white z-10">
+                1
               </div>
-              <div className="flex justify-between mt-2">
-                <span className={`text-sm ${currentStep >= 1 ? 'text-violet-600 font-medium' : 'text-gray-400'}`}>
-                  Preferences
-                </span>
-                <span className={`text-sm ${currentStep >= 2 ? 'text-violet-600 font-medium' : 'text-gray-400'}`}>
-                  Book Upload
-                </span>
-                <span className={`text-sm ${currentStep >= 3 ? 'text-violet-600 font-medium' : 'text-gray-400'}`}>
-                  Recommendations
-                </span>
+              <div className={`relative flex items-center justify-center w-10 h-10 rounded-full z-10 ${
+                currentStep >= 2 
+                  ? 'bg-violet-600 dark:bg-violet-500 text-white' 
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
+              }`}>
+                2
+              </div>
+              <div className={`relative flex items-center justify-center w-10 h-10 rounded-full z-10 ${
+                currentStep >= 3 
+                  ? 'bg-violet-600 dark:bg-violet-500 text-white' 
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
+              }`}>
+                3
               </div>
             </div>
+            
+            <div className="flex justify-between items-center mt-2 text-xs text-gray-600 dark:text-gray-300">
+              <div className="text-center w-10">Preferences</div>
+              <div className={`text-center w-10 ${currentStep >= 2 ? 'text-gray-900 dark:text-gray-200' : ''}`}>Book Upload</div>
+              <div className={`text-center w-10 ${currentStep >= 3 ? 'text-gray-900 dark:text-gray-200' : ''}`}>Recommendations</div>
+            </div>
           </div>
+        </CardContent>
+      </Card>
 
-          {/* Step 1: Preferences */}
+      {/* Step Content */}
+      <Card className="border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-sm">
+        <CardContent className="p-6">
           {currentStep === 1 && (
-            <PreferencesStep 
+            <PreferencesStep
               preferences={userPreferences}
               onSubmit={handlePreferencesSubmit}
               isLoading={savePreferencesMutation.isPending}
             />
           )}
-
-          {/* Step 2: Book Upload */}
           {currentStep === 2 && (
-            <UploadStep 
+            <UploadStep
               onBooksDetected={handleBooksDetected}
               detectedBooks={detectedBooks}
-            />
-          )}
-
-          {/* Step 3: Recommendations */}
-          {currentStep === 3 && (
-            <RecommendationsStep 
-              recommendations={currentRecommendations}
+              onGetRecommendations={() => {
+                if (detectedBooks.length > 0) {
+                  recommendationsMutation.mutate();
+                } else {
+                  toast({
+                    title: "No books selected",
+                    description: "Please scan some books before getting recommendations.",
+                    variant: "destructive"
+                  });
+                }
+              }}
               isLoading={recommendationsMutation.isPending}
-              goodreadsData={userPreferences.goodreadsData}
             />
           )}
-
-          {/* Navigation Buttons */}
-          <div className="flex justify-between mt-8">
-            {currentStep > 1 && (
-              <button 
-                onClick={prevStep}
-                className="px-4 py-2 border rounded-md text-sm font-medium text-slate-300 border-slate-600 hover:bg-slate-700 transition-colors"
-              >
-                Back
-              </button>
-            )}
-            {/* Continue button for steps 2 and 3 only - step 1 has its own button */}
-            {currentStep === 2 && (
-              <button 
-                onClick={() => recommendationsMutation.mutate()}
-                disabled={detectedBooks.length === 0 || recommendationsMutation.isPending}
-                className={`px-4 py-2 bg-primary text-white rounded-md text-sm font-medium ${
-                  detectedBooks.length === 0 || recommendationsMutation.isPending
-                    ? 'opacity-70 cursor-not-allowed' 
-                    : 'hover:bg-primary/90 transition-colors'
-                }`}
-              >
-                {recommendationsMutation.isPending ? 'Processing...' : 'Get Recommendations'}
-              </button>
-            )}
-          </div>
+          {currentStep === 3 && (
+            <RecommendationsStep
+              recommendations={currentRecommendations}
+            />
+          )}
         </CardContent>
       </Card>
     </div>

@@ -15,9 +15,11 @@ interface Book {
 interface UploadStepProps {
   onBooksDetected: (books: Book[], imageBase64: string) => void;
   detectedBooks: Book[];
+  onGetRecommendations?: () => void;
+  isLoading?: boolean;
 }
 
-export default function UploadStep({ onBooksDetected, detectedBooks }: UploadStepProps) {
+export default function UploadStep({ onBooksDetected, detectedBooks, onGetRecommendations, isLoading = false }: UploadStepProps) {
   const [isUploading, setIsUploading] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [uploadedImage, setUploadedImage] = useState<string>("");
@@ -202,206 +204,163 @@ export default function UploadStep({ onBooksDetected, detectedBooks }: UploadSte
 
   return (
     <div>
-      <h3 className="text-lg font-semibold mb-4">Upload a photo of books</h3>
-      <p className="text-gray-500 mb-4">
-        Take a photo of books at a store, library, or friend's bookshelf. 
-        We'll identify the books and recommend which ones match your reading preferences.
-      </p>
-      
-      <div 
-        className={`border-2 border-dashed border-violet-300 rounded-lg p-6 text-center ${
-          isUploading || isProcessing ? 'bg-violet-100' : ''
-        }`}
-        onDragOver={handleDragOver}
-        onDrop={handleDrop}
-      >
-        {!uploadedImage && !isUploading && !isProcessing && (
-          <div>
-            <svg 
-              xmlns="http://www.w3.org/2000/svg" 
-              width="24" 
-              height="24" 
-              viewBox="0 0 24 24" 
-              fill="none" 
-              stroke="currentColor" 
-              strokeWidth="2" 
-              strokeLinecap="round" 
-              strokeLinejoin="round" 
-              className="h-12 w-12 text-slate-400 mx-auto mb-4"
-            >
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-              <polyline points="17 8 12 3 7 8" />
-              <line x1="12" x2="12" y1="3" y2="15" />
-            </svg>
-            <p className="text-gray-500 mb-4">
-              Drag and drop a photo of your bookshelf here, or click to browse
-            </p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              {isMobile && (
-                <Button 
-                  className="bg-primary hover:bg-primary/90 text-white flex items-center gap-2"
-                  onClick={() => {
-                    // Find the camera input element and trigger a click
-                    const cameraInput = document.getElementById('camera-capture');
-                    if (cameraInput) {
-                      cameraInput.click();
-                    }
-                  }}
-                >
+      <div className="mb-6">
+        <h2 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Upload a photo of books</h2>
+        <p className="text-gray-600 dark:text-gray-300">Take a photo of a bookshelf or book collection you want recommendations for.</p>
+      </div>
+
+      {/* Image upload area */}
+      {!detectedBooks.length ? (
+        <>
+          <div 
+            className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 mb-6 flex flex-col items-center justify-center text-center"
+            onDragOver={handleDragOver}
+            onDrop={handleDrop}
+          >
+            {!isUploading && !isProcessing && !uploadedImage ? (
+              <>
+                <div className="h-12 w-12 rounded-full bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center mb-4">
                   <svg 
                     xmlns="http://www.w3.org/2000/svg" 
-                    width="16" 
-                    height="16" 
-                    viewBox="0 0 24 24" 
-                    fill="none" 
-                    stroke="currentColor" 
-                    strokeWidth="2" 
-                    strokeLinecap="round" 
+                    width="24" 
+                    height="24" 
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
                     strokeLinejoin="round"
+                    className="h-6 w-6 text-violet-600 dark:text-violet-400"
                   >
-                    <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z"/>
-                    <circle cx="12" cy="13" r="3"/>
+                    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7" />
+                    <line x1="16" x2="22" y1="5" y2="5" />
+                    <line x1="19" x2="19" y1="2" y2="8" />
+                    <circle cx="9" cy="9" r="2" />
+                    <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
                   </svg>
-                  Take Photo
-                </Button>
-              )}
-              <Button 
-                variant={isMobile ? "outline" : "default"}
-                className={`flex items-center gap-2 ${!isMobile ? 'bg-primary hover:bg-primary/90 text-white' : ''}`}
-                onClick={() => {
-                  // Find the file input element and trigger a click
-                  const fileInput = document.getElementById('photo-upload');
-                  if (fileInput) {
-                    fileInput.click();
-                  }
-                }}
-              >
-                <svg 
-                  xmlns="http://www.w3.org/2000/svg" 
-                  width="16" 
-                  height="16" 
-                  viewBox="0 0 24 24" 
-                  fill="none" 
-                  stroke="currentColor" 
-                  strokeWidth="2" 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round"
-                >
-                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                  <polyline points="17 8 12 3 7 8"/>
-                  <line x1="12" x2="12" y1="3" y2="15"/>
-                </svg>
-                {isMobile ? 'Choose From Gallery' : 'Upload Photo'}
-              </Button>
-              {isMobile && (
-                <input 
-                  id="camera-capture"
-                  type="file" 
-                  className="sr-only" 
-                  accept="image/*" 
-                  capture="environment"
-                  onChange={handleFileChange}
-                />
-              )}
-              <input 
-                id="photo-upload"
-                type="file" 
-                className="sr-only" 
-                accept="image/*" 
-                onChange={handleFileChange}
-              />
-            </div>
-          </div>
-        )}
-        
-        {uploadedImage && !isProcessing && !isUploading && (
-          <div>
-            <img 
-              src={uploadedImage} 
-              alt="Uploaded bookshelf" 
-              className="max-h-64 mx-auto mb-4 rounded-md"
-            />
-            <div className="flex justify-center gap-4">
-              <Button variant="outline" onClick={() => setUploadedImage("")}>
-                Try Another Photo
-              </Button>
-              {detectedBooks.length === 0 && (
-                <Button onClick={() => processImage(uploadedImage)}>
-                  Analyze Again
-                </Button>
-              )}
-            </div>
-          </div>
-        )}
-        
-        {(isUploading || isProcessing) && (
-          <div className="space-y-4">
-            <div className="flex justify-center">
-              <LoaderPinwheel className="h-10 w-10 animate-spin text-primary-600" />
-            </div>
-            <p className="text-neutral-600">
-              {isUploading ? "Uploading your image..." : "Analyzing your books..."}
-            </p>
-          </div>
-        )}
-      </div>
-      
-      {detectedBooks.length > 0 && (
-        <div className="mt-6">
-          <h4 className="font-medium mb-3">Detected Books</h4>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-            {detectedBooks.map((book, index) => (
-              <div key={index} className="bg-violet-900 border border-violet-800 rounded-lg overflow-hidden shadow-lg">
-                {book.coverUrl ? (
-                  <img 
-                    src={book.coverUrl} 
-                    alt={book.title} 
-                    className="w-full h-40 object-cover" 
+                </div>
+                <h3 className="text-lg font-medium mb-2 text-gray-900 dark:text-white">Upload a photo</h3>
+                <p className="text-gray-600 dark:text-gray-300 mb-4 max-w-md">
+                  Drag & drop an image here, or click to browse
+                </p>
+                <div className="relative">
+                  <Button 
+                    onClick={() => document.getElementById("book-image")?.click()}
+                    className="bg-violet-600 hover:bg-violet-700 dark:bg-violet-600 dark:hover:bg-violet-500 text-white"
+                  >
+                    Choose Image
+                  </Button>
+                  <input 
+                    type="file" 
+                    id="book-image" 
+                    accept="image/*"
+                    onChange={handleFileChange}
+                    className="hidden"
                   />
-                ) : (
-                  <div className="w-full h-40 bg-violet-800 flex items-center justify-center">
-                    <svg 
-                      xmlns="http://www.w3.org/2000/svg" 
-                      width="24" 
-                      height="24" 
-                      viewBox="0 0 24 24" 
-                      fill="none" 
-                      stroke="currentColor" 
-                      strokeWidth="2" 
-                      strokeLinecap="round" 
-                      strokeLinejoin="round" 
-                      className="h-10 w-10 text-slate-400"
-                    >
-                      <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20" />
-                    </svg>
+                </div>
+
+                {isMobile && (
+                  <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg max-w-md text-left">
+                    <h4 className="font-medium text-blue-800 dark:text-blue-300 mb-2">Taking a photo of books?</h4>
+                    <ul className="text-sm text-blue-700 dark:text-blue-300 space-y-1 pl-5 list-disc">
+                      <li>Make sure book titles and authors are visible</li>
+                      <li>Ensure good lighting to avoid shadows</li>
+                      <li>Keep the camera steady for clear text</li>
+                    </ul>
                   </div>
                 )}
-                <div className="p-3">
-                  <p className="font-medium text-white truncate">{book.title}</p>
-                  <p className="text-xs text-slate-400 truncate">{book.author}</p>
-                  <p className="text-xs text-green-500 mt-1">
-                    <svg 
-                      xmlns="http://www.w3.org/2000/svg" 
-                      width="24" 
-                      height="24" 
-                      viewBox="0 0 24 24" 
-                      fill="none" 
-                      stroke="currentColor" 
-                      strokeWidth="2" 
-                      strokeLinecap="round" 
-                      strokeLinejoin="round" 
-                      className="h-3 w-3 inline mr-1"
-                    >
-                      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-                      <polyline points="22 4 12 14.01 9 11.01" />
-                    </svg>
-                    Processed
-                  </p>
+              </>
+            ) : isUploading ? (
+              <div className="py-12 flex flex-col items-center">
+                <div className="animate-spin h-10 w-10 border-4 border-violet-600 dark:border-violet-400 border-t-transparent rounded-full mb-4"></div>
+                <p className="text-gray-600 dark:text-gray-300">Uploading image...</p>
+              </div>
+            ) : isProcessing ? (
+              <div className="py-12 flex flex-col items-center">
+                <div className="animate-spin h-10 w-10 border-4 border-violet-600 dark:border-violet-400 border-t-transparent dark:border-t-transparent rounded-full mb-4"></div>
+                <p className="text-violet-600 dark:text-violet-400 font-medium mb-1">Analyzing your books</p>
+                <p className="text-gray-600 dark:text-gray-300">This may take a moment...</p>
+              </div>
+            ) : (
+              <div className="relative w-full">
+                <img 
+                  src={uploadedImage} 
+                  alt="Uploaded bookshelf" 
+                  className="max-h-80 max-w-full mx-auto rounded-lg"
+                />
+                <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                  <div className="animate-spin h-12 w-12 border-4 border-white border-t-transparent rounded-full"></div>
                 </div>
               </div>
-            ))}
+            )}
           </div>
-        </div>
+          
+          {!isUploading && !isProcessing && !uploadedImage && (
+            <div className="text-center mb-8">
+              <p className="text-gray-500 dark:text-gray-400">
+                <span className="font-medium">Tip:</span> Try to capture clear, well-lit images of book covers and spines
+              </p>
+            </div>
+          )}
+        </>
+      ) : (
+        <>
+          <div className="mb-6">
+            <h3 className="font-medium text-lg text-gray-900 dark:text-white mb-2">
+              Detected Books ({detectedBooks.length})
+            </h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {detectedBooks.map((book, index) => (
+                <div 
+                  key={index}
+                  className="border rounded-lg overflow-hidden bg-white dark:bg-gray-800 shadow-sm border-gray-200 dark:border-gray-700"
+                >
+                  <div className="p-4 flex">
+                    {book.coverUrl ? (
+                      <img 
+                        src={book.coverUrl} 
+                        alt={book.title}
+                        className="w-16 h-24 object-cover rounded"
+                        onError={(e) => {
+                          // If image fails to load, replace with placeholder
+                          (e.target as HTMLImageElement).src = 'https://placehold.co/80x120?text=No+Cover';
+                        }}
+                      />
+                    ) : (
+                      <div className="w-16 h-24 bg-gray-100 dark:bg-gray-700 flex items-center justify-center rounded text-gray-400 dark:text-gray-500">
+                        No Cover
+                      </div>
+                    )}
+                    <div className="ml-3">
+                      <h4 className="font-medium text-gray-900 dark:text-white">{book.title}</h4>
+                      <p className="text-gray-600 dark:text-gray-300 text-sm">{book.author}</p>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {onGetRecommendations && (
+              <div className="mt-6 flex justify-end">
+                <Button 
+                  onClick={onGetRecommendations} 
+                  disabled={isLoading}
+                  className="bg-violet-600 hover:bg-violet-700 dark:bg-violet-600 dark:hover:bg-violet-500 text-white"
+                >
+                  {isLoading ? (
+                    <>
+                      <LoaderPinwheel className="mr-2 h-4 w-4 animate-spin" />
+                      Getting recommendations...
+                    </>
+                  ) : (
+                    'Get Recommendations'
+                  )}
+                </Button>
+              </div>
+            )}
+          </div>
+        </>
       )}
     </div>
   );

@@ -13,6 +13,7 @@ import TermsConditions from "@/pages/terms-conditions";
 import Navbar from "@/components/layout/Navbar";
 import ContactForm from "@/components/contact/ContactForm";
 import { DeviceProvider } from "./contexts/DeviceContext";
+import { ThemeProvider } from "./contexts/ThemeContext";
 import { syncDeviceIdCookie } from "./lib/deviceId";
 import AdminPage from "@/pages/admin";
 import Debug from "@/pages/debug";
@@ -53,31 +54,33 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <DeviceProvider>
-        <TooltipProvider>
-          <div className="min-h-screen flex flex-col bg-background text-foreground">
-            <Navbar 
-              sidebarOpen={sidebarOpen} 
-              toggleSidebar={toggleSidebar} 
-              toggleContact={toggleContact} 
-            />
-            <div className="flex flex-1">
-              {/* Overlay when sidebar is open (all devices) */}
-              {sidebarOpen && (
-                <div 
-                  onClick={() => setSidebarOpen(false)}
-                  className="fixed inset-0 bg-black bg-opacity-50 z-10"
-                />
-              )}
-              
-              <main className="flex-1 overflow-x-hidden overflow-y-auto">
-                <Router />
-              </main>
-              
-              <ContactForm isOpen={contactOpen} onClose={() => setContactOpen(false)} />
+        <ThemeProvider>
+          <TooltipProvider>
+            <div className="min-h-screen flex flex-col bg-background text-foreground">
+              <Navbar 
+                sidebarOpen={sidebarOpen} 
+                toggleSidebar={toggleSidebar} 
+                toggleContact={toggleContact} 
+              />
+              <div className="flex flex-1">
+                {/* Overlay when sidebar is open (all devices) */}
+                {sidebarOpen && (
+                  <div 
+                    onClick={() => setSidebarOpen(false)}
+                    className="fixed inset-0 bg-black bg-opacity-50 z-10"
+                  />
+                )}
+                
+                <main className="flex-1 overflow-x-hidden overflow-y-auto">
+                  <Router />
+                </main>
+                
+                <ContactForm isOpen={contactOpen} onClose={() => setContactOpen(false)} />
+              </div>
             </div>
-          </div>
-          <Toaster />
-        </TooltipProvider>
+            <Toaster />
+          </TooltipProvider>
+        </ThemeProvider>
       </DeviceProvider>
     </QueryClientProvider>
   );

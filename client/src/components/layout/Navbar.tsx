@@ -1,4 +1,5 @@
 import { Link, useLocation } from "wouter";
+import { ThemeToggle } from "../ui/ThemeToggle";
 
 interface NavbarProps {
   sidebarOpen: boolean;
@@ -11,11 +12,11 @@ export default function Navbar({ sidebarOpen, toggleSidebar, toggleContact }: Na
 
   return (
     <>
-      {/* Top Navigation Bar - Notion-style */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-20">
+      {/* Top Navigation Bar */}
+      <header className="bg-white dark:bg-black border-b border-gray-200 dark:border-gray-800 sticky top-0 z-20">
         <div className="px-4 sm:px-6 lg:px-8 py-3 flex items-center justify-between">
           <div className="flex items-center">
-            <button onClick={toggleSidebar} className="mr-4 text-gray-700 hover:text-gray-900 transition-colors">
+            <button onClick={toggleSidebar} className="mr-4 text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white transition-colors">
               <svg 
                 xmlns="http://www.w3.org/2000/svg" 
                 width="24" 
@@ -36,7 +37,7 @@ export default function Navbar({ sidebarOpen, toggleSidebar, toggleContact }: Na
             <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-opacity">
               <svg 
                 xmlns="http://www.w3.org/2000/svg" 
-                className="h-7 w-7 text-gray-900" 
+                className="h-7 w-7 text-gray-900 dark:text-white" 
                 viewBox="0 0 24 24" 
                 fill="none"
                 stroke="currentColor" 
@@ -46,12 +47,13 @@ export default function Navbar({ sidebarOpen, toggleSidebar, toggleContact }: Na
               >
                 <path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"></path>
               </svg>
-              <span className="text-lg font-medium text-gray-900">ShelfScanner</span>
+              <span className="text-lg font-medium text-gray-900 dark:text-white">ShelfScanner</span>
             </Link>
           </div>
           
           <div className="flex items-center gap-4">
-            <button onClick={toggleContact} className="text-gray-700 hover:text-gray-900 flex items-center gap-2 transition-colors">
+            <ThemeToggle />
+            <button onClick={toggleContact} className="text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white flex items-center gap-2 transition-colors">
               <svg 
                 xmlns="http://www.w3.org/2000/svg" 
                 width="24" 
@@ -75,7 +77,7 @@ export default function Navbar({ sidebarOpen, toggleSidebar, toggleContact }: Na
       
       {/* Sidebar Navigation - Notion-style */}
       <aside 
-        className={`w-64 bg-white border-r border-gray-200 fixed top-[57px] bottom-0 left-0 z-20 transition-transform duration-300 ease-in-out ${
+        className={`w-64 bg-white dark:bg-black border-r border-gray-200 dark:border-gray-800 fixed top-[57px] bottom-0 left-0 z-20 transition-transform duration-300 ease-in-out ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
@@ -87,8 +89,8 @@ export default function Navbar({ sidebarOpen, toggleSidebar, toggleContact }: Na
                   <li>
                     <Link href="/" className={`flex items-center gap-2 w-full px-3 py-1.5 rounded-md font-medium text-sm transition-colors duration-150 ${
                         location === '/' 
-                          ? 'bg-violet-50 text-violet-600' 
-                          : 'text-gray-800 hover:bg-gray-100'
+                          ? 'bg-violet-50 dark:bg-violet-900 text-violet-600 dark:text-violet-200' 
+                          : 'text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
                       }`}>
                         <svg 
                           xmlns="http://www.w3.org/2000/svg" 
@@ -111,8 +113,8 @@ export default function Navbar({ sidebarOpen, toggleSidebar, toggleContact }: Na
                   <li>
                     <Link href="/books" className={`flex items-center gap-2 w-full px-3 py-1.5 rounded-md font-medium text-sm transition-colors duration-150 ${
                         location === '/books' 
-                          ? 'bg-violet-50 text-violet-600' 
-                          : 'text-gray-800 hover:bg-gray-100'
+                          ? 'bg-violet-50 dark:bg-violet-900 text-violet-600 dark:text-violet-200' 
+                          : 'text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
                       }`}>
                         <svg 
                           xmlns="http://www.w3.org/2000/svg" 
@@ -134,8 +136,8 @@ export default function Navbar({ sidebarOpen, toggleSidebar, toggleContact }: Na
                   <li>
                     <Link href="/reading-list" className={`flex items-center gap-2 w-full px-3 py-1.5 rounded-md font-medium text-sm transition-colors duration-150 ${
                         location === '/reading-list' 
-                          ? 'bg-violet-50 text-violet-600' 
-                          : 'text-gray-800 hover:bg-gray-100'
+                          ? 'bg-violet-50 dark:bg-violet-900 text-violet-600 dark:text-violet-200' 
+                          : 'text-gray-800 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800'
                       }`}>
                         <svg 
                           xmlns="http://www.w3.org/2000/svg" 

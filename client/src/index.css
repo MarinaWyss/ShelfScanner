@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 :root {
-  /* Light theme like Notion */
+  /* Light theme */
   --background: 0 0% 100%; /* White background */
   --foreground: 222.2 84% 4.9%; /* Dark text */
   --muted: 210 40% 96.1%;
@@ -41,6 +41,50 @@
   --sidebar-accent-foreground: 222.2 47.4% 11.2%;
   --sidebar-border: 214.3 31.8% 91.4%;
   --sidebar-ring: 214 100% 50%;
+}
+
+.dark {
+  /* Black background */
+  --background: 0 0% 0%;
+  --foreground: 210 40% 98%;
+  
+  /* Gray boxes */
+  --muted: 217 33% 17%;
+  --muted-foreground: 215 20.2% 75%;
+  --popover: 222 20% 15%;
+  --popover-foreground: 210 40% 98%;
+  --card: 222 20% 15%;
+  --card-foreground: 210 40% 98%;
+  
+  /* Brighter borders for contrast */
+  --border: 217 33% 25%;
+  --input: 217 33% 25%;
+  
+  /* Keep primary color vibrant but slightly adjusted for dark mode */
+  --primary: 265 89% 58%;
+  --primary-foreground: 210 40% 98%;
+  
+  /* Secondary color for dark theme */
+  --secondary: 217 33% 25%;
+  --secondary-foreground: 210 40% 98%;
+  
+  /* Accent color for dark theme */
+  --accent: 217 33% 25%;
+  --accent-foreground: 210 40% 98%;
+  
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+  --ring: 265 89% 58%;
+  
+  /* Sidebar colors for dark theme */
+  --sidebar-background: 0 0% 0%;
+  --sidebar-foreground: 210 40% 98%;
+  --sidebar-primary: 265 89% 58%;
+  --sidebar-primary-foreground: 210 40% 98%;
+  --sidebar-accent: 217 33% 25%;
+  --sidebar-accent-foreground: 210 40% 98%;
+  --sidebar-border: 217 33% 25%;
+  --sidebar-ring: 265 89% 58%;
 }
 
 @layer base {
