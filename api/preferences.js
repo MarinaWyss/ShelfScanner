@@ -29,10 +29,10 @@ export default async function handler(req, res) {
 
   try {
     // Import storage dynamically to avoid issues with module resolution
-    const { storage } = await import('../server/storage.js');
-    const { insertPreferenceSchema } = await import('../shared/schema.js');
-    const { logDeviceOperation } = await import('../server/utils/safe-logger.js');
-    const { log } = await import('../server/simple-logger.js');
+    const { storage } = await import('../server/storage.ts');
+    const { insertPreferenceSchema } = await import('../shared/schema.ts');
+    const { logDeviceOperation } = await import('../server/utils/safe-logger.ts');
+    const { log } = await import('../server/simple-logger.ts');
 
     console.log('Modules imported successfully');
 
@@ -45,16 +45,16 @@ export default async function handler(req, res) {
           return res.status(400).json({ error: 'Device ID is required' });
         }
 
-        const preferences = await storage.getPreferences(deviceId);
+        const preferences = await storage.getPreferencesByDeviceId(deviceId);
         console.log('Retrieved preferences:', preferences);
         
         await logDeviceOperation(deviceId, 'preferences_get', { 
           found: preferences ? 'yes' : 'no',
-          count: preferences?.length || 0 
+          count: preferences ? 1 : 0 
         });
         
         return res.status(200).json({ 
-          preferences: preferences || [],
+          preferences: preferences || null,
           deviceId: deviceId 
         });
         
@@ -78,37 +78,34 @@ export default async function handler(req, res) {
           });
         }
 
-        const { deviceId, preferences } = validation.data;
-        console.log('Saving preferences for deviceId:', deviceId);
+        const preferenceData = validation.data;
+        console.log('Saving preference for deviceId:', preferenceData.deviceId);
         
-        // Generate preference IDs
-        const preferencesWithIds = preferences.map(pref => ({
-          ...pref,
+        // Generate preference ID
+        const preferenceWithId = {
+          ...preferenceData,
           id: uuidv4(),
-          deviceId: deviceId,
           createdAt: new Date(),
           updatedAt: new Date()
-        }));
+        };
 
-        console.log('Preferences with IDs:', preferencesWithIds);
+        console.log('Preference with ID:', preferenceWithId);
         
-        const result = await storage.savePreferences(deviceId, preferencesWithIds);
+        const result = await storage.createPreference(preferenceWithId);
         console.log('Save result:', result);
         
-        await logDeviceOperation(deviceId, 'preferences_save', { 
-          count: preferencesWithIds.length,
-          success: 'yes' 
+        await logDeviceOperation(preferenceData.deviceId, 'preferences_save', { 
+          success: 'yes'
         });
         
-        log('Preferences saved successfully', { 
-          deviceId, 
-          count: preferencesWithIds.length 
+        log('Preference saved successfully', { 
+          deviceId: preferenceData.deviceId
         });
         
         return res.status(200).json({ 
           success: true, 
-          preferences: result,
-          message: 'Preferences saved successfully' 
+          preference: result,
+          message: 'Preference saved successfully' 
         });
         
       } catch (error) {
@@ -127,7 +124,7 @@ export default async function handler(req, res) {
           console.error('Failed to log error operation:', logError);
         }
         
-        return res.status(500).json({ error: 'Failed to save preferences' });
+        return res.status(500).json({ error: 'Failed to save preference' });
       }
     }
 

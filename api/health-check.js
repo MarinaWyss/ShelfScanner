@@ -34,11 +34,11 @@ export default async function handler(req, res) {
     let dbError = null;
     
     try {
-      const { testDatabaseConnection } = await import('../server/db.js');
+      const { testDatabaseConnection } = await import('../server/db.ts');
       const dbResult = await testDatabaseConnection();
-      dbStatus = dbResult.success ? 'connected' : 'failed';
-      if (!dbResult.success) {
-        dbError = dbResult.error;
+      dbStatus = dbResult ? 'connected' : 'failed';
+      if (!dbResult) {
+        dbError = 'Connection test returned false';
       }
     } catch (error) {
       console.error('Database test failed:', error);
