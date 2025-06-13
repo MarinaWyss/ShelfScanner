@@ -1,15 +1,12 @@
 {
   "buildCommand": "npm run build",
   "outputDirectory": "dist/public",
-  "functions": {
-    "api/**/*.cjs": {
-      "memory": 1024,
-      "maxDuration": 60
-    }
-  },
-  "rewrites": [
-    { "source": "/api/books/analyze", "destination": "/api/books/analyze.cjs" },
-    { "source": "/api/saved-books/:id", "destination": "/api/saved-books/[id].cjs" },
-    { "source": "/api/:path", "destination": "/api/:path.cjs" }
+  "routes": [
+    { "src": "/api/books/analyze", "dest": "/api/books/analyze.cjs" },
+    { "src": "/api/saved-books/([^/]+)", "dest": "/api/saved-books/[id].cjs?id=$1" },
+    { "src": "/api/saved-books", "dest": "/api/saved-books.cjs" },
+    { "src": "/api/preferences", "dest": "/api/preferences.cjs" },
+    { "src": "/api", "dest": "/api/index.cjs" },
+    { "handle": "filesystem" }
   ]
 } 
