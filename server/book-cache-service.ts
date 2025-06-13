@@ -400,29 +400,43 @@ export class BookCacheService {
     isbn?: string
   ): Promise<string> {
     try {
-      // Check for cached rating first - but only use if it's from OpenAI
+      // Check for cached rating first
       const cachedBook = await this.findInCache(title, author);
-      if (cachedBook?.rating && cachedBook.source === 'openai') {
-        log(`Using cached OpenAI rating for "${title}": ${cachedBook.rating}`, 'cache');
-        return cachedBook.rating;
+      if (cachedBook?.rating) {
+        // If the source is already OpenAI, use it immediately
+        if (cachedBook.source === 'openai') {
+          log(`Using cached OpenAI rating for "${title}": ${cachedBook.rating}`, 'cache');
+          return cachedBook.rating;
+        }
+        // If rating exists but source isn't OpenAI, still use it if it looks valid
+        // This handles cases where ratings were generated but source wasn't properly updated
+        const ratingNum = parseFloat(cachedBook.rating);
+        if (!isNaN(ratingNum) && ratingNum >= 1.0 && ratingNum <= 5.0) {
+          log(`Using cached rating for "${title}": ${cachedBook.rating} (source: ${cachedBook.source})`, 'cache');
+          return cachedBook.rating;
+        }
       }
       
-      // If we have an ISBN, try looking up by that - but only use if it's from OpenAI
+      // If we have an ISBN, try looking up by that
       if (isbn) {
         const isbnBook = await this.findByISBN(isbn);
-        if (isbnBook?.rating && isbnBook.source === 'openai') {
-          log(`Using cached OpenAI ISBN rating for "${title}": ${isbnBook.rating}`, 'cache');
-          
-          // Also cache under title/author for future lookups
-          await this.cacheBook({
-            title,
-            author,
-            isbn,
-            rating: isbnBook.rating,
-            source: 'openai'
-          });
-          
-          return isbnBook.rating;
+        if (isbnBook?.rating) {
+          // Check if it's a valid rating regardless of source
+          const ratingNum = parseFloat(isbnBook.rating);
+          if (!isNaN(ratingNum) && ratingNum >= 1.0 && ratingNum <= 5.0) {
+            log(`Using cached ISBN rating for "${title}": ${isbnBook.rating}`, 'cache');
+            
+            // Also cache under title/author for future lookups
+            await this.cacheBook({
+              title,
+              author,
+              isbn,
+              rating: isbnBook.rating,
+              source: isbnBook.source || 'openai'
+            });
+            
+            return isbnBook.rating;
+          }
         }
       }
       
