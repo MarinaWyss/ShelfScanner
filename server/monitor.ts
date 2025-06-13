@@ -3,8 +3,8 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { log } from './simple-logger.js';
 import os from 'os';
-import { db } from './db';
-import { sendDatabaseAlert } from './notification';
+import { db } from './db.js';
+import { sendDatabaseAlert } from './notification.js';
 
 // Get directory name in ESM
 const __filename = fileURLToPath(import.meta.url);

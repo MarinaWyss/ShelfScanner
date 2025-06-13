@@ -1,5 +1,5 @@
-import { checkSystemHealth, logEvent, LogLevel } from './monitor';
-import { sendSystemHealthAlert, sendErrorAlert, sendDailySummary } from './notification';
+import { checkSystemHealth, logEvent, LogLevel } from './monitor.js';
+import { sendSystemHealthAlert, sendErrorAlert, sendDailySummary } from './notification.js';
 import { log } from './simple-logger.js';
 
 // Health monitoring state

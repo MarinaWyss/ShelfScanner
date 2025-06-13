@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { log } from './simple-logger.js';
-import { rateLimiter } from './rate-limiter';
+import { rateLimiter } from './rate-limiter.js';
 
 /**
  * Local database of popular book ratings to provide accurate ratings without API calls
