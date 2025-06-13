@@ -19,10 +19,11 @@ interface SavedBook {
 }
 
 export default function SavedBooks() {
-  const [savedBooks, setSavedBooks] = useState<SavedBook[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [savedBooks, setSavedBooks] = useState<SavedBook[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [expandedBooks, setExpandedBooks] = useState<number[]>([]);
+  const [_deviceId, setDeviceId] = useState<string | null>(null);
 
   // Fetch saved books when component mounts
   useEffect(() => {
@@ -44,18 +45,12 @@ export default function SavedBooks() {
         }
         
         const data = await response.json();
-        console.log("Retrieved saved books response:", data);
         
-        // Handle the API response format which returns { books: [], deviceId: string }
-        if (data && Array.isArray(data.books)) {
+        if (data && data.books && Array.isArray(data.books)) {
           setSavedBooks(data.books);
-          // No error message needed for empty arrays - it's valid to have no saved books
-        } else if (Array.isArray(data)) {
-          // Fallback for direct array response (legacy compatibility)
-          setSavedBooks(data);
+          setDeviceId(data.deviceId);
         } else {
-          console.log("Unexpected response format:", data);
-          setError("Received invalid data format from server");
+          setSavedBooks([]);
         }
       } catch (err) {
         console.log("Error fetching saved books:", err);

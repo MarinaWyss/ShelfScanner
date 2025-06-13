@@ -12,9 +12,6 @@ export default async function handler(req, res) {
   console.log('=== SAVED BOOKS API CALLED ===');
   console.log('Method:', req.method);
   console.log('URL:', req.url);
-  console.log('Headers:', req.headers);
-  console.log('Query:', req.query);
-  console.log('Body:', req.body);
   
   // Handle CORS
   res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -37,7 +34,6 @@ export default async function handler(req, res) {
     if (req.method === 'GET') {
       try {
         const deviceId = req.query.deviceId || req.cookies?.deviceId;
-        console.log('GET request for deviceId:', deviceId);
         
         if (!deviceId) {
           return res.status(400).json({ error: 'Device ID is required' });
@@ -65,7 +61,6 @@ export default async function handler(req, res) {
 
     if (req.method === 'POST') {
       try {
-        console.log('POST request body:', req.body);
         
         const validation = insertSavedBookSchema.safeParse(req.body);
         
@@ -78,7 +73,6 @@ export default async function handler(req, res) {
         }
 
         const bookData = validation.data;
-        console.log('Saving book for deviceId:', bookData.deviceId);
         
         // Check if this book is already saved for this device
         const existingSavedBook = await storage.findSavedBook(bookData.deviceId, bookData.title, bookData.author);
@@ -86,15 +80,12 @@ export default async function handler(req, res) {
         let result;
         if (existingSavedBook) {
           // Update existing saved book
-          console.log('Updating existing saved book for deviceId:', bookData.deviceId, 'title:', bookData.title);
           result = await storage.updateSavedBook(existingSavedBook.id, bookData);
         } else {
           // Create new saved book
-          console.log('Creating new saved book for deviceId:', bookData.deviceId, 'title:', bookData.title);
           result = await storage.createSavedBook(bookData);
         }
         
-        console.log('Save result:', result);
         
         logInfo(existingSavedBook ? 'Book updated successfully' : 'Book saved successfully', {
           deviceId: bookData.deviceId,
@@ -131,14 +122,12 @@ export default async function handler(req, res) {
     if (req.method === 'DELETE') {
       try {
         const { bookId, deviceId } = req.query;
-        console.log('DELETE request for bookId:', bookId, 'deviceId:', deviceId);
         
         if (!bookId || !deviceId) {
           return res.status(400).json({ error: 'Book ID and Device ID are required' });
         }
 
         const result = await storage.deleteSavedBook(bookId, deviceId);
-        console.log('Delete result:', result);
         
         if (result) {
           logInfo('Book deleted successfully', {

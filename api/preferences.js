@@ -12,9 +12,6 @@ export default async function handler(req, res) {
   console.log('=== PREFERENCES API CALLED ===');
   console.log('Method:', req.method);
   console.log('URL:', req.url);
-  console.log('Headers:', req.headers);
-  console.log('Query:', req.query);
-  console.log('Body:', req.body);
   
   // Handle CORS
   res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -37,14 +34,12 @@ export default async function handler(req, res) {
     if (req.method === 'GET') {
       try {
         const deviceId = req.query.deviceId || req.cookies?.deviceId;
-        console.log('GET request for deviceId:', deviceId);
         
         if (!deviceId) {
           return res.status(400).json({ error: 'Device ID is required' });
         }
 
         const preferences = await storage.getPreferencesByDeviceId(deviceId);
-        console.log('Retrieved preferences:', preferences);
         
         logInfo('Preferences retrieved', {
           deviceId,
@@ -68,7 +63,6 @@ export default async function handler(req, res) {
 
     if (req.method === 'POST') {
       try {
-        console.log('POST request body:', req.body);
         
         // Get deviceId from request
         const deviceId = req.query.deviceId || req.cookies?.deviceId;
@@ -94,7 +88,6 @@ export default async function handler(req, res) {
         }
 
         const preferenceData = validation.data;
-        console.log('Saving preference for deviceId:', preferenceData.deviceId);
         
         // Check if preferences already exist for this device
         const existingPreferences = await storage.getPreferencesByDeviceId(preferenceData.deviceId);
@@ -102,15 +95,12 @@ export default async function handler(req, res) {
         let result;
         if (existingPreferences) {
           // Update existing preferences
-          console.log('Updating existing preferences for deviceId:', preferenceData.deviceId);
           result = await storage.updatePreference(existingPreferences.id, preferenceData);
         } else {
           // Create new preferences
-          console.log('Creating new preferences for deviceId:', preferenceData.deviceId);
           result = await storage.createPreference(preferenceData);
         }
         
-        console.log('Save result:', result);
         
         logInfo(existingPreferences ? 'Preferences updated successfully' : 'Preferences saved successfully', {
           deviceId: preferenceData.deviceId,

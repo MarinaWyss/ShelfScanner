@@ -103,8 +103,8 @@ export default function AdminPage() {
         if (response.ok) {
           setIsAuthenticated(true);
         }
-      } catch (error) {
-        console.log('Error checking authentication:', error);
+      } catch {
+        // Authentication errors are intentionally not logged due to security concerns
       }
       setAuthChecked(true);
     };

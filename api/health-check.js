@@ -11,7 +11,6 @@ export default async function handler(req, res) {
   console.log('=== HEALTH CHECK API CALLED ===');
   console.log('Method:', req.method);
   console.log('URL:', req.url);
-  console.log('Headers:', req.headers);
   console.log('Environment:', process.env.NODE_ENV);
   
   // Handle CORS
@@ -60,7 +59,7 @@ export default async function handler(req, res) {
       }
     };
 
-    console.log('Health check response:', healthData);
+    // console.log('Health check response:', healthData); // REMOVED: Health data may expose sensitive system info
     
     return res.status(200).json(healthData);
     
