@@ -2,16 +2,52 @@ import { pgTable, text, serial, integer, jsonb, timestamp, varchar, pgSchema } f
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-// Get the schema name based on environment
+// Get the schema name based on environment and deployment context
 const getSchemaName = () => {
+  // For Vercel deployments, check VERCEL_ENV and git branch
+  if (process.env.VERCEL_ENV) {
+    // On Vercel production (main branch)
+    if (process.env.VERCEL_ENV === 'production') {
+      return 'public';
+    }
+    
+    // On Vercel preview deployments (feature branches) or development
+    if (process.env.VERCEL_ENV === 'preview' || process.env.VERCEL_ENV === 'development') {
+      return 'development';
+    }
+  }
+  
+  // For local development, check git branch
+  if (process.env.NODE_ENV === 'development') {
+    return 'development';
+  }
+  
+  // Check git branch name (useful for local and CI/CD)
+  const gitBranch = process.env.VERCEL_GIT_COMMIT_REF || process.env.GIT_BRANCH || process.env.BRANCH;
+  if (gitBranch && gitBranch !== 'main' && gitBranch !== 'master') {
+    return 'development';
+  }
+  
+  // Default to public schema for production/main branch
   if (process.env.NODE_ENV === 'production') {
     return 'public';
   }
+  
+  // Default to development for everything else
   return 'development';
 };
 
 // Create the schema object
 const currentSchemaName = getSchemaName();
+
+// Log which schema is being used for debugging
+if (typeof console !== 'undefined') {
+  const context = process.env.VERCEL_ENV ? `Vercel ${process.env.VERCEL_ENV}` : 
+                  process.env.NODE_ENV === 'development' ? 'Local development' : 'Unknown';
+  const branch = process.env.VERCEL_GIT_COMMIT_REF || process.env.GIT_BRANCH || process.env.BRANCH || 'unknown';
+  console.log(`📊 Database Schema: "${currentSchemaName}" | Context: ${context} | Branch: ${branch}`);
+}
+
 export const appSchema = currentSchemaName === 'public' 
   ? undefined  // Use default (public) schema
   : pgSchema(currentSchemaName);
