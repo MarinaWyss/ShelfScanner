@@ -11,7 +11,7 @@ import {
   triggerDailyReport 
 } from './health-monitor';
 import crypto from 'crypto';
-import { log } from './vite';
+import { log } from './simple-logger.js';
 
 const router = Router();
 

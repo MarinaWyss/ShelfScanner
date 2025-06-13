@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { log } from './vite';
+import { log } from './simple-logger.js';
 import { getEstimatedBookRating } from './utils/book-utils';
 import { rateLimiter } from './rate-limiter';
 import { bookCacheService } from './book-cache-service';

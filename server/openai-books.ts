@@ -1,5 +1,5 @@
 import { bookCacheService } from './book-cache-service';
-import { log } from './vite';
+import { log } from './simple-logger.js';
 
 /**
  * Interface for OpenAI-enhanced book info

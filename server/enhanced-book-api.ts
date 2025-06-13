@@ -1,5 +1,5 @@
 import { bookCacheService } from './book-cache-service';
-import { log } from './vite';
+import { log } from './simple-logger.js';
 import { storage } from './storage';
 import axios from 'axios';
 import { rateLimiter } from './rate-limiter';

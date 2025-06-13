@@ -5,7 +5,7 @@ import { Router, Request, Response } from 'express';
 import { getApiFailureStats } from './utils/api-monitoring';
 import { getApiUsageStats } from './utils/api-usage-tracking';
 import { rateLimiter } from './rate-limiter';
-import { log } from './vite';
+import { log } from './simple-logger.js';
 
 const router = Router();
 

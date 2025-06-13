@@ -1,6 +1,6 @@
 import { checkSystemHealth, logEvent, LogLevel } from './monitor';
 import { sendSystemHealthAlert, sendErrorAlert, sendDailySummary } from './notification';
-import { log } from './vite';
+import { log } from './simple-logger.js';
 
 // Health monitoring state
 let healthMonitorInterval: NodeJS.Timeout | null = null;

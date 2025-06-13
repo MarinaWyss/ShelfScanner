@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { log } from './vite';
+import { log } from './simple-logger.js';
 import os from 'os';
 import { db } from './db';
 import { sendDatabaseAlert } from './notification';
