@@ -41,7 +41,7 @@ export async function getOpenAIRecommendations(
     }
     
     // Check rate limits
-    if (!rateLimiter.isAllowed('openai')) {
+    if (!(await rateLimiter.isAllowed('openai'))) {
       log('Rate limit reached for OpenAI, unable to generate recommendations', 'openai');
       throw new Error("Rate limit reached for AI recommendations");
     }
@@ -196,7 +196,7 @@ Only return the JSON object with no additional text.`
       });
       
       // Increment the rate limiter counter
-      rateLimiter.increment('openai');
+      await rateLimiter.increment('openai');
       
       // Parse the recommendations
       const content = response.choices[0].message.content;

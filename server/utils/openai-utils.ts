@@ -28,7 +28,7 @@ export async function getOpenAIBookRating(title: string, author: string): Promis
     }
     
     // Check rate limits to control costs
-    if (!rateLimiter.isAllowed('openai')) {
+    if (!(await rateLimiter.isAllowed('openai'))) {
       log("Rate limit reached for OpenAI, using fallback rating", "openai");
       return "4.2";
     }
@@ -54,7 +54,7 @@ export async function getOpenAIBookRating(title: string, author: string): Promis
     });
     
     // Count the API call against our rate limit
-    rateLimiter.increment('openai');
+    await rateLimiter.increment('openai');
     
     // Extract the rating from the response
     const content = response.choices[0].message.content?.trim() || "";
@@ -89,7 +89,7 @@ export async function getOpenAIBookSummary(title: string, author: string): Promi
     }
     
     // Check rate limits to control costs
-    if (!rateLimiter.isAllowed('openai')) {
+    if (!(await rateLimiter.isAllowed('openai'))) {
       log("Rate limit reached for OpenAI, using fallback summary", "openai");
       return `"${title}" by ${author} is a noteworthy book in its genre. (API rate limit reached)`;
     }
@@ -115,7 +115,7 @@ export async function getOpenAIBookSummary(title: string, author: string): Promi
     });
     
     // Count the API call against our rate limit
-    rateLimiter.increment('openai');
+    await rateLimiter.increment('openai');
     
     // Extract the summary from the response
     const summary = response.choices[0].message.content?.trim() || "";

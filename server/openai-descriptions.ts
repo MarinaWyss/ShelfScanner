@@ -58,7 +58,7 @@ export async function getOpenAIDescription(title: string, author: string): Promi
     }
     
     // Check rate limits
-    if (!rateLimiter.isAllowed('openai')) {
+    if (!(await rateLimiter.isAllowed('openai'))) {
       log('Rate limit reached for OpenAI, skipping description generation', 'openai');
       return "Description temporarily unavailable";
     }
@@ -87,7 +87,7 @@ export async function getOpenAIDescription(title: string, author: string): Promi
     });
     
     // Increment the rate limiter counter
-    rateLimiter.increment('openai');
+    await rateLimiter.increment('openai');
     
     // Extract and return the description
     const description = response.choices[0].message.content?.trim() || "No description available";
@@ -158,7 +158,7 @@ export async function getOpenAIMatchReason(
     }
     
     // Check rate limits
-    if (!rateLimiter.isAllowed('openai')) {
+    if (!(await rateLimiter.isAllowed('openai'))) {
       log('Rate limit reached for OpenAI, skipping match reason generation', 'openai');
       return "This book aligns with your reading interests.";
     }
@@ -197,7 +197,7 @@ export async function getOpenAIMatchReason(
     });
     
     // Increment the rate limiter counter
-    rateLimiter.increment('openai');
+    await rateLimiter.increment('openai');
     
     // Extract and return the match reason
     const matchReason = response.choices[0].message.content?.trim() || 

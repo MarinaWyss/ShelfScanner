@@ -69,7 +69,7 @@ export async function searchEnhancedBooks(title: string): Promise<BookInfo[]> {
 async function searchGoogleBooks(title: string): Promise<BookInfo[]> {
   try {
     // Check if we can make a Google Books API request
-    if (!rateLimiter.isAllowed('google-books')) {
+    if (!(await rateLimiter.isAllowed('google-books'))) {
       log(`Rate limit reached for Google Books API, skipping search for "${title}"`, 'books');
       return [];
     }
@@ -80,7 +80,7 @@ async function searchGoogleBooks(title: string): Promise<BookInfo[]> {
     const googleResponse = await axios.get(googleBooksUrl);
     
     // Increment the rate limiter counter for Google Books API
-    rateLimiter.increment('google-books');
+    await rateLimiter.increment('google-books');
     
     if (googleResponse.data.items && googleResponse.data.items.length > 0) {
       log(`Found ${googleResponse.data.items.length} results for "${title}" in Google Books API`, 'books');
@@ -126,7 +126,7 @@ async function searchGoogleBooks(title: string): Promise<BookInfo[]> {
 async function searchOpenLibrary(title: string): Promise<BookInfo[]> {
   try {
     // Check rate limits
-    if (!rateLimiter.isAllowed('open-library')) {
+    if (!(await rateLimiter.isAllowed('open-library'))) {
       log(`Rate limit reached for Open Library API, skipping fallback search for "${title}"`, 'books');
       return [];
     }
@@ -135,7 +135,7 @@ async function searchOpenLibrary(title: string): Promise<BookInfo[]> {
     const openLibraryResponse = await axios.get(openLibraryUrl);
     
     // Increment rate limiter
-    rateLimiter.increment('open-library');
+    await rateLimiter.increment('open-library');
     
     if (openLibraryResponse.data.docs && openLibraryResponse.data.docs.length > 0) {
       log(`Found ${openLibraryResponse.data.docs.length} results for "${title}" in Open Library`, 'books');

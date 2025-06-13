@@ -43,7 +43,7 @@ export async function analyzeBookshelfImage(base64Image: string): Promise<{
     }
     
     // Check rate limits before making the API call
-    if (!rateLimiter.isAllowed('openai')) {
+    if (!(await rateLimiter.isAllowed('openai'))) {
       log("Rate limit reached for OpenAI API. Using fallback.", "vision");
       return await fallbackToGoogleVision(base64Image);
     }
@@ -78,7 +78,7 @@ export async function analyzeBookshelfImage(base64Image: string): Promise<{
     });
 
     // Increment the counter for successful API calls
-    rateLimiter.increment('openai');
+    await rateLimiter.increment('openai');
 
     // Parse the response
     const content = response.choices[0].message.content || '';
@@ -118,13 +118,13 @@ async function fallbackToGoogleVision(base64Image: string): Promise<{
     log("Falling back to Google Vision API for image analysis", "vision");
     
     // Check if the Google Vision fallback is rate-limited
-    if (!rateLimiter.isAllowed('google-vision')) {
+    if (!(await rateLimiter.isAllowed('google-vision'))) {
       log("Rate limit reached for Google Vision fallback API", "vision");
       return { bookTitles: [], isBookshelf: false };
     }
     
     const visionResult = await analyzeImage(base64Image);
-    rateLimiter.increment('google-vision');
+    await rateLimiter.increment('google-vision');
     
     // Extract potential book titles from the Google Vision text
     const text = visionResult.text || '';

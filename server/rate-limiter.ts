@@ -1,115 +1,167 @@
 import { log } from './simple-logger.js';
-import { logError, logWarning, logInfo, logRateLimit } from './simple-error-logger.js';
+import { logError, logWarning, logRateLimit } from './simple-error-logger.js';
+
+// Define interfaces for better type safety
+interface KVStore {
+  get(key: string): Promise<number | null>;
+  set(key: string, value: number): Promise<number | "OK" | null>;
+  incr(key: string): Promise<number>;
+  expire(key: string, seconds: number): Promise<number>;
+}
+
+interface UsageStats {
+  windowUsage: number;
+  windowSeconds: number;
+  dailyUsage: number;
+  dailyLimit: number;
+  withinLimits: boolean;
+}
+
+// Dynamic import for Vercel KV - only available in Vercel environment
+let kv: KVStore | null = null;
+
+async function getKV(): Promise<KVStore> {
+  if (kv === null) {
+    try {
+      if (process.env.VERCEL || process.env.KV_URL) {
+        // Only import in Vercel environment or when KV is available
+        const { kv: vercelKV } = await import('@vercel/kv');
+        kv = vercelKV;
+        log('Using Vercel KV for rate limiting', 'rate-limiter');
+      } else {
+        // Local development fallback - use in-memory store
+        const localStore = new Map<string, number>();
+        kv = {
+          get: (key: string) => Promise.resolve(localStore.get(key) || null),
+          set: (key: string, value: number) => { localStore.set(key, value); return Promise.resolve('OK' as const); },
+          incr: (key: string) => {
+            const current = localStore.get(key) || 0;
+            const newValue = current + 1;
+            localStore.set(key, newValue);
+            return Promise.resolve(newValue);
+          },
+          expire: (_key: string, _seconds: number) => Promise.resolve(1), // No-op for local
+        };
+        log('Using local fallback for rate limiting (development)', 'rate-limiter');
+      }
+    } catch (error) {
+      log(`KV not available, using local fallback: ${error}`, 'rate-limiter');
+      // Fallback to basic object - ensure we never return null
+      kv = {
+        get: (_key: string) => Promise.resolve(null),
+        set: (_key: string, _value: number) => Promise.resolve('OK' as const),
+        incr: (_key: string) => Promise.resolve(1),
+        expire: (_key: string, _seconds: number) => Promise.resolve(1),
+      };
+    }
+  }
+  return kv!; // We ensure kv is never null above
+}
 
 /**
- * Simple in-memory rate limiter to control API usage
- * Enhanced with monitoring and alerting capabilities
+ * Vercel KV-based rate limiter for serverless environments
  */
-export class RateLimiter {
-  private requestCounts: Map<string, number> = new Map();
-  private timestamps: Map<string, number> = new Map();
-  private dailyLimits: Map<string, number> = new Map();
-  private dailyUsage: Map<string, number> = new Map();
-  private lastResetDay: Map<string, number> = new Map();
-  private alertsSent: Map<string, boolean> = new Map();
-  
-  constructor() {
-    // Set rate limits based on expected usage of 100 users per day, each scanning 5 shelves
-    this.setLimit('openai', 60, 60); // Updated: 60 requests per minute for OpenAI (up from 10)
-    this.setDailyLimit('openai', 15000); // Updated: 15,000 requests per day for OpenAI (up from 1000)
-    
-    this.setLimit('google-books', 100, 60); // Maintained: 100 requests per minute for Google Books
-    this.setDailyLimit('google-books', 7500); // Updated: 7,500 requests per day for Google Books (up from 1000)
-    
-    this.setLimit('google-vision', 20, 60); // Maintained: 20 requests per minute for Google Vision
-    this.setDailyLimit('google-vision', 1000); // Restored to original 1000 requests per day for Google Vision
-  }
-  
-  /**
-   * Set rate limit for a specific API
-   * @param apiName API identifier
-   * @param limit Number of requests allowed
-   * @param windowSeconds Time window in seconds
-   */
-  public setLimit(apiName: string, limit: number, windowSeconds: number): void {
-    const key = `${apiName}_${windowSeconds}`;
-    this.requestCounts.set(key, 0);
-    this.timestamps.set(key, Date.now());
-    this.dailyLimits.set(apiName, 0);
-  }
-  
-  /**
-   * Set daily limit for a specific API
-   * @param apiName API identifier
-   * @param limit Number of requests allowed per day
-   */
-  public setDailyLimit(apiName: string, limit: number): void {
-    this.dailyLimits.set(apiName, limit);
-    this.dailyUsage.set(apiName, 0);
-    this.lastResetDay.set(apiName, new Date().getDate());
-  }
-  
+export class VercelKVRateLimiter {
+  private readonly limits = {
+    'openai': { perMinute: 60, perDay: 15000 },
+    'google-books': { perMinute: 100, perDay: 7500 },
+    'google-vision': { perMinute: 20, perDay: 1000 },
+    'open-library': { perMinute: 60, perDay: 1000 }
+  };
+
   /**
    * Check if a request to the API is allowed based on rate limits
-   * Enhanced with monitoring and alerting
    * @param apiName API identifier
-   * @param windowSeconds Time window in seconds
+   * @param windowSeconds Time window in seconds (default: 60)
    * @returns boolean indicating if the request is allowed
    */
-  public isAllowed(apiName: string, windowSeconds = 60): boolean {
-    this.checkAndResetDaily(apiName);
-    
-    const key = `${apiName}_${windowSeconds}`;
-    
-    // Initialize if not exists
-    if (!this.requestCounts.has(key)) {
-      this.requestCounts.set(key, 0);
-      this.timestamps.set(key, Date.now());
+  public async isAllowed(apiName: string, windowSeconds = 60): Promise<boolean> {
+    try {
+      const kvStore = await getKV();
+      const now = Date.now();
+      const windowStart = Math.floor(now / (windowSeconds * 1000));
+      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+      
+      const limits = this.limits[apiName as keyof typeof this.limits];
+      if (!limits) {
+        log(`Unknown API: ${apiName}, allowing request`, 'rate-limiter');
+        return true;
+      }
+
+      // Keys for window and daily limits
+      const windowKey = `rate:${apiName}:${windowStart}`;
+      const dailyKey = `rate:${apiName}:daily:${today}`;
+
+      // Get current counts
+      const [windowCount, dailyCount] = await Promise.all([
+        kvStore.get(windowKey),
+        kvStore.get(dailyKey),
+      ]);
+
+      const currentWindowCount = windowCount || 0;
+      const currentDailyCount = dailyCount || 0;
+
+      // Check limits
+      const withinWindowLimit = currentWindowCount < limits.perMinute;
+      const withinDailyLimit = currentDailyCount < limits.perDay;
+
+      if (!withinWindowLimit) {
+        logRateLimit(apiName, 'window', limits.perMinute, currentWindowCount);
+      }
+
+      if (!withinDailyLimit) {
+        logRateLimit(apiName, 'daily', limits.perDay, currentDailyCount);
+      }
+
+      // Check for alerts
+      this.checkForAlerts(apiName, currentWindowCount, limits.perMinute, currentDailyCount, limits.perDay);
+
+      return withinWindowLimit && withinDailyLimit;
+    } catch (error) {
+      log(`Rate limiter error: ${error instanceof Error ? error.message : String(error)}`, 'rate-limiter');
+      // On error, allow the request (fail open)
+      return true;
     }
-    
-    const currentTime = Date.now();
-    const windowMs = windowSeconds * 1000;
-    const windowStart = currentTime - windowMs;
-    
-    // Reset counter if window has passed
-    if (this.timestamps.get(key)! < windowStart) {
-      this.requestCounts.set(key, 0);
-      this.timestamps.set(key, currentTime);
-    }
-    
-    // Check rate limit
-    const currentCount = this.requestCounts.get(key) || 0;
-    const limit = apiName === 'openai' ? 60 : 
-                 apiName === 'google-vision' ? 20 : 100; // Get appropriate limits
-    
-    // Check daily limit
-    const dailyUsage = this.dailyUsage.get(apiName) || 0;
-    const dailyLimit = this.dailyLimits.get(apiName) || Infinity;
-    
-    const isWithinRateLimit = currentCount < limit;
-    const isWithinDailyLimit = dailyUsage < dailyLimit;
-    
-    // Check if we need to send alerts
-    this.checkForAlerts(apiName, currentCount, limit, dailyUsage, dailyLimit);
-    
-    if (!isWithinRateLimit) {
-      logRateLimit(apiName, 'window', limit, currentCount);
-    }
-    
-    if (!isWithinDailyLimit) {
-      logRateLimit(apiName, 'daily', dailyLimit, dailyUsage);
-    }
-    
-    return isWithinRateLimit && isWithinDailyLimit;
   }
-  
+
+  /**
+   * Increment the count for an API after successful usage
+   * @param apiName API identifier
+   * @param windowSeconds Time window in seconds (default: 60)
+   */
+  public async increment(apiName: string, windowSeconds = 60): Promise<void> {
+    try {
+      const kvStore = await getKV();
+      const now = Date.now();
+      const windowStart = Math.floor(now / (windowSeconds * 1000));
+      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+
+      // Keys for window and daily limits
+      const windowKey = `rate:${apiName}:${windowStart}`;
+      const dailyKey = `rate:${apiName}:daily:${today}`;
+
+      // Increment both counters atomically
+      const [windowCount, dailyCount] = await Promise.all([
+        kvStore.incr(windowKey),
+        kvStore.incr(dailyKey),
+      ]);
+
+      // Set expiry on first increment
+      if (windowCount === 1) {
+        await kvStore.expire(windowKey, windowSeconds);
+      }
+      if (dailyCount === 1) {
+        await kvStore.expire(dailyKey, 86400); // 24 hours
+      }
+
+      log(`API call to ${apiName}: window=${windowCount}, daily=${dailyCount}`, 'rate-limiter');
+    } catch (error) {
+      log(`Rate limiter increment error: ${error instanceof Error ? error.message : String(error)}`, 'rate-limiter');
+    }
+  }
+
   /**
    * Check if alerts should be logged based on usage thresholds
-   * @param apiName API name
-   * @param currentCount Current count in window
-   * @param limit Window limit
-   * @param dailyUsage Daily usage
-   * @param dailyLimit Daily limit
    */
   private checkForAlerts(
     apiName: string, 
@@ -119,23 +171,16 @@ export class RateLimiter {
     dailyLimit: number
   ): void {
     const usagePercent = (dailyUsage / dailyLimit) * 100;
-    const _windowPercent = (currentCount / limit) * 100;
-    const alertKey = `${apiName}_alert`;
-    
-    // Check if we've already sent an alert for this API today
-    const alreadySentAlert = this.alertsSent.get(alertKey) || false;
-    
-    // Alert on high daily usage (only log once per day)
-    if (usagePercent >= 80 && !alreadySentAlert) {
-      // Log the high usage
+
+    // Alert on high daily usage
+    if (usagePercent >= 80) {
       logWarning(`High API usage for ${apiName}: ${usagePercent.toFixed(1)}%`, {
         api: apiName,
         current: dailyUsage,
         limit: dailyLimit,
         metadata: { type: 'daily', usagePercent }
       });
-      
-      // Log a critical event if usage is very high
+
       if (usagePercent >= 90) {
         logError(`${apiName} API quota is nearly exhausted (${usagePercent.toFixed(1)}%)`, undefined, {
           api: apiName,
@@ -144,103 +189,72 @@ export class RateLimiter {
           metadata: { usagePercent, critical: true }
         });
       }
-      
-      // Mark that we've alerted for this API today
-      this.alertsSent.set(alertKey, true);
-    }
-    
-    // Reset alert flag at midnight
-    const currentDay = new Date().getDate();
-    const lastAlertDay = this.lastResetDay.get(apiName) || currentDay;
-    if (currentDay !== lastAlertDay) {
-      this.alertsSent.set(alertKey, false);
     }
   }
-  
-  /**
-   * Increment the count for an API after successful usage
-   * @param apiName API identifier
-   * @param windowSeconds Time window in seconds
-   */
-  public increment(apiName: string, windowSeconds = 60): void {
-    this.checkAndResetDaily(apiName);
-    
-    const key = `${apiName}_${windowSeconds}`;
-    
-    // Increment request count
-    const currentCount = this.requestCounts.get(key) || 0;
-    this.requestCounts.set(key, currentCount + 1);
-    
-    // Increment daily usage
-    const dailyUsage = this.dailyUsage.get(apiName) || 0;
-    this.dailyUsage.set(apiName, dailyUsage + 1);
-    
-    log(`API call to ${apiName}: ${currentCount + 1} requests in current window, daily total: ${dailyUsage + 1}`, 'rate-limiter');
-    
-    // Check if we need to log high usage warning
-    const limit = apiName === 'openai' ? 60 : 
-                 apiName === 'google-vision' ? 20 : 100;
-    const dailyLimit = this.dailyLimits.get(apiName) || Infinity;
-    
-    // Only log when usage reaches significant thresholds
-    if (dailyUsage + 1 >= dailyLimit * 0.5 && (dailyUsage + 1) % 5 === 0) {
-      // Log usage milestone every 5 requests once we're past 50%
-      logInfo(`API usage milestone for ${apiName}: ${dailyUsage + 1}/${dailyLimit}`, {
-        api: apiName,
-        current: dailyUsage + 1,
-        limit: dailyLimit,
-        metadata: { 
-          windowUsage: currentCount + 1,
-          windowLimit: limit,
-          milestone: true
-        }
-      });
-    }
-  }
-  
-  /**
-   * Reset daily counters if day has changed
-   * @param apiName API identifier
-   */
-  private checkAndResetDaily(apiName: string): void {
-    const currentDay = new Date().getDate();
-    const lastResetDay = this.lastResetDay.get(apiName) || currentDay;
-    
-    if (currentDay !== lastResetDay) {
-      this.dailyUsage.set(apiName, 0);
-      this.lastResetDay.set(apiName, currentDay);
-      log(`Reset daily usage counter for ${apiName}`, 'rate-limiter');
-    }
-  }
-  
+
   /**
    * Get current API usage statistics
-   * @returns Object with usage statistics
    */
-  public getUsageStats(): Record<string, any> {
-    const stats: Record<string, any> = {};
-    
-    // Manually get keys and iterate to avoid TypeScript iterator issues
-    const keys = Array.from(this.requestCounts.keys());
-    
-    for (const key of keys) {
-      const count = this.requestCounts.get(key) || 0;
-      const [apiName, windowSeconds] = key.split('_');
-      const dailyUsage = this.dailyUsage.get(apiName) || 0;
-      const dailyLimit = this.dailyLimits.get(apiName) || Infinity;
-      
-      stats[apiName] = {
-        windowUsage: count,
-        windowSeconds: parseInt(windowSeconds),
-        dailyUsage,
-        dailyLimit,
-        withinLimits: count < (apiName === 'openai' ? 60 : apiName === 'google-vision' ? 20 : 100) && dailyUsage < dailyLimit
-      };
+  public async getUsageStats(): Promise<Record<string, UsageStats>> {
+    try {
+      const kvStore = await getKV();
+      const stats: Record<string, UsageStats> = {};
+      const now = Date.now();
+      const currentWindow = Math.floor(now / 60000); // 1-minute window
+      const today = new Date().toISOString().split('T')[0];
+
+      for (const [apiName, limits] of Object.entries(this.limits)) {
+        const windowKey = `rate:${apiName}:${currentWindow}`;
+        const dailyKey = `rate:${apiName}:daily:${today}`;
+
+        const [windowUsage, dailyUsage] = await Promise.all([
+          kvStore.get(windowKey),
+          kvStore.get(dailyKey),
+        ]);
+
+        const currentWindowUsage = windowUsage || 0;
+        const currentDailyUsage = dailyUsage || 0;
+
+        stats[apiName] = {
+          windowUsage: currentWindowUsage,
+          windowSeconds: 60,
+          dailyUsage: currentDailyUsage,
+          dailyLimit: limits.perDay,
+          withinLimits: currentWindowUsage < limits.perMinute && currentDailyUsage < limits.perDay
+        };
+      }
+
+      return stats;
+    } catch (error) {
+      log(`Error getting usage stats: ${error instanceof Error ? error.message : String(error)}`, 'rate-limiter');
+      return {};
     }
-    
-    return stats;
+  }
+
+  /**
+   * Reset a specific API's rate limits (useful for testing or manual reset)
+   */
+  public async resetLimits(apiName: string): Promise<void> {
+    try {
+      const kvStore = await getKV();
+      const now = Date.now();
+      const currentWindow = Math.floor(now / 60000);
+      const today = new Date().toISOString().split('T')[0];
+
+      const windowKey = `rate:${apiName}:${currentWindow}`;
+      const dailyKey = `rate:${apiName}:daily:${today}`;
+
+      await Promise.all([
+        kvStore.set(windowKey, 0),
+        kvStore.set(dailyKey, 0),
+      ]);
+
+      log(`Reset rate limits for ${apiName}`, 'rate-limiter');
+    } catch (error) {
+      log(`Error resetting limits for ${apiName}: ${error instanceof Error ? error.message : String(error)}`, 'rate-limiter');
+    }
   }
 }
 
 // Create a singleton instance
-export const rateLimiter = new RateLimiter();
+export const rateLimiter = new VercelKVRateLimiter();
