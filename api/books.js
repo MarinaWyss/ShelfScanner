@@ -64,9 +64,9 @@ export default async function handler(req, res) {
               continue;
             }
             
-            // Cache the book data in book_cache to ensure consistent IDs
+            // First, cache the basic book data
             const bookId = `${bookData.title}-${bookData.author || "Unknown"}`.toLowerCase().replace(/[^a-z0-9]/g, '-');
-            const cachedBook = await storage.cacheBook({
+            let cachedBook = await storage.cacheBook({
               title: bookData.title,
               author: bookData.author || "Unknown",
               isbn: bookData.isbn || null,
@@ -75,6 +75,23 @@ export default async function handler(req, res) {
               bookId, // Add required bookId field
               expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000) // 1 year expiration
             });
+            
+            // Generate OpenAI rating and summary for this book
+            try {
+              const { bookCacheService } = await import('../server/book-cache-service.js');
+              
+              // Generate rating
+              const rating = await bookCacheService.getEnhancedRating(bookData.title, bookData.author || "Unknown", bookData.isbn);
+              
+              // Generate summary  
+              const summary = await bookCacheService.getEnhancedSummary(bookData.title, bookData.author || "Unknown", bookData.isbn);
+              
+              log(`Generated OpenAI content for "${bookData.title}": rating=${rating}, summary=${summary ? 'yes' : 'no'}`, 'books');
+              
+            } catch (openaiError) {
+              // Don't fail the entire book save if OpenAI fails
+              log(`Failed to generate OpenAI content for "${bookData.title}": ${openaiError instanceof Error ? openaiError.message : String(openaiError)}`, 'books');
+            }
             
             savedBooks.push({
               id: cachedBook.id,

@@ -261,10 +261,14 @@ export class DatabaseStorage implements IStorage {
         bookId = `book_${normalizedTitle.replace(/[^a-z0-9]/g, '_')}_${normalizedAuthor.replace(/[^a-z0-9]/g, '_')}`;
       }
       
-      // Add bookId to the data
+      // Ensure source has a default value if not provided
+      const source = bookData.source || 'google';
+      
+      // Add bookId and ensure source to the data
       const bookDataWithId = {
         ...bookData,
-        bookId
+        bookId,
+        source
       };
       
       // Check if book already exists by bookId
@@ -280,7 +284,7 @@ export class DatabaseStorage implements IStorage {
             coverUrl: bookData.coverUrl || existingBook.coverUrl,
             rating: bookData.rating || existingBook.rating,
             summary: bookData.summary || existingBook.summary,
-            source: bookData.source || existingBook.source,
+            source: source || existingBook.source, // Use the validated source
             metadata: bookData.metadata || existingBook.metadata,
             expiresAt: bookData.expiresAt || existingBook.expiresAt,
             cachedAt: new Date() // Update the cached timestamp
