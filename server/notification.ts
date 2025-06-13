@@ -1,5 +1,5 @@
 import nodemailer from 'nodemailer';
-import { logger } from './logger';
+import { log } from './simple-logger.js';
 
 // Create SMTP transporter
 let transporter: nodemailer.Transporter | null = null;
@@ -42,13 +42,13 @@ interface EmailParams {
  */
 export async function sendAlertEmail(params: EmailParams): Promise<boolean> {
   if (!transporter) {
-    logger.warn('Cannot send alert email: SMTP not configured');
+    log('Cannot send alert email: SMTP not configured', 'notification');
     return false;
   }
   
   // Check for admin email configuration
   if (!process.env.ADMIN_EMAIL) {
-    logger.warn('Cannot send alert email: Admin email not configured');
+    log('Cannot send alert email: Admin email not configured', 'notification');
     return false;
   }
   
@@ -61,7 +61,7 @@ export async function sendAlertEmail(params: EmailParams): Promise<boolean> {
     if (alertCache.has(cacheKey)) {
       const lastSent = alertCache.get(cacheKey) || 0;
       if (now - lastSent < ALERT_COOLDOWN_MS) {
-        logger.debug(`Skipping duplicate alert: ${params.subject} (cooldown period)`);
+        log(`Skipping duplicate alert: ${params.subject} (cooldown period)`, 'notification');
         return false;
       }
     }
@@ -82,10 +82,10 @@ export async function sendAlertEmail(params: EmailParams): Promise<boolean> {
       html: params.html || '',
     });
     
-    logger.info(`Alert email sent: ${params.subject}`);
+    log(`Alert email sent: ${params.subject}`, 'notification');
     return true;
   } catch (error) {
-    logger.error(`SMTP email error: ${error}`);
+    log(`SMTP email error: ${error}`, 'notification');
     return false;
   }
 }
