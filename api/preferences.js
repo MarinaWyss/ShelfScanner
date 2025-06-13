@@ -5,181 +5,140 @@ import { v4 as uuidv4 } from 'uuid';
 
 /**
  * API handler for preferences
- * @param {Request} request - The request object
+ * @param {import('@vercel/node').VercelRequest} req - The request object
+ * @param {import('@vercel/node').VercelResponse} res - The response object
  */
-export default async function handler(request) {
+export default async function handler(req, res) {
   // Add comprehensive logging for debugging
   console.log('=== PREFERENCES API CALLED ===');
-  console.log('Method:', request.method);
-  console.log('URL:', request.url);
-  console.log('Headers:', Object.fromEntries(request.headers.entries()));
+  console.log('Method:', req.method);
+  console.log('URL:', req.url);
+  console.log('Headers:', req.headers);
+  console.log('Query:', req.query);
+  console.log('Body:', req.body);
   
   // Handle CORS
-  const headers = {
-    'Access-Control-Allow-Credentials': 'true',
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
-    'Access-Control-Allow-Headers': 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version',
-    'Content-Type': 'application/json'
-  };
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
 
-  if (request.method === 'OPTIONS') {
-    return new Response(null, { status: 200, headers });
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
   }
 
   try {
-    // Dynamic imports for server modules
+    // Import storage dynamically to avoid issues with module resolution
     const { storage } = await import('../server/storage.js');
     const { insertPreferenceSchema } = await import('../shared/schema.js');
     const { logDeviceOperation } = await import('../server/utils/safe-logger.js');
     const { log } = await import('../server/simple-logger.js');
 
-    // Parse request body for POST/PUT requests
-    let body = null;
-    if (request.method === 'POST' || request.method === 'PUT') {
+    console.log('Modules imported successfully');
+
+    if (req.method === 'GET') {
       try {
-        body = await request.json();
-        console.log('Request body:', body);
-      } catch (error) {
-        console.error('Failed to parse request body:', error);
-        return new Response(
-          JSON.stringify({ error: 'Invalid JSON in request body' }),
-          { status: 400, headers }
-        );
-      }
-    }
+        const deviceId = req.query.deviceId || req.cookies?.deviceId;
+        console.log('GET request for deviceId:', deviceId);
+        
+        if (!deviceId) {
+          return res.status(400).json({ error: 'Device ID is required' });
+        }
 
-    // Extract device ID from cookies or body
-    const cookieHeader = request.headers.get('cookie') || '';
-    const cookies = Object.fromEntries(
-      cookieHeader.split(';').map(c => {
-        const [key, value] = c.trim().split('=');
-        return [key, value];
-      }).filter(([key]) => key)
-    );
-    
-    const deviceId = body?.deviceId || cookies.deviceId;
-    console.log('Device ID:', deviceId);
-
-    if (request.method === 'GET') {
-      if (!deviceId) {
-        console.log('No device ID provided for GET request');
-        return new Response(
-          JSON.stringify({ preferences: [] }),
-          { status: 200, headers }
-        );
-      }
-
-      try {
-        const preferences = await storage.getPreferencesByDeviceId(deviceId);
+        const preferences = await storage.getPreferences(deviceId);
         console.log('Retrieved preferences:', preferences);
         
-        await logDeviceOperation(deviceId, 'get_preferences', { 
-          count: preferences.length 
+        await logDeviceOperation(deviceId, 'preferences_get', { 
+          found: preferences ? 'yes' : 'no',
+          count: preferences?.length || 0 
         });
         
-        return new Response(
-          JSON.stringify({ preferences }),
-          { status: 200, headers }
-        );
+        return res.status(200).json({ 
+          preferences: preferences || [],
+          deviceId: deviceId 
+        });
+        
       } catch (error) {
-        console.error('Error retrieving preferences:', error);
-        await logDeviceOperation(deviceId, 'get_preferences_error', { 
-          error: error.message 
-        });
-        
-        return new Response(
-          JSON.stringify({ error: 'Failed to retrieve preferences' }),
-          { status: 500, headers }
-        );
+        console.error('GET preferences error:', error);
+        return res.status(500).json({ error: 'Failed to retrieve preferences' });
       }
     }
 
-    if (request.method === 'POST') {
-      if (!body) {
-        return new Response(
-          JSON.stringify({ error: 'Request body is required' }),
-          { status: 400, headers }
-        );
-      }
-
-      // Validate the request body
+    if (req.method === 'POST') {
       try {
-        const validatedData = insertPreferenceSchema.parse(body);
-        console.log('Validated preference data:', validatedData);
-
-        // Generate ID if not provided
-        if (!validatedData.id) {
-          validatedData.id = uuidv4();
-        }
-
-        // Ensure device ID is set
-        if (!validatedData.deviceId && deviceId) {
-          validatedData.deviceId = deviceId;
-        }
-
-        if (!validatedData.deviceId) {
-          return new Response(
-            JSON.stringify({ error: 'Device ID is required' }),
-            { status: 400, headers }
-          );
-        }
-
-        const savedPreference = await storage.savePreference(validatedData);
-        console.log('Saved preference:', savedPreference);
+        console.log('POST request body:', req.body);
         
-        await logDeviceOperation(validatedData.deviceId, 'save_preference', {
-          preferenceId: savedPreference.id,
-          type: validatedData.type
-        });
+        const validation = insertPreferenceSchema.safeParse(req.body);
         
-        log.info('Preference saved successfully', {
-          deviceId: validatedData.deviceId,
-          preferenceId: savedPreference.id,
-          type: validatedData.type
-        });
-
-        return new Response(
-          JSON.stringify({ 
-            message: 'Preference saved successfully', 
-            preference: savedPreference 
-          }),
-          { status: 201, headers }
-        );
-      } catch (validationError) {
-        console.error('Validation error:', validationError);
-        
-        if (deviceId) {
-          await logDeviceOperation(deviceId, 'save_preference_validation_error', {
-            error: validationError.message
+        if (!validation.success) {
+          console.log('Validation failed:', validation.error);
+          return res.status(400).json({ 
+            error: 'Invalid request data',
+            details: validation.error.errors 
           });
         }
+
+        const { deviceId, preferences } = validation.data;
+        console.log('Saving preferences for deviceId:', deviceId);
         
-        return new Response(
-          JSON.stringify({ 
-            error: 'Validation failed', 
-            details: validationError.message 
-          }),
-          { status: 400, headers }
-        );
+        // Generate preference IDs
+        const preferencesWithIds = preferences.map(pref => ({
+          ...pref,
+          id: uuidv4(),
+          deviceId: deviceId,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        }));
+
+        console.log('Preferences with IDs:', preferencesWithIds);
+        
+        const result = await storage.savePreferences(deviceId, preferencesWithIds);
+        console.log('Save result:', result);
+        
+        await logDeviceOperation(deviceId, 'preferences_save', { 
+          count: preferencesWithIds.length,
+          success: 'yes' 
+        });
+        
+        log('Preferences saved successfully', { 
+          deviceId, 
+          count: preferencesWithIds.length 
+        });
+        
+        return res.status(200).json({ 
+          success: true, 
+          preferences: result,
+          message: 'Preferences saved successfully' 
+        });
+        
+      } catch (error) {
+        console.error('POST preferences error:', error);
+        
+        // Try to log the device operation even on error
+        try {
+          const deviceId = req.body?.deviceId;
+          if (deviceId) {
+            await logDeviceOperation(deviceId, 'preferences_save', { 
+              success: 'no',
+              error: error.message 
+            });
+          }
+        } catch (logError) {
+          console.error('Failed to log error operation:', logError);
+        }
+        
+        return res.status(500).json({ error: 'Failed to save preferences' });
       }
     }
 
-    // Method not allowed
-    return new Response(
-      JSON.stringify({ error: `Method ${request.method} not allowed` }),
-      { status: 405, headers }
-    );
-
-  } catch (error) {
-    console.error('Unexpected error in preferences API:', error);
+    return res.status(405).json({ error: 'Method not allowed' });
     
-    return new Response(
-      JSON.stringify({ 
-        error: 'Internal server error',
-        details: process.env.NODE_ENV === 'development' ? error.message : undefined
-      }),
-      { status: 500, headers }
-    );
+  } catch (error) {
+    console.error('Preferences API error:', error);
+    return res.status(500).json({ 
+      error: 'Internal server error',
+      message: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 } 

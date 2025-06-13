@@ -4,33 +4,28 @@ import 'dotenv/config';
 
 /**
  * Health check API handler
- * @param {Request} request - The request object
- * @param {Response} response - The response object
+ * @param {import('@vercel/node').VercelRequest} req - The request object
+ * @param {import('@vercel/node').VercelResponse} res - The response object
  */
-export default async function handler(request) {
+export default async function handler(req, res) {
   console.log('=== HEALTH CHECK API CALLED ===');
-  console.log('Method:', request.method);
-  console.log('URL:', request.url);
+  console.log('Method:', req.method);
+  console.log('URL:', req.url);
+  console.log('Headers:', req.headers);
   console.log('Environment:', process.env.NODE_ENV);
   
   // Handle CORS
-  const headers = {
-    'Access-Control-Allow-Credentials': 'true',
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET,OPTIONS',
-    'Access-Control-Allow-Headers': 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version',
-    'Content-Type': 'application/json'
-  };
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version');
 
-  if (request.method === 'OPTIONS') {
-    return new Response(null, { status: 200, headers });
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
   }
 
-  if (request.method !== 'GET') {
-    return new Response(
-      JSON.stringify({ error: 'Method not allowed' }), 
-      { status: 405, headers }
-    );
+  if (req.method !== 'GET') {
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
@@ -67,10 +62,7 @@ export default async function handler(request) {
 
     console.log('Health check response:', healthData);
     
-    return new Response(
-      JSON.stringify(healthData), 
-      { status: 200, headers }
-    );
+    return res.status(200).json(healthData);
     
   } catch (error) {
     console.error('Health check error:', error);
@@ -82,9 +74,6 @@ export default async function handler(request) {
       stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     };
     
-    return new Response(
-      JSON.stringify(errorResponse), 
-      { status: 500, headers }
-    );
+    return res.status(500).json(errorResponse);
   }
 } 
