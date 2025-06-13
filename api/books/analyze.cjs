@@ -186,14 +186,16 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    // Fetch user preferences using device ID
+    // Fetch user preferences using device ID (optional)
     try {
       const deviceId = req.query.deviceId || req.cookies?.deviceId;
-      if (!deviceId) {
-        return res.status(400).json({ error: 'Device ID is required' });
-      }
+      let preferences = null;
       
-      const preferences = await storage.getPreferencesByDeviceId(deviceId);
+      if (deviceId) {
+        preferences = await storage.getPreferencesByDeviceId(deviceId);
+      } else {
+        console.log('No device ID found, proceeding without preferences');
+      }
 
       // Look up each detected title via our existing search helper
       const detectedBooks = [];
