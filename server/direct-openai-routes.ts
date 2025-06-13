@@ -41,8 +41,29 @@ router.post("/recommendations", async (req: Request, res: Response) => {
     // This ensures authenticity and personalization
     
     try {
-      // Get base recommendations from OpenAI
-      const baseRecommendations = await getOpenAIRecommendations(books, preferences || {}, deviceId);
+      // Import storage to check cache for detected books
+      const { storage } = await import('./storage.js');
+      
+      // Enhance detected books with cached OpenAI data before generating recommendations
+      const enhancedInputBooks = await Promise.all(books.map(async (book: any) => {
+        const cachedBook = await storage.findBookInCache(book.title, book.author);
+        
+        if (cachedBook && cachedBook.source === 'openai') {
+          log(`Using cached OpenAI data for input book "${book.title}"`, "openai");
+          
+          // Use cached data to enhance the input book
+          return {
+            ...book,
+            rating: cachedBook.rating || book.rating,
+            summary: cachedBook.summary || book.summary
+          };
+        }
+        
+        return book;
+      }));
+      
+      // Get base recommendations from OpenAI using enhanced books
+      const baseRecommendations = await getOpenAIRecommendations(enhancedInputBooks, preferences || {}, deviceId);
       
       // Make sure we received recommendations from OpenAI
       if (!baseRecommendations || baseRecommendations.length === 0) {
@@ -54,7 +75,7 @@ router.post("/recommendations", async (req: Request, res: Response) => {
         });
       }
       
-      // Enhance each recommendation with fresh OpenAI descriptions and match reasons
+      // Enhance each recommendation with cached or fresh OpenAI data
       const enhancedRecommendations = await Promise.all(baseRecommendations.map(async (book) => {
         try {
           // Find the original book from the user's list to get the cover URL
@@ -69,14 +90,42 @@ router.post("/recommendations", async (req: Request, res: Response) => {
           // Make sure we have an ISBN if it's available in the original book
           const isbn = originalBook?.isbn || book.isbn || '';
           
-          // Get fresh OpenAI-generated description
-          const description = await getOpenAIDescription(book.title, book.author);
+          // Import storage and bookCacheService
+          const { storage } = await import('./storage.js');
+          const { bookCacheService } = await import('./book-cache-service.js');
           
-          // Get cached or fresh OpenAI-generated rating
-          log(`About to get rating for "${book.title}" by ${book.author} with ISBN: ${isbn}`, "openai");
-          const bookCacheService = (await import('./book-cache-service.js')).bookCacheService;
-          const rating = await bookCacheService.getEnhancedRating(book.title, book.author, isbn);
-          log(`Retrieved rating for recommendation "${book.title}": ${rating}`, "openai");
+          // First check if we have this recommendation in cache with OpenAI data
+          const cachedBook = await storage.findBookInCache(book.title, book.author);
+          
+          let description = '';
+          let rating = '';
+          
+          if (cachedBook && cachedBook.source === 'openai') {
+            // Use cached OpenAI data if available
+            log(`Using cached OpenAI data for recommendation "${book.title}"`, "openai");
+            
+            if (cachedBook.summary) {
+              description = cachedBook.summary;
+              log(`Using cached OpenAI summary for recommendation "${book.title}"`, "openai");
+            }
+            
+            if (cachedBook.rating) {
+              rating = cachedBook.rating;
+              log(`Using cached OpenAI rating for recommendation "${book.title}": ${rating}`, "openai");
+            }
+          }
+          
+          // If we still don't have a description, get it from OpenAI
+          if (!description || description.length < 100) {
+            description = await getOpenAIDescription(book.title, book.author);
+            log(`Got fresh OpenAI description for recommendation "${book.title}"`, "openai");
+          }
+          
+          // If we still don't have a rating, get it from OpenAI
+          if (!rating || rating === "0") {
+            rating = await bookCacheService.getEnhancedRating(book.title, book.author, isbn);
+            log(`Got fresh OpenAI rating for recommendation "${book.title}": ${rating}`, "openai");
+          }
           
           // Debug the rating value
           if (!rating || isNaN(parseFloat(rating))) {
@@ -87,10 +136,15 @@ router.post("/recommendations", async (req: Request, res: Response) => {
           // This is now generated within the recommendation prompt and should be more focused
           const matchReason = book.matchReason || "This book matches elements of your reading preferences.";
           
-          // Cache this book with OpenAI data for future use
-          if (description || rating) {
-            // Let the BookCacheService handle generating the bookId
-            // It will be created automatically based on ISBN or title+author
+          // Cache this book with OpenAI data for future use if we don't already have it cached
+          // or if we got fresh data that needs to be stored
+          const needsCaching = (!cachedBook) || 
+                              (cachedBook && (
+                                (rating && rating !== cachedBook.rating) || 
+                                (description && description !== cachedBook.summary)
+                              ));
+          
+          if (needsCaching && (description || rating)) {
             await bookCacheService.cacheBook({
               title: book.title,
               author: book.author,

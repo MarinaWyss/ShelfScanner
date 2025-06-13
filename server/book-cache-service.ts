@@ -299,20 +299,12 @@ export class BookCacheService {
         return existingSummary || null;
       }
       
-      // Look for cached summary first - accept any valid summary
+      // Look for cached summary first - prioritize OpenAI content
       const cachedBook = await this.findInCache(title, author);
-      if (cachedBook?.summary) {
-        // If the source is already OpenAI, use it immediately
-        if (cachedBook.source === 'openai') {
-          log(`Using cached OpenAI summary for "${title}"`, 'cache');
-          return cachedBook.summary;
-        }
-        // If summary exists but source isn't OpenAI, still use it if it looks valid
-        // This prevents regenerating summaries that were already created
-        if (cachedBook.summary.length > 50) { // Basic validity check
-          log(`Using cached summary for "${title}" (source: ${cachedBook.source})`, 'cache');
-          return cachedBook.summary;
-        }
+      if (cachedBook?.summary && cachedBook.source === 'openai') {
+        // Only use cached summary if it's from OpenAI
+        log(`Using cached OpenAI summary for "${title}"`, 'cache');
+        return cachedBook.summary;
       }
       
       // Generate a new summary using OpenAI's knowledge
@@ -410,21 +402,12 @@ export class BookCacheService {
     isbn?: string
   ): Promise<string> {
     try {
-      // Check for cached rating first
+      // Check for cached rating first - prioritize OpenAI content
       const cachedBook = await this.findInCache(title, author);
-      if (cachedBook?.rating) {
-        // If the source is already OpenAI, use it immediately
-        if (cachedBook.source === 'openai') {
-          log(`Using cached OpenAI rating for "${title}": ${cachedBook.rating}`, 'cache');
-          return cachedBook.rating;
-        }
-        // If rating exists but source isn't OpenAI, still use it if it looks valid
-        // This handles cases where ratings were generated but source wasn't properly updated
-        const ratingNum = parseFloat(cachedBook.rating);
-        if (!isNaN(ratingNum) && ratingNum >= 1.0 && ratingNum <= 5.0) {
-          log(`Using cached rating for "${title}": ${cachedBook.rating} (source: ${cachedBook.source})`, 'cache');
-          return cachedBook.rating;
-        }
+      if (cachedBook?.rating && cachedBook.source === 'openai') {
+        // Only use cached rating if it's from OpenAI
+        log(`Using cached OpenAI rating for "${title}": ${cachedBook.rating}`, 'cache');
+        return cachedBook.rating;
       }
       
       // If we have an ISBN, try looking up by that

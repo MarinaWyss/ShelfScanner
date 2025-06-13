@@ -190,6 +190,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }, null);
           
           if (bestMatch && calculateSimilarity(titleLower, bestMatch.title.toLowerCase()) > 0.6) {
+            // Check cache for existing OpenAI data
+            const cachedBook = await storage.findBookInCache(bestMatch.title, bestMatch.author);
+            
+            if (cachedBook && cachedBook.source === 'openai') {
+              // Use cached OpenAI data if available
+              log(`Using cached OpenAI data for detected book "${bestMatch.title}"`);
+              if (cachedBook.rating) {
+                bestMatch.rating = cachedBook.rating;
+              }
+              if (cachedBook.summary) {
+                bestMatch.summary = cachedBook.summary;
+              }
+            }
+            
             detectedBooks.push(bestMatch);
           }
         }
