@@ -68,7 +68,20 @@ export default async function handler(req, res) {
       try {
         console.log('POST request body:', req.body);
         
-        const validation = insertPreferenceSchema.safeParse(req.body);
+        // Get deviceId from request
+        const deviceId = req.query.deviceId || req.cookies?.deviceId;
+        
+        if (!deviceId) {
+          return res.status(400).json({ error: 'Device ID is required' });
+        }
+        
+        // Add deviceId to the request body for validation
+        const dataToValidate = {
+          ...req.body,
+          deviceId: deviceId
+        };
+        
+        const validation = insertPreferenceSchema.safeParse(dataToValidate);
         
         if (!validation.success) {
           console.log('Validation failed:', validation.error);

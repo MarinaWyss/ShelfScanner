@@ -36,15 +36,13 @@ export const insertUserSchema = createInsertSchema(users).pick({
 // Book preferences schema
 export const preferences = createTable("preferences", {
   id: serial("id").primaryKey(),
-  userId: integer("user_id").notNull(),
-  deviceId: text("device_id"),
+  deviceId: text("device_id").notNull(),
   genres: text("genres").array().notNull(),
   authors: text("authors").array(),
   goodreadsData: jsonb("goodreads_data"),
 });
 
 export const insertPreferenceSchema = createInsertSchema(preferences).pick({
-  userId: true,
   deviceId: true,
   genres: true,
   authors: true,

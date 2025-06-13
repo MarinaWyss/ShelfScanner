@@ -1,4 +1,5 @@
-import { insertUserSchema, insertPreferenceSchema, insertBookCacheSchema, insertSavedBookSchema, type InsertUser, type InsertPreference, type InsertBookCache, type InsertSavedBook } from '../../shared/schema';
+import { insertUserSchema, insertPreferenceSchema, insertBookCacheSchema, insertSavedBookSchema } from '../../shared/schema';
+import type { InsertUser, InsertPreference, InsertBookCache, InsertSavedBook } from '../../shared/schema';
 
 describe('Schema Validation', () => {
   describe('insertUserSchema', () => {
@@ -51,7 +52,6 @@ describe('Schema Validation', () => {
   describe('insertPreferenceSchema', () => {
     test('should validate valid preference data', () => {
       const validPreference = {
-        userId: 1,
         deviceId: 'device123',
         genres: ['fiction', 'mystery'],
         authors: ['Author One', 'Author Two'],
@@ -59,22 +59,22 @@ describe('Schema Validation', () => {
       };
 
       const result: InsertPreference = insertPreferenceSchema.parse(validPreference);
-      expect((result as any).userId).toBe(1);
+      expect((result as any).deviceId).toBe('device123');
       expect((result as any).genres).toEqual(['fiction', 'mystery']);
     });
 
     test('should validate preference data without optional fields', () => {
       const validPreference = {
-        userId: 1,
+        deviceId: 'device123',
         genres: ['fiction'],
       };
 
       const result: InsertPreference = insertPreferenceSchema.parse(validPreference);
-      expect((result as any).userId).toBe(1);
+      expect((result as any).deviceId).toBe('device123');
       expect((result as any).genres).toEqual(['fiction']);
     });
 
-    test('should reject preference data without userId', () => {
+    test('should reject preference data without deviceId', () => {
       const invalidPreference = {
         genres: ['fiction'],
       };
@@ -84,7 +84,7 @@ describe('Schema Validation', () => {
 
     test('should reject preference data without genres', () => {
       const invalidPreference = {
-        userId: 1,
+        deviceId: 'device123',
       };
 
       expect(() => insertPreferenceSchema.parse(invalidPreference)).toThrow();
@@ -92,13 +92,13 @@ describe('Schema Validation', () => {
 
     test('should validate with empty authors array', () => {
       const validPreference = {
-        userId: 1,
+        deviceId: 'device123',
         genres: ['fiction'],
         authors: [],
       };
 
       const result: InsertPreference = insertPreferenceSchema.parse(validPreference);
-      expect((result as any).userId).toBe(1);
+      expect((result as any).deviceId).toBe('device123');
       expect((result as any).authors).toEqual([]);
     });
   });

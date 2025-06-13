@@ -136,10 +136,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'No image file provided' });
       }
 
-      const userId = 1; // Default user ID
+      // Extract deviceId from request
+      const deviceId = req.deviceId;
+      
+      if (!deviceId) {
+        return res.status(400).json({ message: 'Device ID is required' });
+      }
       
       // Get user preferences to match with detected books
-      const preferences = await storage.getPreferencesByUserId(userId);
+      const preferences = await storage.getPreferencesByDeviceId(deviceId);
       
       // Convert buffer to base64
       const base64Image = req.file.buffer.toString('base64');
@@ -359,13 +364,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: 'Device ID is required' });
       }
       
-      // For backward compatibility we still include userId but use deviceId as primary identifier
-      const userId = 1;
-      
       // Validate request body
       const validatedData = insertPreferenceSchema.parse({
         ...req.body,
-        userId,
         deviceId
       });
       
@@ -471,10 +472,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Get recommendations
   app.post('/api/recommendations', async (req: Request, res: Response) => {
     try {
-      const userId = 1; // Default user ID
+      // Extract deviceId from request
+      const deviceId = req.deviceId;
+      
+      if (!deviceId) {
+        return res.status(400).json({ message: 'Device ID is required' });
+      }
       
       // Get user preferences
-      const preferences = await storage.getPreferencesByUserId(userId);
+      const preferences = await storage.getPreferencesByDeviceId(deviceId);
       
       if (!preferences) {
         return res.status(404).json({ message: 'Preferences not found' });
