@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { log } from './vite';
+import { log } from './simple-logger.js';
 
 interface VisionRequest {
   requests: {
