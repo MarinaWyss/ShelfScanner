@@ -96,21 +96,32 @@ export default async function handler(req, res) {
         const preferenceData = validation.data;
         console.log('Saving preference for deviceId:', preferenceData.deviceId);
         
-        console.log('Preference data to save:', preferenceData);
+        // Check if preferences already exist for this device
+        const existingPreferences = await storage.getPreferencesByDeviceId(preferenceData.deviceId);
         
-        const result = await storage.createPreference(preferenceData);
+        let result;
+        if (existingPreferences) {
+          // Update existing preferences
+          console.log('Updating existing preferences for deviceId:', preferenceData.deviceId);
+          result = await storage.updatePreference(existingPreferences.id, preferenceData);
+        } else {
+          // Create new preferences
+          console.log('Creating new preferences for deviceId:', preferenceData.deviceId);
+          result = await storage.createPreference(preferenceData);
+        }
+        
         console.log('Save result:', result);
         
-        logInfo('Preference saved successfully', {
+        logInfo(existingPreferences ? 'Preferences updated successfully' : 'Preferences saved successfully', {
           deviceId: preferenceData.deviceId,
-          action: 'preferences_save',
+          action: existingPreferences ? 'preferences_update' : 'preferences_save',
           metadata: { success: 'yes' }
         });
         
         return res.status(200).json({ 
           success: true, 
           preference: result,
-          message: 'Preference saved successfully' 
+          message: existingPreferences ? 'Preferences updated successfully' : 'Preferences saved successfully' 
         });
         
       } catch (error) {

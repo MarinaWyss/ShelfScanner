@@ -81,16 +81,25 @@ export default async function handler(req, res) {
         const bookData = validation.data;
         console.log('Saving book for deviceId:', bookData.deviceId);
         
-        // Don't add an ID - let the database auto-generate the serial ID
-        // Also don't add createdAt/updatedAt - they're not in the schema
-        console.log('Book data to save:', bookData);
+        // Check if this book is already saved for this device
+        const existingSavedBook = await storage.findSavedBook(bookData.deviceId, bookData.title, bookData.author);
         
-        const result = await storage.createSavedBook(bookData);
+        let result;
+        if (existingSavedBook) {
+          // Update existing saved book
+          console.log('Updating existing saved book for deviceId:', bookData.deviceId, 'title:', bookData.title);
+          result = await storage.updateSavedBook(existingSavedBook.id, bookData);
+        } else {
+          // Create new saved book
+          console.log('Creating new saved book for deviceId:', bookData.deviceId, 'title:', bookData.title);
+          result = await storage.createSavedBook(bookData);
+        }
+        
         console.log('Save result:', result);
         
-        logInfo('Book saved successfully', {
+        logInfo(existingSavedBook ? 'Book updated successfully' : 'Book saved successfully', {
           deviceId: bookData.deviceId,
-          action: 'books_save',
+          action: existingSavedBook ? 'books_update' : 'books_save',
           metadata: { 
             success: 'yes',
             isbn: bookData.isbn 
@@ -100,7 +109,7 @@ export default async function handler(req, res) {
         return res.status(200).json({ 
           success: true, 
           book: result,
-          message: 'Book saved successfully' 
+          message: existingSavedBook ? 'Book updated successfully' : 'Book saved successfully' 
         });
         
       } catch (error) {
