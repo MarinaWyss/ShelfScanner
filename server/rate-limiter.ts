@@ -1,6 +1,5 @@
 import { log } from './simple-logger.js';
-import { logApiUsage, LogLevel, logEvent } from './monitor.js';
-import { sendRateLimitAlert } from './notification.js';
+import { logError, logWarning, logInfo, logRateLimit } from './simple-error-logger.js';
 
 /**
  * Simple in-memory rate limiter to control API usage
@@ -94,13 +93,11 @@ export class RateLimiter {
     this.checkForAlerts(apiName, currentCount, limit, dailyUsage, dailyLimit);
     
     if (!isWithinRateLimit) {
-      log(`Rate limit exceeded for ${apiName}: ${currentCount}/${limit} requests within ${windowSeconds}s`, 'rate-limiter');
-      logEvent(LogLevel.ERROR, `Rate limit exceeded for ${apiName}: ${currentCount}/${limit} requests within ${windowSeconds}s`);
+      logRateLimit(apiName, 'window', limit, currentCount);
     }
     
     if (!isWithinDailyLimit) {
-      log(`Daily limit exceeded for ${apiName}: ${dailyUsage}/${dailyLimit} requests`, 'rate-limiter');
-      logEvent(LogLevel.ERROR, `Daily limit exceeded for ${apiName}: ${dailyUsage}/${dailyLimit} requests`);
+      logRateLimit(apiName, 'daily', dailyLimit, dailyUsage);
     }
     
     return isWithinRateLimit && isWithinDailyLimit;
@@ -130,21 +127,22 @@ export class RateLimiter {
     
     // Alert on high daily usage (only log once per day)
     if (usagePercent >= 80 && !alreadySentAlert) {
-      // Log the high usage with proper log level
-      logApiUsage(apiName, dailyUsage, dailyLimit, { type: 'daily' });
-      
-      // Send actual email alert for high usage
-      sendRateLimitAlert(apiName, dailyUsage, dailyLimit).catch(error => {
-        log(`Failed to send rate limit alert for ${apiName}: ${error}`, 'rate-limiter');
+      // Log the high usage
+      logWarning(`High API usage for ${apiName}: ${usagePercent.toFixed(1)}%`, {
+        api: apiName,
+        current: dailyUsage,
+        limit: dailyLimit,
+        metadata: { type: 'daily', usagePercent }
       });
       
       // Log a critical event if usage is very high
       if (usagePercent >= 90) {
-        logEvent(
-          LogLevel.CRITICAL, 
-          `${apiName} API quota is nearly exhausted (${usagePercent.toFixed(1)}%)`,
-          { apiName, dailyUsage, dailyLimit, usagePercent }
-        );
+        logError(`${apiName} API quota is nearly exhausted (${usagePercent.toFixed(1)}%)`, undefined, {
+          api: apiName,
+          current: dailyUsage,
+          limit: dailyLimit,
+          metadata: { usagePercent, critical: true }
+        });
       }
       
       // Mark that we've alerted for this API today
@@ -187,9 +185,15 @@ export class RateLimiter {
     // Only log when usage reaches significant thresholds
     if (dailyUsage + 1 >= dailyLimit * 0.5 && (dailyUsage + 1) % 5 === 0) {
       // Log usage milestone every 5 requests once we're past 50%
-      logApiUsage(apiName, dailyUsage + 1, dailyLimit, { 
-        windowUsage: currentCount + 1,
-        windowLimit: limit
+      logInfo(`API usage milestone for ${apiName}: ${dailyUsage + 1}/${dailyLimit}`, {
+        api: apiName,
+        current: dailyUsage + 1,
+        limit: dailyLimit,
+        metadata: { 
+          windowUsage: currentCount + 1,
+          windowLimit: limit,
+          milestone: true
+        }
       });
     }
   }
