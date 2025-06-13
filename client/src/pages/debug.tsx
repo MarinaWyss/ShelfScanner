@@ -16,7 +16,7 @@ export default function Debug() {
 
   const testEndpoint = async (
     url: string,
-    method: string = 'GET',
+    method = 'GET',
     body?: any,
     setter?: (response: ApiResponse) => void
   ): Promise<ApiResponse> => {
@@ -43,7 +43,7 @@ export default function Debug() {
         error: response.ok ? undefined : `HTTP ${response.status}`
       };
 
-      if (setter) setter(result);
+      if (setter) {setter(result);}
       return result;
     } catch (error) {
       const result = {
@@ -52,7 +52,7 @@ export default function Debug() {
         error: error instanceof Error ? error.message : String(error)
       };
       
-      if (setter) setter(result);
+      if (setter) {setter(result);}
       return result;
     }
   };

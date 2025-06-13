@@ -1,5 +1,5 @@
 /**
- * ShelfScanner - Book Discovery Application
+ * ShelfScanner - AI Book Discovery Application
  * 
  * Copyright (c) 2025 ShelfScanner. All rights reserved.
  * 
@@ -17,8 +17,6 @@ import cookieParser from "cookie-parser";
 import { registerRoutes } from "./routes.js";
 import { setupVite, serveStatic, log } from "./vite.js";
 import { ensureDeviceId } from "./middleware/deviceId.js";
-import { startHealthMonitoring } from "./health-monitor.js";
-import { sendStartupNotification } from "./notification.js";
 
 const app = express();
 
@@ -86,20 +84,5 @@ app.use((req, res, next) => {
   
   server.listen(port, host, () => {
     log(`serving on ${host}:${port}`);
-    
-    // Start health monitoring in production
-    if (process.env.NODE_ENV === 'production') {
-      log('Starting health monitoring service', 'startup');
-      startHealthMonitoring();
-      
-      // Send startup notification if email is configured
-      if (process.env.SMTP_SMARTHOST && process.env.SMTP_FROM && process.env.ADMIN_EMAIL) {
-        sendStartupNotification().catch(error => {
-          log(`Failed to send startup notification: ${error}`, 'startup');
-        });
-      }
-    } else {
-      log('Health monitoring disabled in development mode', 'startup');
-    }
   });
 })();
