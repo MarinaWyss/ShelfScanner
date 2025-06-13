@@ -29,10 +29,10 @@ export default async function handler(req, res) {
 
   try {
     // Import storage dynamically to avoid issues with module resolution
-    const { storage } = await import('../server/storage.ts');
-    const { insertPreferenceSchema } = await import('../shared/schema.ts');
-    const { logDeviceOperation } = await import('../server/utils/safe-logger.ts');
-    const { log } = await import('../server/simple-logger.ts');
+    const { storage } = await import('../server/storage.js');
+    const { insertPreferenceSchema } = await import('../shared/schema.js');
+    const { logDeviceOperation } = await import('../server/utils/safe-logger.js');
+    const { log } = await import('../server/simple-logger.js');
 
     console.log('Modules imported successfully');
 

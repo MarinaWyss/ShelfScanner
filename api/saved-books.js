@@ -29,10 +29,10 @@ export default async function handler(req, res) {
 
   try {
     // Import storage dynamically to avoid issues with module resolution
-    const { storage } = await import('../server/storage.ts');
-    const { insertSavedBookSchema } = await import('../shared/schema.ts');
-    const { logDeviceOperation, logBookOperation } = await import('../server/utils/safe-logger.ts');
-    const { log } = await import('../server/simple-logger.ts');
+    const { storage } = await import('../server/storage.js');
+    const { insertSavedBookSchema } = await import('../shared/schema.js');
+    const { logDeviceOperation } = await import('../server/utils/safe-logger.js');
+    const { log } = await import('../server/simple-logger.js');
 
     console.log('Modules imported successfully');
 
@@ -45,16 +45,15 @@ export default async function handler(req, res) {
           return res.status(400).json({ error: 'Device ID is required' });
         }
 
-        const savedBooks = await storage.getSavedBooksByDeviceId(deviceId);
-        console.log('Retrieved saved books:', savedBooks?.length || 0);
+        const books = await storage.getSavedBooksByDeviceId(deviceId);
+        console.log('Retrieved books count:', books?.length || 0);
         
-        await logDeviceOperation(deviceId, 'saved_books_get', { 
-          found: savedBooks ? 'yes' : 'no',
-          count: savedBooks?.length || 0 
+        await logDeviceOperation(deviceId, 'books_get', { 
+          count: books?.length || 0 
         });
         
         return res.status(200).json({ 
-          savedBooks: savedBooks || [],
+          books: books || [],
           deviceId: deviceId 
         });
         
@@ -85,7 +84,6 @@ export default async function handler(req, res) {
         const bookWithId = {
           ...bookData,
           id: uuidv4(),
-          savedAt: new Date(),
           createdAt: new Date(),
           updatedAt: new Date()
         };
@@ -95,21 +93,14 @@ export default async function handler(req, res) {
         const result = await storage.createSavedBook(bookWithId);
         console.log('Save result:', result);
         
-        await logDeviceOperation(bookData.deviceId, 'book_save', { 
+        await logDeviceOperation(bookData.deviceId, 'books_save', { 
           success: 'yes',
-          bookId: bookWithId.id,
-          title: bookData.title || 'Unknown'
-        });
-        
-        await logBookOperation(bookWithId.id, 'saved', {
-          deviceId: bookData.deviceId,
-          title: bookData.title || 'Unknown'
+          isbn: bookData.isbn 
         });
         
         log('Book saved successfully', { 
-          deviceId: bookData.deviceId, 
-          bookId: bookWithId.id,
-          title: bookData.title 
+          deviceId: bookData.deviceId,
+          isbn: bookData.isbn 
         });
         
         return res.status(200).json({ 
@@ -125,7 +116,7 @@ export default async function handler(req, res) {
         try {
           const deviceId = req.body?.deviceId;
           if (deviceId) {
-            await logDeviceOperation(deviceId, 'book_save', { 
+            await logDeviceOperation(deviceId, 'books_save', { 
               success: 'no',
               error: error.message 
             });
@@ -140,59 +131,37 @@ export default async function handler(req, res) {
 
     if (req.method === 'DELETE') {
       try {
-        const { bookId } = req.query;
-        const deviceId = req.query.deviceId || req.cookies?.deviceId;
-        
+        const { bookId, deviceId } = req.query;
         console.log('DELETE request for bookId:', bookId, 'deviceId:', deviceId);
         
-        if (!bookId) {
-          return res.status(400).json({ error: 'Book ID is required' });
-        }
-        
-        if (!deviceId) {
-          return res.status(400).json({ error: 'Device ID is required' });
+        if (!bookId || !deviceId) {
+          return res.status(400).json({ error: 'Book ID and Device ID are required' });
         }
 
-        const result = await storage.deleteSavedBook(parseInt(bookId));
+        const result = await storage.deleteSavedBook(bookId, deviceId);
         console.log('Delete result:', result);
         
-        await logDeviceOperation(deviceId, 'book_delete', { 
-          success: 'yes',
-          bookId: bookId
+        await logDeviceOperation(deviceId, 'books_delete', { 
+          success: result ? 'yes' : 'no',
+          bookId: bookId 
         });
         
-        await logBookOperation(bookId, 'deleted', {
-          deviceId: deviceId
-        });
-        
-        log('Book deleted successfully', { 
-          deviceId, 
-          bookId 
-        });
-        
-        return res.status(200).json({ 
-          success: true,
-          message: 'Book deleted successfully' 
-        });
+        if (result) {
+          log('Book deleted successfully', { 
+            deviceId: deviceId,
+            bookId: bookId 
+          });
+          
+          return res.status(200).json({ 
+            success: true,
+            message: 'Book deleted successfully' 
+          });
+        } else {
+          return res.status(404).json({ error: 'Book not found' });
+        }
         
       } catch (error) {
         console.error('DELETE saved books error:', error);
-        
-        // Try to log the device operation even on error
-        try {
-          const deviceId = req.query.deviceId || req.cookies?.deviceId;
-          const bookId = req.query.bookId;
-          if (deviceId && bookId) {
-            await logDeviceOperation(deviceId, 'book_delete', { 
-              success: 'no',
-              bookId: bookId,
-              error: error.message 
-            });
-          }
-        } catch (logError) {
-          console.error('Failed to log error operation:', logError);
-        }
-        
         return res.status(500).json({ error: 'Failed to delete book' });
       }
     }

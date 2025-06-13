@@ -34,7 +34,7 @@ export default async function handler(req, res) {
     let dbError = null;
     
     try {
-      const { testDatabaseConnection } = await import('../server/db.ts');
+      const { testDatabaseConnection } = await import('../server/db.js');
       const dbResult = await testDatabaseConnection();
       dbStatus = dbResult ? 'connected' : 'failed';
       if (!dbResult) {
