@@ -27,6 +27,7 @@ export default function UploadStep({ onBooksDetected, detectedBooks, onGetRecomm
   const [showCamera, setShowCamera] = useState(false);
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
   const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment');
+  const [cameraLoading, setCameraLoading] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { toast } = useToast();
@@ -53,12 +54,18 @@ export default function UploadStep({ onBooksDetected, detectedBooks, onGetRecomm
   }, [cameraStream]);
 
   const startCamera = async () => {
+    setCameraLoading(true);
     try {
+      // Check if getUserMedia is supported
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('Camera not supported');
+      }
+
       const constraints = {
         video: {
           facingMode: facingMode,
-          width: { ideal: 1920 },
-          height: { ideal: 1080 }
+          width: { ideal: 1920, max: 1920 },
+          height: { ideal: 1080, max: 1080 }
         }
       };
 
@@ -67,14 +74,48 @@ export default function UploadStep({ onBooksDetected, detectedBooks, onGetRecomm
       
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
+        
+        // Wait for video to be ready
+        const video = videoRef.current;
+        video.onloadedmetadata = () => {
+          video.play().then(() => {
+            setCameraLoading(false);
+            setShowCamera(true);
+          }).catch(() => {
+            setCameraLoading(false);
+            toast({
+              title: "Camera error",
+              description: "Unable to start camera preview. Please try again.",
+              variant: "destructive",
+            });
+          });
+        };
+        
+        // Fallback timeout
+        setTimeout(() => {
+          if (cameraLoading) {
+            setCameraLoading(false);
+            setShowCamera(true);
+          }
+        }, 3000);
+      }
+    } catch (error) {
+      setCameraLoading(false);
+      let errorMessage = "Please allow camera access to take photos directly, or use the file upload option.";
+      
+      if (error instanceof Error) {
+        if (error.name === 'NotAllowedError') {
+          errorMessage = "Camera access was denied. Please allow camera access and try again.";
+        } else if (error.name === 'NotFoundError') {
+          errorMessage = "No camera found on this device.";
+        } else if (error.name === 'NotSupportedError') {
+          errorMessage = "Camera is not supported on this device.";
+        }
       }
       
-      setShowCamera(true);
-    } catch {
-      // Handle camera access error
       toast({
-        title: "Camera access denied",
-        description: "Please allow camera access to take photos directly, or use the file upload option.",
+        title: "Camera access error",
+        description: errorMessage,
         variant: "destructive",
       });
     }
@@ -104,6 +145,11 @@ export default function UploadStep({ onBooksDetected, detectedBooks, onGetRecomm
 
   const capturePhoto = () => {
     if (!videoRef.current || !canvasRef.current) {
+      toast({
+        title: "Camera error",
+        description: "Camera is not ready. Please try again.",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -112,6 +158,21 @@ export default function UploadStep({ onBooksDetected, detectedBooks, onGetRecomm
     const context = canvas.getContext('2d');
 
     if (!context) {
+      toast({
+        title: "Capture error",
+        description: "Unable to capture photo. Please try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Check if video has loaded and has dimensions
+    if (video.videoWidth === 0 || video.videoHeight === 0) {
+      toast({
+        title: "Camera not ready",
+        description: "Please wait for the camera to fully load before taking a photo.",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -124,6 +185,16 @@ export default function UploadStep({ onBooksDetected, detectedBooks, onGetRecomm
 
     // Convert canvas to base64
     const base64Image = canvas.toDataURL('image/jpeg', 0.8);
+    
+    // Validate that we got a proper image
+    if (!base64Image || base64Image === 'data:,') {
+      toast({
+        title: "Capture failed",
+        description: "Failed to capture photo. Please try again.",
+        variant: "destructive",
+      });
+      return;
+    }
     
     // Stop camera
     stopCamera();
@@ -300,7 +371,7 @@ export default function UploadStep({ onBooksDetected, detectedBooks, onGetRecomm
   };
 
   // Camera interface component
-  if (showCamera) {
+  if (showCamera || cameraLoading) {
     return (
       <div className="fixed inset-0 z-50 bg-black">
         <div className="relative w-full h-full">
@@ -309,53 +380,70 @@ export default function UploadStep({ onBooksDetected, detectedBooks, onGetRecomm
             ref={videoRef}
             autoPlay
             playsInline
+            muted
             className="w-full h-full object-cover"
+            style={{ transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }}
           />
           
           {/* Hidden canvas for capturing */}
           <canvas ref={canvasRef} className="hidden" />
           
-          {/* Camera controls */}
-          <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/80 to-transparent">
-            <div className="flex items-center justify-between">
-              {/* Close camera */}
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={stopCamera}
-                className="text-white hover:bg-white/20"
-              >
-                <X className="h-6 w-6" />
-              </Button>
-              
-              {/* Capture button */}
-              <Button
-                onClick={capturePhoto}
-                size="lg" 
-                className="bg-white hover:bg-gray-200 text-black rounded-full w-16 h-16 p-0"
-              >
-                <div className="w-12 h-12 bg-white rounded-full border-4 border-gray-300" />
-              </Button>
-              
-              {/* Switch camera */}
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={switchCamera}
-                className="text-white hover:bg-white/20"
-              >
-                <RotateCcw className="h-6 w-6" />
-              </Button>
+          {/* Loading overlay */}
+          {cameraLoading && (
+            <div className="absolute inset-0 bg-black/70 flex items-center justify-center">
+              <div className="text-white text-center">
+                <div className="animate-spin h-12 w-12 border-4 border-white border-t-transparent rounded-full mx-auto mb-4"></div>
+                <p className="text-lg font-medium">Starting camera...</p>
+                <p className="text-sm text-white/80 mt-2">Please allow camera access</p>
+              </div>
             </div>
-          </div>
+          )}
+          
+          {/* Camera controls */}
+          {!cameraLoading && (
+            <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/80 to-transparent">
+              <div className="flex items-center justify-between">
+                {/* Close camera */}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={stopCamera}
+                  className="text-white hover:bg-white/20"
+                >
+                  <X className="h-6 w-6" />
+                </Button>
+                
+                {/* Capture button */}
+                <Button
+                  onClick={capturePhoto}
+                  size="lg" 
+                  className="bg-white hover:bg-gray-200 text-black rounded-full w-16 h-16 p-0"
+                >
+                  <div className="w-12 h-12 bg-white rounded-full border-4 border-gray-300" />
+                </Button>
+                
+                {/* Switch camera */}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={switchCamera}
+                  className="text-white hover:bg-white/20"
+                >
+                  <RotateCcw className="h-6 w-6" />
+                </Button>
+              </div>
+            </div>
+          )}
           
           {/* Tips overlay */}
-          <div className="absolute top-0 left-0 right-0 p-6 bg-gradient-to-b from-black/60 to-transparent">
-            <div className="text-white text-center">
-              <h3 className="font-medium mb-2">Position books clearly in frame</h3>
-              <p className="text-sm text-white/80">Make sure book titles and authors are visible</p>
+          {!cameraLoading && (
+            <div className="absolute top-0 left-0 right-0 p-6 bg-gradient-to-b from-black/60 to-transparent">
+              <div className="text-white text-center">
+                <h3 className="font-medium mb-2">Position books clearly in frame</h3>
+                <p className="text-sm text-white/80">Make sure book titles and authors are visible</p>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     );
