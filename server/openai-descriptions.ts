@@ -57,8 +57,8 @@ export async function getOpenAIDescription(title: string, author: string): Promi
       return "No description available";
     }
     
-    // Check rate limits
-    if (!(await rateLimiter.isAllowed('openai'))) {
+    // Check rate limits and atomically increment if allowed
+    if (!(await rateLimiter.checkAndIncrement('openai'))) {
       log('Rate limit reached for OpenAI, skipping description generation', 'openai');
       return "Description temporarily unavailable";
     }
@@ -86,9 +86,6 @@ export async function getOpenAIDescription(title: string, author: string): Promi
       temperature: 0.7
     });
     
-    // Increment the rate limiter counter
-    await rateLimiter.increment('openai');
-    
     // Extract and return the description
     const description = response.choices[0].message.content?.trim() || "No description available";
     log(`Generated OpenAI description for "${title}" (${description.length} chars)`, 'openai');
@@ -98,6 +95,17 @@ export async function getOpenAIDescription(title: string, author: string): Promi
     
     return description;
   } catch (error) {
+    // Check if this is a rate limit error from the API itself
+    if (error instanceof Error && (
+      error.message.includes('rate limit') || 
+      error.message.includes('429') ||
+      error.message.includes('too many requests') ||
+      error.message.includes('quota exceeded')
+    )) {
+      log(`OpenAI API rate limit error: ${error.message}`, 'openai');
+      return "Description temporarily unavailable due to rate limits";
+    }
+    
     log(`Error generating OpenAI description: ${error instanceof Error ? error.message : String(error)}`, 'openai');
     return "Description unavailable";
   }
@@ -157,8 +165,8 @@ export async function getOpenAIMatchReason(
       return "This book matches your reading preferences.";
     }
     
-    // Check rate limits
-    if (!(await rateLimiter.isAllowed('openai'))) {
+    // Check rate limits and atomically increment if allowed
+    if (!(await rateLimiter.checkAndIncrement('openai'))) {
       log('Rate limit reached for OpenAI, skipping match reason generation', 'openai');
       return "This book aligns with your reading interests.";
     }
@@ -196,9 +204,6 @@ export async function getOpenAIMatchReason(
       temperature: 0.6
     });
     
-    // Increment the rate limiter counter
-    await rateLimiter.increment('openai');
-    
     // Extract and return the match reason
     const matchReason = response.choices[0].message.content?.trim() || 
       "This book aligns with your reading preferences based on its themes and style.";
@@ -210,6 +215,17 @@ export async function getOpenAIMatchReason(
     
     return matchReason;
   } catch (error) {
+    // Check if this is a rate limit error from the API itself
+    if (error instanceof Error && (
+      error.message.includes('rate limit') || 
+      error.message.includes('429') ||
+      error.message.includes('too many requests') ||
+      error.message.includes('quota exceeded')
+    )) {
+      log(`OpenAI API rate limit error: ${error.message}`, 'openai');
+      return "This book aligns with your reading preferences (rate limit reached).";
+    }
+    
     log(`Error generating match reason: ${error instanceof Error ? error.message : String(error)}`, 'openai');
     return "This book appears to align with your reading preferences.";
   }

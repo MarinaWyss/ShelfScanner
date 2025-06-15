@@ -293,18 +293,18 @@ export class BookCacheService {
         return existingSummary || null;
       }
       
-      // Check rate limits
-      if (!(await rateLimiter.isAllowed('openai'))) {
-        log('Rate limit reached for OpenAI, skipping summary enhancement', 'cache');
-        return existingSummary || null;
-      }
-      
       // Look for cached summary first - prioritize OpenAI content
       const cachedBook = await this.findInCache(title, author);
       if (cachedBook?.summary && cachedBook.source === 'openai') {
         // Only use cached summary if it's from OpenAI
         log(`Using cached OpenAI summary for "${title}"`, 'cache');
         return cachedBook.summary;
+      }
+      
+      // Check rate limits and atomically increment if allowed
+      if (!(await rateLimiter.checkAndIncrement('openai'))) {
+        log('Rate limit reached for OpenAI, skipping summary enhancement', 'cache');
+        return existingSummary || null;
       }
       
       // Generate a new summary using OpenAI's knowledge
@@ -325,9 +325,6 @@ export class BookCacheService {
         max_tokens: 200,
         temperature: 0.6 // Slightly higher temperature for more engaging summaries
       });
-      
-      // Increment OpenAI API counter
-      await rateLimiter.increment('openai');
       
       const summary = response.choices[0].message.content?.trim() || null;
       
@@ -440,8 +437,8 @@ export class BookCacheService {
         return estimatedRating;
       }
       
-      // Check rate limits
-      if (!(await rateLimiter.isAllowed('openai'))) {
+      // Check rate limits and atomically increment if allowed
+      if (!(await rateLimiter.checkAndIncrement('openai'))) {
         log('Rate limit reached for OpenAI, using estimate for rating', 'cache');
         const estimatedRating = getEstimatedBookRating(title, author);
         return estimatedRating;
@@ -465,9 +462,6 @@ export class BookCacheService {
         max_tokens: 10,
         temperature: 0.3 // Lower temperature for more consistent ratings
       });
-      
-      // Increment OpenAI API counter
-      await rateLimiter.increment('openai');
       
       const ratingText = response.choices[0].message.content?.trim() || '';
       log(`OpenAI response for "${title}" rating: "${ratingText}"`, 'cache');

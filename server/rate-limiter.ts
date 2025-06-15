@@ -63,10 +63,10 @@ async function getKV(): Promise<KVStore> {
  */
 export class VercelKVRateLimiter {
   private readonly limits = {
-    'openai': { perMinute: 60, perDay: 15000 },
-    'google-books': { perMinute: 100, perDay: 7500 },
-    'google-vision': { perMinute: 20, perDay: 1000 },
-    'open-library': { perMinute: 60, perDay: 1000 }
+    'openai': { perMinute: 60, perDay: 12000 }, // Reduced daily limit for better cost control (~$120-360/day max)
+    'google-books': { perMinute: 100, perDay: 5000 }, // More realistic for free tier usage
+    'google-vision': { perMinute: 100, perDay: 5000 }, // Much more generous - Google Vision can handle this easily
+    'open-library': { perMinute: 60, perDay: 2000 } // Slightly increased daily limit while respecting free service
   };
 
   /**
@@ -252,6 +252,79 @@ export class VercelKVRateLimiter {
       log(`Reset rate limits for ${apiName}`, 'rate-limiter');
     } catch (error) {
       log(`Error resetting limits for ${apiName}: ${error instanceof Error ? error.message : String(error)}`, 'rate-limiter');
+    }
+  }
+
+  /**
+   * Atomically check if a request is allowed and increment if so
+   * This prevents race conditions between check and increment
+   * @param apiName API identifier
+   * @param windowSeconds Time window in seconds (default: 60)
+   * @returns Promise<boolean> indicating if the request was allowed and incremented
+   */
+  public async checkAndIncrement(apiName: string, windowSeconds = 60): Promise<boolean> {
+    try {
+      const kvStore = await getKV();
+      const now = Date.now();
+      const windowStart = Math.floor(now / (windowSeconds * 1000));
+      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+      
+      const limits = this.limits[apiName as keyof typeof this.limits];
+      if (!limits) {
+        log(`Unknown API: ${apiName}, allowing request`, 'rate-limiter');
+        return true;
+      }
+
+      // Keys for window and daily limits
+      const windowKey = `rate:${apiName}:${windowStart}`;
+      const dailyKey = `rate:${apiName}:daily:${today}`;
+
+      // First get current counts to check limits
+      const [windowCount, dailyCount] = await Promise.all([
+        kvStore.get(windowKey),
+        kvStore.get(dailyKey),
+      ]);
+
+      const currentWindowCount = windowCount || 0;
+      const currentDailyCount = dailyCount || 0;
+
+      // Check if we would exceed limits with this request
+      const wouldExceedWindow = currentWindowCount >= limits.perMinute;
+      const wouldExceedDaily = currentDailyCount >= limits.perDay;
+
+      if (wouldExceedWindow) {
+        logRateLimit(apiName, 'window', limits.perMinute, currentWindowCount);
+        return false;
+      }
+
+      if (wouldExceedDaily) {
+        logRateLimit(apiName, 'daily', limits.perDay, currentDailyCount);
+        return false;
+      }
+
+      // If we're within limits, increment both counters
+      const [newWindowCount, newDailyCount] = await Promise.all([
+        kvStore.incr(windowKey),
+        kvStore.incr(dailyKey),
+      ]);
+
+      // Set expiry on first increment
+      if (newWindowCount === 1) {
+        await kvStore.expire(windowKey, windowSeconds);
+      }
+      if (newDailyCount === 1) {
+        await kvStore.expire(dailyKey, 86400); // 24 hours
+      }
+
+      // Check for alerts
+      this.checkForAlerts(apiName, newWindowCount, limits.perMinute, newDailyCount, limits.perDay);
+
+      log(`API call to ${apiName}: window=${newWindowCount}, daily=${newDailyCount}`, 'rate-limiter');
+      return true;
+    } catch (error) {
+      log(`Rate limiter error: ${error instanceof Error ? error.message : String(error)}`, 'rate-limiter');
+      // On error, allow the request (fail open)
+      return true;
     }
   }
 }
