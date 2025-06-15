@@ -4,9 +4,10 @@ import PreferencesStep from "@/components/book-scanner/PreferencesStep";
 import UploadStep from "@/components/book-scanner/UploadStep";
 import RecommendationsStep from "@/components/book-scanner/RecommendationsStep";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
-import { queryClient } from "@/lib/queryClient";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useDevice } from "@/contexts/DeviceContext";
+import { Button } from "@/components/ui/button";
 
 type Book = {
   id?: number;
@@ -14,7 +15,7 @@ type Book = {
   author: string;
   coverUrl: string;
   isbn?: string;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
 };
 
 type Recommendation = {
@@ -29,7 +30,7 @@ type Recommendation = {
 type Preference = {
   genres: string[];
   authors: string[];
-  goodreadsData?: any;
+  goodreadsData?: Record<string, unknown> | unknown[] | null;
 };
 
 export default function Books() {
@@ -43,20 +44,44 @@ export default function Books() {
   const [currentRecommendations, setCurrentRecommendations] = useState<Recommendation[]>([]);
   const { toast } = useToast();
 
+  // Get device ID from context
+  const { deviceId, isLoading: deviceLoading } = useDevice();
+
   // Fetch existing preferences if any
-  const { data: existingPreferences } = useQuery<Preference>({
-    queryKey: ['/api/preferences'],
-    staleTime: 30000
+  const { data: existingPreferences, isLoading: _preferencesLoading, error: _preferencesError, refetch: _refetchPreferences } = useQuery<{preferences: Preference}>({
+    queryKey: ['/api/preferences', deviceId],
+    queryFn: async () => {
+      console.log('Fetching preferences for device ID:', deviceId);
+      const response = await fetch(`/api/preferences?deviceId=${deviceId}`, {
+        credentials: 'include'
+      });
+      if (!response.ok) {
+        if (response.status === 404) {
+          console.log('No existing preferences found');
+          return { preferences: null };
+        }
+        throw new Error('Failed to fetch preferences');
+      }
+      const data = await response.json();
+      console.log('Preferences fetched:', data);
+      return data;
+    },
+    staleTime: 30000,
+    enabled: !deviceLoading && !!deviceId, // Only run query when device ID is available
+    retry: 1, // Retry once if it fails
+    refetchOnWindowFocus: true, // Refetch when window gains focus (user returns to tab)
+    refetchOnMount: true // Always refetch when component mounts
   });
   
   // Use effect to set preferences when they're loaded
   // This prevents the React state update during render issue
   useEffect(() => {
-    if (existingPreferences && existingPreferences.genres) {
+    if (existingPreferences?.preferences) {
+      console.log('Setting user preferences from API:', existingPreferences.preferences);
       setUserPreferences({
-        genres: existingPreferences.genres || [],
-        authors: existingPreferences.authors || [],
-        goodreadsData: existingPreferences.goodreadsData || null
+        genres: existingPreferences.preferences.genres || [],
+        authors: existingPreferences.preferences.authors || [],
+        goodreadsData: existingPreferences.preferences.goodreadsData || null
       });
     }
   }, [existingPreferences]);
@@ -64,14 +89,22 @@ export default function Books() {
   // Save preferences
   const savePreferencesMutation = useMutation({
     mutationFn: async (preferences: Preference) => {
-      const response = await apiRequest('POST', '/api/preferences', preferences);
-      return response.json();
+      console.log('Saving preferences for device ID:', deviceId, preferences);
+      const response = await apiRequest('POST', `/api/preferences?deviceId=${deviceId}`, preferences);
+      const result = await response.json();
+      console.log('Preferences saved:', result);
+      return result;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/preferences'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/preferences', deviceId] });
+      toast({
+        title: "Success",
+        description: "Your preferences have been saved!",
+      });
       nextStep();
     },
     onError: (error) => {
+      console.error('Error saving preferences:', error);
       toast({
         title: "Error",
         description: `Failed to save preferences: ${error instanceof Error ? error.message : String(error)}`,
@@ -180,6 +213,12 @@ export default function Books() {
     }
   };
 
+  const previousStep = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
+
   return (
     <div className="p-6 sm:p-8 lg:p-10 max-w-6xl mx-auto">
       <div className="mb-8">
@@ -199,21 +238,31 @@ export default function Books() {
               <div className="absolute top-1/2 transform -translate-y-1/2 h-0.5 bg-violet-600 dark:bg-violet-500" style={{ width: `${((currentStep - 1) / 2) * 100}%` }}></div>
 
               {/* Steps */}
-              <div className="relative flex items-center justify-center w-10 h-10 rounded-full bg-violet-600 dark:bg-violet-500 text-white z-10">
+              <div className={`relative flex items-center justify-center w-10 h-10 rounded-full z-10 cursor-pointer transition-colors ${
+                currentStep >= 1 
+                  ? 'bg-violet-600 dark:bg-violet-500 text-white' 
+                  : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
+              }`}
+              onClick={() => setCurrentStep(1)}
+              >
                 1
               </div>
-              <div className={`relative flex items-center justify-center w-10 h-10 rounded-full z-10 ${
+              <div className={`relative flex items-center justify-center w-10 h-10 rounded-full z-10 cursor-pointer transition-colors ${
                 currentStep >= 2 
                   ? 'bg-violet-600 dark:bg-violet-500 text-white' 
                   : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
-              }`}>
+              }`}
+              onClick={() => currentStep >= 2 ? setCurrentStep(2) : null}
+              >
                 2
               </div>
-              <div className={`relative flex items-center justify-center w-10 h-10 rounded-full z-10 ${
+              <div className={`relative flex items-center justify-center w-10 h-10 rounded-full z-10 cursor-pointer transition-colors ${
                 currentStep >= 3 
                   ? 'bg-violet-600 dark:bg-violet-500 text-white' 
                   : 'bg-gray-100 dark:bg-gray-700 text-gray-500 dark:text-gray-400'
-              }`}>
+              }`}
+              onClick={() => currentStep >= 3 ? setCurrentStep(3) : null}
+              >
                 3
               </div>
             </div>
@@ -238,27 +287,69 @@ export default function Books() {
             />
           )}
           {currentStep === 2 && (
-            <UploadStep
-              onBooksDetected={handleBooksDetected}
-              detectedBooks={detectedBooks}
-              onGetRecommendations={() => {
-                if (detectedBooks.length > 0) {
-                  recommendationsMutation.mutate();
-                } else {
-                  toast({
-                    title: "No books selected",
-                    description: "Please scan some books before getting recommendations.",
-                    variant: "destructive"
-                  });
-                }
-              }}
-              isLoading={recommendationsMutation.isPending}
-            />
+            <div>
+              <UploadStep
+                onBooksDetected={handleBooksDetected}
+                detectedBooks={detectedBooks}
+                onGetRecommendations={() => {
+                  if (detectedBooks.length > 0) {
+                    recommendationsMutation.mutate();
+                  } else {
+                    toast({
+                      title: "No books selected",
+                      description: "Please scan some books before getting recommendations.",
+                      variant: "destructive"
+                    });
+                  }
+                }}
+                isLoading={recommendationsMutation.isPending}
+              />
+              {/* Back button for step 2 */}
+              <div className="flex justify-start mt-6">
+                <Button
+                  variant="outline"
+                  onClick={previousStep}
+                  className="flex items-center gap-2"
+                >
+                  <svg 
+                    xmlns="http://www.w3.org/2000/svg" 
+                    className="h-4 w-4" 
+                    fill="none" 
+                    viewBox="0 0 24 24" 
+                    stroke="currentColor"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                  Back to Preferences
+                </Button>
+              </div>
+            </div>
           )}
           {currentStep === 3 && (
-            <RecommendationsStep
-              recommendations={currentRecommendations}
-            />
+            <div>
+              <RecommendationsStep
+                recommendations={currentRecommendations}
+              />
+              {/* Back button for step 3 */}
+              <div className="flex justify-start mt-6">
+                <Button
+                  variant="outline"
+                  onClick={previousStep}
+                  className="flex items-center gap-2"
+                >
+                  <svg 
+                    xmlns="http://www.w3.org/2000/svg" 
+                    className="h-4 w-4" 
+                    fill="none" 
+                    viewBox="0 0 24 24" 
+                    stroke="currentColor"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                  </svg>
+                  Back to Book Upload
+                </Button>
+              </div>
+            </div>
           )}
         </CardContent>
       </Card>
