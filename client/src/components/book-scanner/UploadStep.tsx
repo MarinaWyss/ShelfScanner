@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { LoaderPinwheel } from "lucide-react";
+import { LoaderPinwheel, Camera, X, RotateCcw } from "lucide-react";
 
 interface Book {
   id?: number;
@@ -9,7 +9,7 @@ interface Book {
   author: string;
   coverUrl: string;
   isbn?: string;
-  metadata?: any;
+  metadata?: Record<string, unknown>;
 }
 
 interface UploadStepProps {
@@ -24,6 +24,12 @@ export default function UploadStep({ onBooksDetected, detectedBooks, onGetRecomm
   const [isProcessing, setIsProcessing] = useState(false);
   const [uploadedImage, setUploadedImage] = useState<string>("");
   const [isMobile, setIsMobile] = useState(false);
+  const [showCamera, setShowCamera] = useState(false);
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
+  const [facingMode, setFacingMode] = useState<'user' | 'environment'>('environment');
+  const [cameraLoading, setCameraLoading] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const { toast } = useToast();
 
   // Check if device is mobile on component mount
@@ -38,9 +44,171 @@ export default function UploadStep({ onBooksDetected, detectedBooks, onGetRecomm
     checkIfMobile();
   }, []);
 
+  // Cleanup camera stream on unmount
+  useEffect(() => {
+    return () => {
+      if (cameraStream) {
+        cameraStream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [cameraStream]);
+
+  const startCamera = async () => {
+    setCameraLoading(true);
+    try {
+      // Check if getUserMedia is supported
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        throw new Error('Camera not supported');
+      }
+
+      const constraints = {
+        video: {
+          facingMode: facingMode,
+          width: { ideal: 1920, max: 1920 },
+          height: { ideal: 1080, max: 1080 }
+        }
+      };
+
+      const stream = await navigator.mediaDevices.getUserMedia(constraints);
+      setCameraStream(stream);
+      
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        
+        // Wait for video to be ready
+        const video = videoRef.current;
+        video.onloadedmetadata = () => {
+          video.play().then(() => {
+            setCameraLoading(false);
+            setShowCamera(true);
+          }).catch(() => {
+            setCameraLoading(false);
+            toast({
+              title: "Camera error",
+              description: "Unable to start camera preview. Please try again.",
+              variant: "destructive",
+            });
+          });
+        };
+        
+        // Fallback timeout
+        setTimeout(() => {
+          if (cameraLoading) {
+            setCameraLoading(false);
+            setShowCamera(true);
+          }
+        }, 3000);
+      }
+    } catch (error) {
+      setCameraLoading(false);
+      let errorMessage = "Please allow camera access to take photos directly, or use the file upload option.";
+      
+      if (error instanceof Error) {
+        if (error.name === 'NotAllowedError') {
+          errorMessage = "Camera access was denied. Please allow camera access and try again.";
+        } else if (error.name === 'NotFoundError') {
+          errorMessage = "No camera found on this device.";
+        } else if (error.name === 'NotSupportedError') {
+          errorMessage = "Camera is not supported on this device.";
+        }
+      }
+      
+      toast({
+        title: "Camera access error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const stopCamera = () => {
+    if (cameraStream) {
+      cameraStream.getTracks().forEach(track => track.stop());
+      setCameraStream(null);
+    }
+    setShowCamera(false);
+  };
+
+  const switchCamera = async () => {
+    const newFacingMode = facingMode === 'user' ? 'environment' : 'user';
+    setFacingMode(newFacingMode);
+    
+    if (cameraStream) {
+      stopCamera();
+      // Small delay to ensure camera is fully stopped before restarting
+      setTimeout(() => {
+        setFacingMode(newFacingMode);
+        startCamera();
+      }, 100);
+    }
+  };
+
+  const capturePhoto = () => {
+    if (!videoRef.current || !canvasRef.current) {
+      toast({
+        title: "Camera error",
+        description: "Camera is not ready. Please try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    const context = canvas.getContext('2d');
+
+    if (!context) {
+      toast({
+        title: "Capture error",
+        description: "Unable to capture photo. Please try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Check if video has loaded and has dimensions
+    if (video.videoWidth === 0 || video.videoHeight === 0) {
+      toast({
+        title: "Camera not ready",
+        description: "Please wait for the camera to fully load before taking a photo.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Set canvas dimensions to match video
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+
+    // Draw current video frame to canvas
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    // Convert canvas to base64
+    const base64Image = canvas.toDataURL('image/jpeg', 0.8);
+    
+    // Validate that we got a proper image
+    if (!base64Image || base64Image === 'data:,') {
+      toast({
+        title: "Capture failed",
+        description: "Failed to capture photo. Please try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Stop camera
+    stopCamera();
+    
+    // Set uploaded image and process
+    setUploadedImage(base64Image);
+    processImage(base64Image);
+  };
+
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) {return;}
+    if (!file) {
+      return;
+    }
 
     // Check file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
@@ -202,6 +370,85 @@ export default function UploadStep({ onBooksDetected, detectedBooks, onGetRecomm
     }
   };
 
+  // Camera interface component
+  if (showCamera || cameraLoading) {
+    return (
+      <div className="fixed inset-0 z-50 bg-black">
+        <div className="relative w-full h-full">
+          {/* Camera feed */}
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            muted
+            className="w-full h-full object-cover"
+            style={{ transform: facingMode === 'user' ? 'scaleX(-1)' : 'none' }}
+          />
+          
+          {/* Hidden canvas for capturing */}
+          <canvas ref={canvasRef} className="hidden" />
+          
+          {/* Loading overlay */}
+          {cameraLoading && (
+            <div className="absolute inset-0 bg-black/70 flex items-center justify-center">
+              <div className="text-white text-center">
+                <div className="animate-spin h-12 w-12 border-4 border-white border-t-transparent rounded-full mx-auto mb-4"></div>
+                <p className="text-lg font-medium">Starting camera...</p>
+                <p className="text-sm text-white/80 mt-2">Please allow camera access</p>
+              </div>
+            </div>
+          )}
+          
+          {/* Camera controls */}
+          {!cameraLoading && (
+            <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/80 to-transparent">
+              <div className="flex items-center justify-between">
+                {/* Close camera */}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={stopCamera}
+                  className="text-white hover:bg-white/20"
+                >
+                  <X className="h-6 w-6" />
+                </Button>
+                
+                {/* Capture button */}
+                <Button
+                  onClick={capturePhoto}
+                  size="lg" 
+                  className="bg-white hover:bg-gray-200 text-black rounded-full w-16 h-16 p-0"
+                >
+                  <div className="w-12 h-12 bg-white rounded-full border-4 border-gray-300" />
+                </Button>
+                
+                {/* Switch camera */}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={switchCamera}
+                  className="text-white hover:bg-white/20"
+                >
+                  <RotateCcw className="h-6 w-6" />
+                </Button>
+              </div>
+            </div>
+          )}
+          
+          {/* Tips overlay */}
+          {!cameraLoading && (
+            <div className="absolute top-0 left-0 right-0 p-6 bg-gradient-to-b from-black/60 to-transparent">
+              <div className="text-white text-center">
+                <h3 className="font-medium mb-2">Position books clearly in frame</h3>
+                <p className="text-sm text-white/80">Make sure book titles and authors are visible</p>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div>
       <div className="mb-6">
@@ -241,34 +488,46 @@ export default function UploadStep({ onBooksDetected, detectedBooks, onGetRecomm
                 </div>
                 <h3 className="text-lg font-medium mb-2 text-gray-900 dark:text-white">Upload a photo</h3>
                 <p className="text-gray-600 dark:text-gray-300 mb-4 max-w-md">
-                  Drag & drop an image here, or click to browse
+                  {isMobile ? "Take a photo or choose from your gallery" : "Drag & drop an image here, or click to browse"}
                 </p>
-                <div className="relative">
-                  <Button 
-                    onClick={() => document.getElementById("book-image")?.click()}
-                    className="bg-violet-600 hover:bg-violet-700 dark:bg-violet-600 dark:hover:bg-violet-500 text-white"
-                  >
-                    Choose Image
-                  </Button>
-                  <input 
-                    type="file" 
-                    id="book-image" 
-                    accept="image/*"
-                    onChange={handleFileChange}
-                    className="hidden"
-                  />
-                </div>
-
-                {isMobile && (
-                  <div className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg max-w-md text-left">
-                    <h4 className="font-medium text-blue-800 dark:text-blue-300 mb-2">Taking a photo of books?</h4>
-                    <ul className="text-sm text-blue-700 dark:text-blue-300 space-y-1 pl-5 list-disc">
-                      <li>Make sure book titles and authors are visible</li>
-                      <li>Ensure good lighting to avoid shadows</li>
-                      <li>Keep the camera steady for clear text</li>
-                    </ul>
+                
+                {/* Button group for mobile (camera + choose file) */}
+                {isMobile ? (
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <Button 
+                      onClick={startCamera}
+                      className="bg-violet-600 hover:bg-violet-700 dark:bg-violet-600 dark:hover:bg-violet-500 text-white flex items-center gap-2"
+                    >
+                      <Camera className="h-4 w-4" />
+                      Take Photo
+                    </Button>
+                    <Button 
+                      onClick={() => document.getElementById("book-image")?.click()}
+                      variant="outline"
+                      className="border-violet-300 text-violet-700 hover:bg-violet-50 dark:border-violet-600 dark:text-violet-300 dark:hover:bg-violet-900/20"
+                    >
+                      Choose from Gallery
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="relative">
+                    <Button 
+                      onClick={() => document.getElementById("book-image")?.click()}
+                      className="bg-violet-600 hover:bg-violet-700 dark:bg-violet-600 dark:hover:bg-violet-500 text-white"
+                    >
+                      Choose Image
+                    </Button>
                   </div>
                 )}
+                
+                <input 
+                  type="file" 
+                  id="book-image" 
+                  accept="image/*"
+                  capture={isMobile ? "environment" : undefined}
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
               </>
             ) : isUploading ? (
               <div className="py-12 flex flex-col items-center">
