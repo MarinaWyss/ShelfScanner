@@ -42,8 +42,8 @@ export async function analyzeBookshelfImage(base64Image: string): Promise<{
       return await fallbackToGoogleVision(base64Image);
     }
     
-    // Check rate limits before making the API call
-    if (!(await rateLimiter.isAllowed('openai'))) {
+    // Check rate limits and atomically increment if allowed
+    if (!(await rateLimiter.checkAndIncrement('openai'))) {
       log("Rate limit reached for OpenAI API. Using fallback.", "vision");
       return await fallbackToGoogleVision(base64Image);
     }
@@ -77,9 +77,6 @@ export async function analyzeBookshelfImage(base64Image: string): Promise<{
       max_tokens: 800
     });
 
-    // Increment the counter for successful API calls
-    await rateLimiter.increment('openai');
-
     // Parse the response
     const content = response.choices[0].message.content || '';
     let result;
@@ -99,6 +96,17 @@ export async function analyzeBookshelfImage(base64Image: string): Promise<{
       isBookshelf: result.isBookshelf || false
     };
   } catch (error) {
+    // Check if this is a rate limit error from the API itself
+    if (error instanceof Error && (
+      error.message.includes('rate limit') || 
+      error.message.includes('429') ||
+      error.message.includes('too many requests') ||
+      error.message.includes('quota exceeded')
+    )) {
+      log(`OpenAI Vision API rate limit error: ${error.message}`, "vision");
+      return await fallbackToGoogleVision(base64Image);
+    }
+    
     log(`Error analyzing image with OpenAI: ${error instanceof Error ? error.message : String(error)}`, "vision");
     
     // Try the fallback option if OpenAI fails
@@ -117,14 +125,13 @@ async function fallbackToGoogleVision(base64Image: string): Promise<{
   try {
     log("Falling back to Google Vision API for image analysis", "vision");
     
-    // Check if the Google Vision fallback is rate-limited
-    if (!(await rateLimiter.isAllowed('google-vision'))) {
+    // Check rate limits and atomically increment if allowed
+    if (!(await rateLimiter.checkAndIncrement('google-vision'))) {
       log("Rate limit reached for Google Vision fallback API", "vision");
       return { bookTitles: [], isBookshelf: false };
     }
     
     const visionResult = await analyzeImage(base64Image);
-    await rateLimiter.increment('google-vision');
     
     // Extract potential book titles from the Google Vision text
     const text = visionResult.text || '';

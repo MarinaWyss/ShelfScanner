@@ -27,8 +27,8 @@ export async function getOpenAIBookRating(title: string, author: string): Promis
       return "4.3";
     }
     
-    // Check rate limits to control costs
-    if (!(await rateLimiter.isAllowed('openai'))) {
+    // Check rate limits and atomically increment if allowed
+    if (!(await rateLimiter.checkAndIncrement('openai'))) {
       log("Rate limit reached for OpenAI, using fallback rating", "openai");
       return "4.2";
     }
@@ -53,9 +53,6 @@ export async function getOpenAIBookRating(title: string, author: string): Promis
       max_tokens: 10
     });
     
-    // Count the API call against our rate limit
-    await rateLimiter.increment('openai');
-    
     // Extract the rating from the response
     const content = response.choices[0].message.content?.trim() || "";
     
@@ -69,6 +66,17 @@ export async function getOpenAIBookRating(title: string, author: string): Promis
       return "4.2";
     }
   } catch (error) {
+    // Check if this is a rate limit error from the API itself
+    if (error instanceof Error && (
+      error.message.includes('rate limit') || 
+      error.message.includes('429') ||
+      error.message.includes('too many requests') ||
+      error.message.includes('quota exceeded')
+    )) {
+      log(`OpenAI API rate limit error: ${error.message}`, "openai");
+      return "4.2";
+    }
+    
     // Log error and provide fallback
     log(`Error getting OpenAI book rating: ${error instanceof Error ? error.message : String(error)}`);
     return "4.0";
@@ -88,8 +96,8 @@ export async function getOpenAIBookSummary(title: string, author: string): Promi
       return `This is a book titled "${title}" by ${author}. No summary is available at this time.`;
     }
     
-    // Check rate limits to control costs
-    if (!(await rateLimiter.isAllowed('openai'))) {
+    // Check rate limits and atomically increment if allowed
+    if (!(await rateLimiter.checkAndIncrement('openai'))) {
       log("Rate limit reached for OpenAI, using fallback summary", "openai");
       return `"${title}" by ${author} is a noteworthy book in its genre. (API rate limit reached)`;
     }
@@ -114,9 +122,6 @@ export async function getOpenAIBookSummary(title: string, author: string): Promi
       max_tokens: 250
     });
     
-    // Count the API call against our rate limit
-    await rateLimiter.increment('openai');
-    
     // Extract the summary from the response
     const summary = response.choices[0].message.content?.trim() || "";
     
@@ -128,6 +133,17 @@ export async function getOpenAIBookSummary(title: string, author: string): Promi
       return `"${title}" by ${author} is a noteworthy book in its genre. (No detailed summary available)`;
     }
   } catch (error) {
+    // Check if this is a rate limit error from the API itself
+    if (error instanceof Error && (
+      error.message.includes('rate limit') || 
+      error.message.includes('429') ||
+      error.message.includes('too many requests') ||
+      error.message.includes('quota exceeded')
+    )) {
+      log(`OpenAI API rate limit error: ${error.message}`, "openai");
+      return `"${title}" by ${author} is a noteworthy book in its genre. (API rate limit reached)`;
+    }
+    
     // Log error and provide fallback
     log(`Error getting OpenAI book summary: ${error instanceof Error ? error.message : String(error)}`);
     return `"${title}" by ${author} is a book that could not be summarized at this time due to technical limitations.`;

@@ -40,8 +40,8 @@ export async function getOpenAIRecommendations(
       throw new Error("OpenAI API key is required for recommendations");
     }
     
-    // Check rate limits
-    if (!(await rateLimiter.isAllowed('openai'))) {
+    // Check rate limits and atomically increment if allowed
+    if (!(await rateLimiter.checkAndIncrement('openai'))) {
       log('Rate limit reached for OpenAI, unable to generate recommendations', 'openai');
       throw new Error("Rate limit reached for AI recommendations");
     }
@@ -195,8 +195,7 @@ Only return the JSON object with no additional text.`
         temperature: 0.7
       });
       
-      // Increment the rate limiter counter
-      await rateLimiter.increment('openai');
+
       
       // Parse the recommendations
       const content = response.choices[0].message.content;
