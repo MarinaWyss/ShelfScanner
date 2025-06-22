@@ -524,7 +524,6 @@ export default function UploadStep({ onBooksDetected, detectedBooks, onGetRecomm
                   type="file" 
                   id="book-image" 
                   accept="image/*"
-                  capture={isMobile ? "environment" : undefined}
                   onChange={handleFileChange}
                   className="hidden"
                 />
