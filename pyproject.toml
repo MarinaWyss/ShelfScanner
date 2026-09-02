@@ -8,6 +8,7 @@ authors = [
 ]
 requires-python = ">=3.12"
 dependencies = [
+    "pillow>=12.3.0",
     "python-dotenv>=1.2.3",
     "supabase>=2.31.0",
 ]
@@ -18,3 +19,8 @@ shelfscanner = "shelfscanner:main"
 [build-system]
 requires = ["uv_build>=0.12.9,<0.13.0"]
 build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]

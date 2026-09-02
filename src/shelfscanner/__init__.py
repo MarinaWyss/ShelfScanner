@@ -1,2 +1,3 @@
-def main() -> None:
-    print("Hello from shelfscanner!")
+from shelfscanner.cli import main
+
+__all__ = ["main"]

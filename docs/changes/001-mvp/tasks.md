@@ -29,7 +29,7 @@ migration grants DML to `service_role` only and revokes the public roles'
 leftover privileges. Verified with the Python client: all three tables and the
 bucket are reachable with the service key.
 
-## 3. Photo sync
+## 3. Photo sync — done 2026-09-02
 
 - Storage module: strip EXIF (the phone embeds GPS), upload the file to the
   bucket, upsert a `photos` row from a label file, list photos.
@@ -38,6 +38,16 @@ bucket are reachable with the service key.
 
 Done when: `uv run shelfscanner photos sync` uploads the test set and the
 `photos` table shows one row per photo with its titles.
+
+Notes: `pillow` added here rather than in task 4, since stripping metadata
+needs it. Stripping re-encodes at JPEG quality 95 after applying the EXIF
+orientation to the pixels, drops EXIF and XMP, keeps the ICC profile. All
+five source photos carried a GPS block. Verified: remote copies have no
+metadata, unauthenticated fetch of the bucket returns 404, rerunning sync is
+idempotent (same ids, five rows). `photos list` added as a convenience. No
+new environment variables. `pytest` added as a dev dependency with
+`tests/test_images.py` covering the stripping on an in-memory fixture, so
+the privacy check does not depend on the gitignored photos.
 
 ## 4. Model config and the OpenRouter adapter
 
@@ -60,6 +70,10 @@ photo from each of the four candidate slugs, with usage and cost.
 - `prompts/extract_v1.md`.
 - Matching and metrics module: normalisation, fuzzy match, found / missed /
   invented against a photo's labels (proposal D3, D4).
+- Unit tests for the matching module: normalisation cases ("Hobbit, The",
+  subtitles, punctuation), the threshold edge, and partial-label exclusion.
+  These are pure functions and a wrong metric silently corrupts the whole
+  comparison.
 - `extract` command: fetch photo from bucket, resize, call adapter, score,
   write an `extractions` row including cost computed from the config prices.
   Errors and parse failures are logged as rows with the error field set.

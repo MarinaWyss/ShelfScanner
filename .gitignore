@@ -8,3 +8,7 @@ dist/
 
 # Shelf photos may show private rooms; never commit them
 data/photos/
+
+# Python
+__pycache__/
+.pytest_cache/
