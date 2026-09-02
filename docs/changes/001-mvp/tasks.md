@@ -107,7 +107,7 @@ and is a real finding, not a scoring artefact: it misreads Fraktur and faded
 spines, invents plausible titles ("The Alchemist"), and returns a series
 name for a volume. The other candidates run in task 8.
 
-## 6. Recommendation end to end
+## 6. Recommendation end to end — done 2026-09-02
 
 - `prompts/recommend_v1.md`.
 - `data/prefs/marina.json`: genres, free-text likes, a few loved books, a
@@ -120,6 +120,20 @@ name for a volume. The other candidates run in task 8.
 Done when: `run --photo <id> --vision-model <haiku slug> --llm-model
 <haiku slug> --prefs data/prefs/marina.json` writes both rows and prints
 five titles with reasons.
+
+Notes: `data/prefs/marina.json` was drafted by Claude from what the shelves
+show, then edited by Marina before commit. A `_note` key, if present, is
+stripped before sending.
+The model is given the extraction's titles with authors where it supplied
+them, plus the preferences as JSON. Validity uses the same fuzzy matcher as
+extraction so a case or subtitle difference does not fail the hard
+constraint. A reply with the wrong number of recommendations is logged with
+the error field set. First run on photo 4, Haiku both stages: 5/5 valid
+against the extraction, 2/5 against labels, $0.0057 and 8.6 s for both
+stages. The two invalid picks were hallucinated extractions ("The Expanse",
+"A Wizard's Guide"), which is precisely what D5's second count is for. Haiku
+also took "North and South" for the Gaskell novel rather than the Avatar
+volume, which the specificity rubric in task 7 should catch.
 
 ## 7. Scoring and reporting
 

@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import argparse
+from pathlib import Path
 
-from shelfscanner import extract, storage
+from shelfscanner import extract, recommend, storage
+from shelfscanner.config import load_config
 
 
 def _photos_sync(_: argparse.Namespace) -> None:
@@ -37,7 +39,42 @@ def build_parser() -> argparse.ArgumentParser:
     ex.add_argument("--prompt", default=extract.DEFAULT_PROMPT, help="prompt name under prompts/ (default extract_v1)")
     ex.set_defaults(func=_extract)
 
+    rec = sub.add_parser("recommend", help="run a language model over an extraction and log the checked recommendations")
+    rec.add_argument("--extraction", required=True, type=int, help="extraction id")
+    rec.add_argument("--model", required=True, help="model alias or OpenRouter slug")
+    rec.add_argument("--prefs", required=True, type=Path, help="preferences JSON, e.g. data/prefs/marina.json")
+    rec.add_argument("--prompt", default=recommend.DEFAULT_PROMPT, help="prompt name under prompts/ (default recommend_v1)")
+    rec.set_defaults(func=_recommend)
+
+    run = sub.add_parser("run", help="extract then recommend for a photo")
+    run.add_argument("--photo", required=True, help="photo id, or 'all'")
+    run.add_argument("--vision-model", required=True, help="model for extraction")
+    run.add_argument("--llm-model", required=True, help="model for recommendation")
+    run.add_argument("--prefs", required=True, type=Path)
+    run.add_argument("--max-dim", type=int, default=None)
+    run.add_argument("--extract-prompt", default=extract.DEFAULT_PROMPT)
+    run.add_argument("--recommend-prompt", default=recommend.DEFAULT_PROMPT)
+    run.set_defaults(func=_run)
+
     return parser
+
+
+def _recommend(args: argparse.Namespace) -> None:
+    for line in recommend.run_recommend(args.extraction, args.model, args.prefs, args.prompt).lines():
+        print(line)
+
+
+def _run(args: argparse.Namespace) -> None:
+    prefs = recommend.load_prefs(args.prefs)
+    llm = load_config().model(args.llm_model)
+    for ex_row in extract.run_extract(args.photo, args.vision_model, args.max_dim, args.extract_prompt):
+        print(ex_row.line())
+        if ex_row.error:
+            print("  skipping recommendation: extraction failed")
+            continue
+        rec_row = recommend.recommend_from_extraction(extract.get_extraction(ex_row.id), llm, prefs, args.recommend_prompt)
+        for line in rec_row.lines():
+            print(line)
 
 
 def _extract(args: argparse.Namespace) -> None:
