@@ -5,7 +5,7 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from shelfscanner import extract, recommend, report, storage
+from shelfscanner import extract, recommend, storage
 from shelfscanner.config import load_config
 
 
@@ -61,23 +61,12 @@ def build_parser() -> argparse.ArgumentParser:
     sc.add_argument("--specificity", required=True, type=int, nargs="+", help="one score per title, in order, e.g. 1 2 3 2 3")
     sc.set_defaults(func=_score)
 
-    rp = sub.add_parser("report", help="per-model aggregates for both stages")
-    rp.add_argument("--html", type=Path, default=None, help="also write the visual comparison report to this file")
-    rp.set_defaults(func=_report)
-
     return parser
 
 
 def _score(args: argparse.Namespace) -> None:
     row = recommend.set_specificity(args.recommendation, args.specificity)
     print(f"recommendation {row['id']}: specificity {row['specificity_scores']} (mean {sum(row['specificity_scores']) / len(row['specificity_scores']):.2f})")
-
-
-def _report(args: argparse.Namespace) -> None:
-    print(report.fetch_and_render())
-    if args.html:
-        from shelfscanner import html_report
-        print(f"\nwrote {html_report.write(args.html)}")
 
 
 def _recommend(args: argparse.Namespace) -> None:

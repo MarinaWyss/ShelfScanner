@@ -14,9 +14,21 @@ prompt filename, the upstream provider OpenRouter routed to, tokens,
 OpenRouter's reported cost, latency and any error. Rows are never deleted
 by the tooling; a rerun adds a row.
 
+Reporting is research tooling, not part of the pipeline; it lives in the
+top-level `research/` package and is run as a module from the repo root.
+
+## Matrix drivers
+
+`uv run python -m research.matrix vision <aliases> [--max-dim N]` runs every
+named model over every synced photo, in parallel by model.
+`uv run python -m research.matrix llm <aliases> [--prefs file]` runs every
+named model over the best extraction of each photo (highest recall, fewest
+invented, earliest). Both only decide what to run; rows are logged by the
+pipeline as usual.
+
 ## Text report
 
-`uv run shelfscanner report`
+`uv run python -m research.report`
 
 Two tables from whatever rows exist.
 
@@ -30,7 +42,7 @@ Two tables from whatever rows exist.
 
 ## Visual report
 
-`uv run shelfscanner report --html <file>`
+`uv run python -m research.report --html <file>`
 
 Writes a self-contained HTML page from the same rows: the test set and
 models, per-model charts for both stages, a photo-by-model matrix whose

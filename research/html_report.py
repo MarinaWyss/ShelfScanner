@@ -1,6 +1,6 @@
 """Visual comparison report for the spike, generated from the logged rows.
 
-`shelfscanner report --html <file>` writes a self-contained page: what was
+`uv run python -m research.report --html <file>` writes a self-contained page: what was
 tested, each model's extraction quality, cost and latency, and separately
 its recommendation quality, so the vision and language model can be chosen
 independently. No photos are embedded; they may show private rooms.
@@ -18,7 +18,7 @@ from shelfscanner.db import get_client
 from shelfscanner.extract import titles_from
 from shelfscanner.recommend import recs_from
 from shelfscanner.matching import similarity
-from shelfscanner.report import latest_per_key
+from research.report import latest_per_key
 from shelfscanner.settings import DATA_DIR
 
 PICKS_PATH = DATA_DIR / "prefs" / "marina_picks.json"
@@ -545,7 +545,7 @@ td.r, th.r { text-align: right; }
   row('Fast enough', `p50 under ${C.p50_seconds} s for both stages`, pairName, pairTime != null ? pairTime.toFixed(1) + ' s' : '–', pairTime == null ? 'Pending' : pairTime < C.p50_seconds ? 'Pass' : 'Fail');
   const cheapest = pairs.slice().sort((a, b) => a.cost - b.cost)[0];
   document.getElementById('pairnote').textContent = pair ? `${pairs.length} pairs of passing models were possible; ${inTime.length} land under ${C.p50_seconds} s. This is the cheapest of those${pairIsInTime ? '' : ' (none did, so it is the cheapest overall)'}.${cheapest && cheapest !== pair ? ` The cheapest pair overall, ${nice(cheapest.ex.model)} + ${nice(cheapest.rec.model)} at ${usd(cheapest.cost)}, sums to ${cheapest.secs.toFixed(1)} s.` : ''} Latency is the sum of two p50s and an upper bound: every call went through OpenRouter, one extra hop.` : 'No pair of passing models yet.';
-  document.getElementById('foot').textContent = `Generated from the extractions and recommendations tables on ${D.generated}. Regenerate with: uv run shelfscanner report --html docs/changes/archive/001-mvp/report.html`;
+  document.getElementById('foot').textContent = `Generated from the extractions and recommendations tables on ${D.generated}. Regenerate with: uv run python -m research.report --html docs/changes/archive/001-mvp/report.html`;
 })();
 </script>
 """

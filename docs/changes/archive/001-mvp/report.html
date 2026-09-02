@@ -384,6 +384,6 @@ td.r, th.r { text-align: right; }
   row('Fast enough', `p50 under ${C.p50_seconds} s for both stages`, pairName, pairTime != null ? pairTime.toFixed(1) + ' s' : '–', pairTime == null ? 'Pending' : pairTime < C.p50_seconds ? 'Pass' : 'Fail');
   const cheapest = pairs.slice().sort((a, b) => a.cost - b.cost)[0];
   document.getElementById('pairnote').textContent = pair ? `${pairs.length} pairs of passing models were possible; ${inTime.length} land under ${C.p50_seconds} s. This is the cheapest of those${pairIsInTime ? '' : ' (none did, so it is the cheapest overall)'}.${cheapest && cheapest !== pair ? ` The cheapest pair overall, ${nice(cheapest.ex.model)} + ${nice(cheapest.rec.model)} at ${usd(cheapest.cost)}, sums to ${cheapest.secs.toFixed(1)} s.` : ''} Latency is the sum of two p50s and an upper bound: every call went through OpenRouter, one extra hop.` : 'No pair of passing models yet.';
-  document.getElementById('foot').textContent = `Generated from the extractions and recommendations tables on ${D.generated}. Regenerate with: uv run shelfscanner report --html docs/changes/archive/001-mvp/report.html`;
+  document.getElementById('foot').textContent = `Generated from the extractions and recommendations tables on ${D.generated}. Regenerate with: uv run python -m research.report --html docs/changes/archive/001-mvp/report.html`;
 })();
 </script>

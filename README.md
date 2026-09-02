@@ -36,12 +36,19 @@ uv run shelfscanner extract --photo all --model gemini-flash
 uv run shelfscanner recommend --extraction 16 --model gpt-mini --prefs data/prefs/marina.json
 uv run shelfscanner run --photo 3 --vision-model sonnet --llm-model qwen-flash --prefs data/prefs/marina.json
 uv run shelfscanner score --recommendation 17 --specificity 3 2 3 2 2
-uv run shelfscanner report [--html docs/changes/archive/001-mvp/report.html]
 uv run pytest
 ```
 
 Model aliases and slugs are in `config/models.toml`; prompts are in
 `prompts/`, versioned by filename.
+
+Research tooling lives outside the pipeline package, in `research/`:
+
+```
+uv run python -m research.matrix vision sonnet,gemini-flash          # every model over every photo
+uv run python -m research.matrix llm gpt-mini,qwen-flash              # every model over the best extraction per photo
+uv run python -m research.report [--html docs/changes/archive/001-mvp/report.html]
+```
 
 ## Layout
 
@@ -51,9 +58,10 @@ prompts/                 one file per prompt version
 data/labels/             hand labels per photo (committed)
 data/photos/             photos (gitignored)
 data/prefs/              preferences files
-src/shelfscanner/        cli, settings, db, config, images, storage,
-                         openrouter, matching, extract, recommend,
-                         report, html_report
+src/shelfscanner/        the pipeline: cli, settings, db, config, images,
+                         storage, openrouter, matching, extract, recommend
+research/                comparison tooling: matrix drivers, text and
+                         visual reports
 supabase/migrations/     schema, grants, constraints
 tests/                   pure pieces: metadata stripping, matching,
                          validity checks, aggregation

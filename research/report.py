@@ -1,5 +1,9 @@
-"""Per-model aggregates over whatever rows exist (task 7). Pure aggregation over dicts; SQL-free on purpose
-so the same functions can run on rows fetched any way."""
+"""Per-model aggregates over whatever rows exist. Pure aggregation over dicts; SQL-free on purpose
+so the same functions can run on rows fetched any way.
+
+    uv run python -m research.report            # both tables to stdout
+    uv run python -m research.report --html f   # also write the visual report
+"""
 
 from __future__ import annotations
 
@@ -132,3 +136,20 @@ def fetch_and_render() -> str:
         "id, extraction_id, model, error, parsed_recommendations, valid_vs_extraction, valid_vs_ground_truth, specificity_scores, latency_ms, cost_usd"
     ).execute().data
     return render(extraction_stats(ex), recommendation_stats(rec))
+
+
+def main() -> None:
+    import argparse
+    from pathlib import Path
+
+    ap = argparse.ArgumentParser(prog="research.report", description="per-model aggregates for both stages")
+    ap.add_argument("--html", type=Path, default=None, help="also write the visual comparison report to this file")
+    args = ap.parse_args()
+    print(fetch_and_render())
+    if args.html:
+        from research import html_report
+        print(f"\nwrote {html_report.write(args.html)}")
+
+
+if __name__ == "__main__":
+    main()

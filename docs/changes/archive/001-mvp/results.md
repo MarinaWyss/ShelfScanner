@@ -2,7 +2,7 @@
 
 Date: 2026-09-02. Rows in the `extractions` and `recommendations` tables;
 the visual version is `report.html` (regenerate with
-`uv run shelfscanner report --html docs/changes/archive/001-mvp/report.html`).
+`uv run python -m research.report --html docs/changes/archive/001-mvp/report.html`).
 
 Test set: five photos, 69 labelled titles, 10 partial labels. Five models,
 all via OpenRouter. Prompts `extract_v1.md` and `recommend_v1.md`. Images at

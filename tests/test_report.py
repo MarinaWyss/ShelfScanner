@@ -2,7 +2,7 @@
 
 import pytest
 
-from shelfscanner.report import extraction_stats, recommendation_stats, render
+from research.report import extraction_stats, recommendation_stats, render
 
 
 _ids = iter(range(1, 10_000))

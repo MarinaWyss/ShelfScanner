@@ -76,7 +76,7 @@ ShelfScanner v1 is live at shelfscanner.io, but it was made fast and kinda slopp
   * Titles missed per photo.  
   * Invented titles per photo: Counted separately from misses, because it's a different and worse failure.  
   * Recommendation validity: % of recommendations that correspond to a book actually visible in the photo.  
-  * Reason specificity: does the stated reason reference the user's actual preferences, or is it generic? (Rubric-scored.)  
+  * Recommendation overlap: how many of the five picks match the books the user would have chosen from that shelf. (Replaced a rubric on reason wording in change 001; the rubric command remains but is unused.)  
 * *System metrics:*  
   * Latency p50 / p95, per pipeline stage — extraction and recommendation measured separately, so it's clear which one is slow.  
   * Cost per scan, broken down by stage.  
@@ -130,7 +130,7 @@ prompts/
 | Test set size | 5 photos, 69 hand-labelled titles plus 10 partial labels (change 001). Target for a later change: 100–300 photos. |
 | Test set composition | Landscape and portrait; straight-on and angled; upright spines and horizontal stacks; Fraktur and faded cloth spines; library stickers; a plant in frame; a run of five near-identical series volumes. |
 | Metrics | Extraction: recall, missed, invented (kept separate) against labels via normalised fuzzy match at 0.85. Recommendation: valid against the extraction (hard), valid against labels, overlap with the user's own five picks for the shelf. Plus cost and latency per stage. |
-| Evaluation tooling | The CLI logs every call to Supabase; `shelfscanner report` and `report --html` aggregate. No LLM-as-judge; the set is small enough to read. |
+| Evaluation tooling | The CLI logs every call to Supabase; `research/` holds the matrix drivers and the text and visual reports that aggregate them. No LLM-as-judge; the set is small enough to read. |
 | Update cadence | Not yet. The test set grows in its own change once the bookstore photos exist. |
 
 **Checklist**:
