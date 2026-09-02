@@ -73,6 +73,14 @@ not used for matching. This avoids penalising harmless variance ("The Hobbit"
 vs "Hobbit, The") while still catching invented titles. Threshold is a config
 value, not a constant in code.
 
+Amended 2026-09-02 (task 5), after spot-checking Haiku's output: the ratio is
+taken over three forms of each title (whole, before the colon, after the last
+colon or dash) so a series volume written "Series: Volume" matches its volume
+label; and an extracted title that contains the whole label, where the label is
+at least two words, counts as a match, because models sometimes put the author
+into the title field. A fragment of a label ("Economics" for "Economics for
+Everyone") is still not a match.
+
 **D4. Three extraction metrics, invented counted separately.** Per photo:
 titles found (recall against labels), titles missed, and titles invented
 (extracted but matching no label). Invented is the worse failure per the

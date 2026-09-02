@@ -80,7 +80,7 @@ distinguishable in the log. A reasoning-effort setting per model may be
 worth adding before the matrix in task 8. Tests cover config loading,
 model lookup, JSON fence tolerance, and resize geometry.
 
-## 5. Extraction end to end
+## 5. Extraction end to end — done 2026-09-02
 
 - `prompts/extract_v1.md`.
 - Matching and metrics module: normalisation, fuzzy match, found / missed /
@@ -95,6 +95,17 @@ model lookup, JSON fence tolerance, and resize geometry.
 
 Done when: `extract --photo all --model <haiku slug>` produces one row per
 photo and the metrics look sane when spot-checked against two photos by hand.
+
+Notes: cost is logged as reported by OpenRouter (D13), not recomputed from
+config prices; tokens are logged so it can be. Spot-check of photos 1 and 4
+found the matcher right on every invented title except one, where Haiku put
+the author into the title field; D3 was amended to accept a title that
+contains the whole label, and rows 1–5 were rescored in place. Haiku 4.5 at
+1568px on extract_v1: median recall 0.42, 33 invented titles over five
+photos, about $0.0036 and 4.6 s per photo. That is far below the pass line
+and is a real finding, not a scoring artefact: it misreads Fraktur and faded
+spines, invents plausible titles ("The Alchemist"), and returns a series
+name for a volume. The other candidates run in task 8.
 
 ## 6. Recommendation end to end
 

@@ -76,15 +76,23 @@ def upsert_photo_row(label: Label) -> dict:
     return res.data[0]
 
 
+PHOTO_COLUMNS = "id, storage_path, titles, partial_titles, notes, created_at"
+
+
 def list_photos() -> list[dict]:
-    res = (
-        get_client()
-        .table("photos")
-        .select("id, storage_path, titles, partial_titles, created_at")
-        .order("id")
-        .execute()
-    )
+    res = get_client().table("photos").select(PHOTO_COLUMNS).order("id").execute()
     return res.data
+
+
+def get_photo(photo_id: int) -> dict:
+    res = get_client().table("photos").select(PHOTO_COLUMNS).eq("id", photo_id).execute()
+    if not res.data:
+        raise SystemExit(f"No photo with id {photo_id}")
+    return res.data[0]
+
+
+def download_photo(storage_path: str) -> bytes:
+    return get_client().storage.from_(PHOTO_BUCKET).download(storage_path)
 
 
 def sync_photos() -> list[str]:

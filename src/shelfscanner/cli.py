@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import argparse
 
-from shelfscanner import storage
+from shelfscanner import extract, storage
 
 
 def _photos_sync(_: argparse.Namespace) -> None:
@@ -30,7 +30,26 @@ def build_parser() -> argparse.ArgumentParser:
     photos_sub.add_parser("sync", help="strip EXIF, upload photos, upsert label rows").set_defaults(func=_photos_sync)
     photos_sub.add_parser("list", help="list photo rows").set_defaults(func=_photos_list)
 
+    ex = sub.add_parser("extract", help="run a vision model over a photo and log the scored extraction")
+    ex.add_argument("--photo", required=True, help="photo id, or 'all'")
+    ex.add_argument("--model", required=True, help="model alias or OpenRouter slug from config/models.toml")
+    ex.add_argument("--max-dim", type=int, default=None, help="long edge in px (default from config)")
+    ex.add_argument("--prompt", default=extract.DEFAULT_PROMPT, help="prompt name under prompts/ (default extract_v1)")
+    ex.set_defaults(func=_extract)
+
     return parser
+
+
+def _extract(args: argparse.Namespace) -> None:
+    rows = extract.run_extract(args.photo, args.model, args.max_dim, args.prompt)
+    for r in rows:
+        print(r.line())
+    ok = [r for r in rows if not r.error]
+    if len(rows) > 1 and ok:
+        recall = sorted(r.found / (r.found + r.missed) for r in ok if r.found + r.missed)
+        med = recall[len(recall) // 2]
+        print(f"{len(ok)}/{len(rows)} ok  median recall {med:.2f}  invented total {sum(r.invented for r in ok)}  "
+              f"cost ${sum(r.cost_usd or 0 for r in ok):.4f}")
 
 
 def main() -> None:
