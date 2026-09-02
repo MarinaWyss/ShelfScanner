@@ -135,7 +135,7 @@ stages. The two invalid picks were hallucinated extractions ("The Expanse",
 also took "North and South" for the Gaskell novel rather than the Avatar
 volume, which the specificity rubric in task 7 should catch.
 
-## 7. Scoring and reporting
+## 7. Scoring and reporting — done 2026-09-02
 
 - `score` command writing specificity scores onto a recommendation row.
 - Migration adding a check constraint that every `specificity_scores`
@@ -146,6 +146,14 @@ volume, which the specificity rubric in task 7 should catch.
   mean specificity, p50 latency, mean cost.
 
 Done when: `report` prints both tables from whatever rows exist.
+
+Notes: extraction aggregates are grouped by model and image long edge, so
+task 8's larger-size run shows as its own row. Validity shares are over all
+recommended titles, not per run. `score` rejects a wrong count or a value
+outside 1–3 before writing; the migration adds the same range check in the
+database. Recommendation 1 was scored 2 3 1 1 2 by Claude to exercise the
+command; Marina can overwrite it by running `score` again. Aggregation is
+tested on hand-built rows.
 
 ## 8. Run the matrix and decide
 

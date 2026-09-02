@@ -137,6 +137,25 @@ def recommend_from_extraction(extraction: dict, model: Model, prefs: dict, promp
                              res.latency_ms, res.cost_usd, error)
 
 
+RUBRIC = {1, 2, 3}  # D6: 1 generic, 2 references a preference, 3 a preference and something specific about the book
+
+
+def set_specificity(recommendation_id: int, scores: list[int]) -> dict:
+    """Write hand-entered specificity scores, one per recommendation in the row, in order."""
+    bad = [s for s in scores if s not in RUBRIC]
+    if bad:
+        raise SystemExit(f"Scores must be 1, 2 or 3; got {bad}")
+    c = get_client()
+    res = c.table("recommendations").select("id, parsed_recommendations, error").eq("id", recommendation_id).execute()
+    if not res.data:
+        raise SystemExit(f"No recommendation with id {recommendation_id}")
+    row = res.data[0]
+    n = len(recs_from(row["parsed_recommendations"]))
+    if len(scores) != n:
+        raise SystemExit(f"Recommendation {recommendation_id} has {n} titles; got {len(scores)} scores")
+    return c.table("recommendations").update({"specificity_scores": scores}).eq("id", recommendation_id).execute().data[0]
+
+
 def run_recommend(extraction_id: int, model_name: str, prefs_path: Path, prompt_name: str) -> RecommendationRow:
     model = load_config().model(model_name)
     return recommend_from_extraction(get_extraction(extraction_id), model, load_prefs(prefs_path), prompt_name)
