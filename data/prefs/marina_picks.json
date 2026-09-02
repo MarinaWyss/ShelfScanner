@@ -1,0 +1,51 @@
+{
+  "_note": "The books Marina would pick from each test photo, keyed by photo id (proposal D6 as amended). A pick given as a list means any one of those titles satisfies it. Photo 5: Marina approved every book on the shelf, so overlap there is always 5 of 5 and carries no signal.",
+  "1": [
+    "In My Time of Dying",
+    "This Is How You Lose the Time War",
+    "The Psychology of Money",
+    "Stumbling on Happiness",
+    "The Creative Act"
+  ],
+  "2": [
+    "Meditations",
+    "The Rise and Fall of Communism",
+    "How to Survive History",
+    "The New Middle East",
+    "Götter und Heldensagen"
+  ],
+  "3": [
+    "Well-Being",
+    "How to Suffer Outside",
+    "Six Easy Pieces",
+    "Le Petit Prince",
+    "Black Wave"
+  ],
+  "4": [
+    ["The Promise", "The Rift", "Smoke and Shadow", "North and South", "Imbalance"],
+    "Leviathan Wakes",
+    "Awe: The New Science of Everyday Wonder and How It Can Transform Your Life",
+    "Stranger in a Strange Land",
+    "Overdiagnosed: Making People Sick in the Pursuit of Health"
+  ],
+  "5": [
+    "How to Know a Person",
+    "The StatQuest Illustrated Guide to Neural Networks and AI",
+    "The Subtle Art of Not Giving a F*ck",
+    "The Coddling of the American Mind",
+    "Meditations",
+    "What Unites Us",
+    "The Comfort Crisis",
+    "Atomic Habits",
+    "Feel-Good Productivity",
+    "Four Thousand Weeks",
+    "Factfulness",
+    "Thinking, Fast and Slow",
+    "When Breath Becomes Air",
+    "The Coaching Habit",
+    "Doing Good Better",
+    "Awe",
+    "Everything Is F*cked",
+    "Be Useful: Seven Tools for Life"
+  ]
+}

@@ -76,8 +76,11 @@ def call(
     image_jpeg: bytes | None = None,
     text: str | None = None,
     max_tokens: int = DEFAULT_MAX_TOKENS,
+    reasoning_effort: str | None = None,
 ) -> CallResult:
     """One chat completion. `prompt` is the instruction; `image_jpeg` and/or `text` are the input.
+
+    `reasoning_effort` maps to OpenRouter's unified `reasoning.effort`; omitted means the model's default.
 
     Never raises for a model or transport failure: those come back with `error` set
     so the caller can log a row for them.
@@ -95,6 +98,8 @@ def call(
         "max_tokens": max_tokens,
         "usage": {"include": True},
     }
+    if reasoning_effort:
+        body["reasoning"] = {"effort": reasoning_effort}
     headers = {
         "Authorization": f"Bearer {openrouter_api_key()}",
         "Content-Type": "application/json",

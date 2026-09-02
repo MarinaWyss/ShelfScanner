@@ -14,7 +14,7 @@ from shelfscanner.db import get_client
 class ExtractionStats:
     model: str
     long_edge: int
-    photos: int  # rows without error
+    photos: int  # distinct photos with a row without error (latest per photo)
     errors: int
     median_recall: float | None
     mean_invented: float | None
@@ -25,7 +25,7 @@ class ExtractionStats:
 @dataclass(frozen=True)
 class RecommendationStats:
     model: str
-    runs: int  # rows without error
+    runs: int  # distinct extractions with a row without error (latest per extraction)
     errors: int
     share_valid_vs_extraction: float | None
     share_valid_vs_ground_truth: float | None
@@ -46,11 +46,12 @@ def extraction_stats(rows: list[dict]) -> list[ExtractionStats]:
         groups[(r["model"], r["image_long_edge"])].append(r)
     out = []
     for (model, edge), rs in sorted(groups.items()):
-        ok = [r for r in rs if not r.get("error")]
+        ok = latest_per_key([r for r in rs if not r.get("error")], "photo_id")
+        errors = sum(1 for r in rs if r.get("error"))
         recalls = [r["found_count"] / (r["found_count"] + r["missed_count"])
                    for r in ok if r["found_count"] + r["missed_count"]]
         out.append(ExtractionStats(
-            model=model, long_edge=edge, photos=len(ok), errors=len(rs) - len(ok),
+            model=model, long_edge=edge, photos=len(ok), errors=errors,
             median_recall=_opt(median, recalls),
             mean_invented=_opt(mean, [r["invented_count"] for r in ok]),
             p50_latency_ms=_opt(median, [r["latency_ms"] for r in ok]),
@@ -65,13 +66,14 @@ def recommendation_stats(rows: list[dict]) -> list[RecommendationStats]:
         groups[r["model"]].append(r)
     out = []
     for model, rs in sorted(groups.items()):
-        ok = [r for r in rs if not r.get("error")]
+        ok = latest_per_key([r for r in rs if not r.get("error")], "extraction_id")
+        errors = sum(1 for r in rs if r.get("error"))
         n_recs = [_count_recs(r) for r in ok]
         total = sum(n_recs)
         scored = [r for r in ok if r.get("specificity_scores")]
         all_scores = [s for r in scored for s in r["specificity_scores"]]
         out.append(RecommendationStats(
-            model=model, runs=len(ok), errors=len(rs) - len(ok),
+            model=model, runs=len(ok), errors=errors,
             share_valid_vs_extraction=(sum(r["valid_vs_extraction"] or 0 for r in ok) / total) if total else None,
             share_valid_vs_ground_truth=(sum(r["valid_vs_ground_truth"] or 0 for r in ok) / total) if total else None,
             mean_specificity=_opt(mean, all_scores),
@@ -80,6 +82,14 @@ def recommendation_stats(rows: list[dict]) -> list[RecommendationStats]:
             mean_cost_usd=_opt(mean, [r["cost_usd"] for r in ok]),
         ))
     return out
+
+
+def latest_per_key(rows: list[dict], key: str) -> list[dict]:
+    """A rerun of the same input under the same model supersedes the earlier row. Error rows are counted separately."""
+    latest: dict = {}
+    for r in sorted(rows, key=lambda r: r.get("id", 0)):
+        latest[r.get(key, r.get("id"))] = r
+    return list(latest.values())
 
 
 def _count_recs(row: dict) -> int:
@@ -117,8 +127,8 @@ def render(ex: list[ExtractionStats], rec: list[RecommendationStats]) -> str:
 def fetch_and_render() -> str:
     c = get_client()
     ex = c.table("extractions").select(
-        "model, image_long_edge, error, found_count, missed_count, invented_count, latency_ms, cost_usd").execute().data
+        "id, photo_id, model, image_long_edge, error, found_count, missed_count, invented_count, latency_ms, cost_usd").execute().data
     rec = c.table("recommendations").select(
-        "model, error, parsed_recommendations, valid_vs_extraction, valid_vs_ground_truth, specificity_scores, latency_ms, cost_usd"
+        "id, extraction_id, model, error, parsed_recommendations, valid_vs_extraction, valid_vs_ground_truth, specificity_scores, latency_ms, cost_usd"
     ).execute().data
     return render(extraction_stats(ex), recommendation_stats(rec))

@@ -108,7 +108,7 @@ def recommend_from_extraction(extraction: dict, model: Model, prefs: dict, promp
     labels = get_photo(extraction["photo_id"])["titles"]
 
     text = f"Books on the shelf:\n{shelf_text(extraction['parsed_titles'])}\n\nReading preferences:\n{json.dumps(prefs, indent=2, ensure_ascii=False)}"
-    res = openrouter.call(model.slug, prompt, text=text)
+    res = openrouter.call(model.slug, prompt, text=text, reasoning_effort=model.reasoning_effort)
 
     recs = recs_from(res.parsed) if res.ok else []
     validity = check(recs, extracted, labels, cfg.match_threshold) if res.ok else None

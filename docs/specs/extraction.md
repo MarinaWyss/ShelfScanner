@@ -1,0 +1,70 @@
+# Extraction
+
+A vision model reads a photo; the result is scored against the photo's
+labels and logged.
+
+## Command
+
+`uv run shelfscanner extract --photo <id|all> --model <alias|slug> [--max-dim N] [--prompt name]`
+
+For each photo:
+
+1. Download the object from the bucket and resize so the long edge is at
+   most `--max-dim` pixels (default from `config/models.toml`, 1568). Never
+   upscales. The dimensions actually sent are logged.
+2. Send the image and the prompt file `prompts/<name>.md` (default
+   `extract_v1`) to the model through the OpenRouter adapter. The prompt
+   asks for `{"books": [{"title", "author"}]}`; the reply is parsed in code.
+3. Score the returned titles against the labels.
+4. Insert one `extractions` row. A transport error, HTTP error, truncated
+   reply or unparseable reply still produces a row, with `error` set and
+   metrics at their defaults.
+
+Prints one line per photo and, for `all`, a summary with median recall,
+total invented and total cost.
+
+## Matching
+
+A returned title matches a label when the best sequence ratio across their
+forms is at least `match_threshold` (config, 0.85), or when a form of the
+label of at least two words appears whole inside the returned title.
+Forms of a title: the whole thing; the part before a colon; the part after
+the last colon or spaced dash. Normalisation: lowercase, accents and
+punctuation stripped, whitespace collapsed, a leading or trailing article
+dropped.
+
+Per photo:
+
+- `found` — labels that some returned title matched. Each label counts
+  once; a second returned title matching the same label is a duplicate and
+  is neither found nor invented.
+- `missed` — labels nothing matched.
+- `invented` — returned titles matching no label, full or partial.
+- `partial_matched` — returned titles matching a partial label. Excluded
+  from all three counts.
+
+Recall is `found / (found + missed)`.
+
+## Model config
+
+`config/models.toml` lists candidates by alias with the OpenRouter slug,
+provider, reference prices and an optional `reasoning_effort`, which is
+passed to OpenRouter as `reasoning.effort`. `--model` accepts an alias or a
+slug.
+
+## Adapter
+
+One POST to OpenRouter's chat completions endpoint via httpx with usage
+accounting on. Returns the raw text, parsed JSON, input and output tokens,
+reasoning tokens, cost as reported by OpenRouter, the upstream provider it
+routed to, latency and finish reason. A reply cut off by `max_tokens` is
+reported as truncation, distinct from a JSON parse failure. Nothing is
+retried.
+
+## Logged row
+
+`extractions`: `photo_id`, `provider`, `model` (slug), `prompt_version`
+(prompt filename), `image_long_edge`, `image_width`, `image_height`,
+`raw_output`, `parsed_titles`, the four lists above, `found_count`,
+`missed_count`, `invented_count`, `latency_ms`, `input_tokens`,
+`output_tokens`, `cost_usd`, `error`, `created_at`.

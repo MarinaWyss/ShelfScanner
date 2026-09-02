@@ -1,6 +1,6 @@
 # 001 — MVP spike: can models read a shelf and recommend from it?
 
-Status: proposed
+Status: done 2026-09-02 (see results.md)
 Date: 2026-09-02
 
 ## Why
@@ -99,6 +99,16 @@ is visible.
 references a stated preference, 3 references a preference and something
 specific about the book) entered through a command and stored on the row.
 No LLM-as-judge in this spike; the test set is small enough to read.
+
+Amended 2026-09-02 (task 8): replaced by **overlap with the user's own
+picks**. For each photo Marina names the five books she would choose from
+the shelf; these live in `data/prefs/marina_picks.json`, keyed by photo id.
+A recommendation run scores the number of its picks that match hers, 0–5,
+computed with the title matcher when the report is built. This measures what the scoping doc
+actually wants ("books they'd have been annoyed to miss") more directly
+than reason wording, and costs one list per photo instead of 25 scores. The
+`score` command and `specificity_scores` column stay but are unused in this
+spike; the pass line becomes median overlap ≥ 3 of 5.
 
 **D7. Images are downscaled before sending.** Phone photos are 3000–4000px on
 the long edge. Default long edge 1568px, exposed as a flag so resolution can

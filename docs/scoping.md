@@ -9,10 +9,11 @@
 * *Primary success metric:* The user saves at least one recommended book per scan.
 
 * *Key risks / unknowns:*  
-  * Can an affordable off-the-shelf vision model reliably read titles off a phone photo of angled, partially occluded spines?  
-  * Can an affordable language model produce specific recommendations from a title list plus loose preferences, rather than generic ones?  
-  * Hallucinated titles — books recommended that aren't on the shelf, or don't exist.  
-  * Cost per scan if it gets popular.
+  * Can an affordable off-the-shelf vision model reliably read titles off a phone photo of angled, partially occluded spines? **Yes** (change 001): two models read five test shelves with recall 1.0 and zero invented titles, at under two cents a photo.  
+  * Can an affordable language model produce specific recommendations from a title list plus loose preferences, rather than generic ones? **Yes, limited by the preferences** (change 001): every model stayed on the list; the best matched the user's own picks 4 of 5. Where it missed, the cause was taste the preferences file did not describe.  
+  * Hallucinated titles — books recommended that aren't on the shelf, or don't exist. **A model property, not a prompt property** (change 001): one prompt gave zero invented titles on two models and up to seven per photo on three others. Managed by model choice first, book-database verification second.  
+  * Cost per scan if it gets popular. **Not the binding constraint** (change 001): about one cent per scan. Latency is: the pair that reads well lands at the 15 s line, mostly reasoning tokens.  
+  * *New:* model lock-in. The passing models are all under a year old; the failing ones were last year's best. The pipeline must make swapping a model a config change (see section 3).
 
 ## 1\. Problem Framing & Success Metrics
 
@@ -57,8 +58,8 @@ ShelfScanner v1 is live at shelfscanner.io, but it was made fast and kinda slopp
 
 | Constraint | Target | Notes |
 | :---- | :---- | :---- |
-| Latency (p50 / p99) | \~15s / \~25s per scan | Needs visible progress feedback, not a spinner. |
-| Cost per request | target \< $0.05/scan | 1 vision call \+ 1 recommendation call \+ book lookups. |
+| Latency (p50 / p99) | \~15s / \~25s per scan | Needs visible progress feedback, not a spinner. Change 001 measured 14.8 s p50 for the chosen pair through OpenRouter; this is the tight constraint. |
+| Cost per request | target \< $0.05/scan | 1 vision call \+ 1 recommendation call \+ book lookups. Change 001 measured about $0.01 for the two model calls. |
 | Quality bar | Zero invented titles. Every recommendation is traceable to a book visible in the photo. |  |
 | Privacy / compliance | No accounts, no PII. Photos are user-uploaded and may incidentally contain people or private rooms. Retention policy needed. | Shelf photos could be more sensitive than they first appear. |
 | Availability / uptime | Best-effort. No SLA. | I’ll do my best. |
@@ -93,10 +94,18 @@ ShelfScanner v1 is live at shelfscanner.io, but it was made fast and kinda slopp
 ## 2\. Prompt Engineering & Systematic Tracking
 
 **Prompt Architecture**   
-*Describe the overall prompt strategy. How many distinct prompts does your system use? What roles do they play (system prompt, few-shot examples, templates, output parsers)?*
+Two prompts, one per stage, both plain instruction text sent as the user
+message with the input (an image, or the shelf list plus preferences JSON)
+appended. No system prompt, no few-shot examples. Both ask for a JSON object
+that is parsed in code; native structured output is not used while calls go
+through OpenRouter (change 001, D9).
 
 **Prompt Organization**   
-*Describe how prompts are stored and versioned. Prompts should be treated as separate components — not hardcoded in application files.*
+`prompts/extract_v1.md` and `prompts/recommend_v1.md`. The filename is the
+version and is logged on every row, so any result can be traced to the exact
+prompt text. A new version is a new file; old ones stay. The directory is
+flat because there are two prompts; the structure below is the target if
+that grows.
 
 **Example structure:**
 
@@ -118,42 +127,78 @@ prompts/
 
 | Evaluation Aspect | Approach |
 | :---- | :---- |
-| Test set size | *e.g., 100–300 test cases* |
-| Test set composition | *Cover different question types, difficulty levels, edge cases* |
-| Metrics | *e.g., LLM-as-judge scores, BLEU/ROUGE, exact match, format compliance* |
-| Evaluation tooling | *e.g., manual review, PromptLayer, Langfuse, Weights & Biases* |
-| Update cadence | *How often is the test set refreshed with new failure patterns?* |
+| Test set size | 5 photos, 69 hand-labelled titles plus 10 partial labels (change 001). Target for a later change: 100–300 photos. |
+| Test set composition | Landscape and portrait; straight-on and angled; upright spines and horizontal stacks; Fraktur and faded cloth spines; library stickers; a plant in frame; a run of five near-identical series volumes. |
+| Metrics | Extraction: recall, missed, invented (kept separate) against labels via normalised fuzzy match at 0.85. Recommendation: valid against the extraction (hard), valid against labels, overlap with the user's own five picks for the shelf. Plus cost and latency per stage. |
+| Evaluation tooling | The CLI logs every call to Supabase; `shelfscanner report` and `report --html` aggregate. No LLM-as-judge; the set is small enough to read. |
+| Update cadence | Not yet. The test set grows in its own change once the bookstore photos exist. |
 
 **Checklist**:
 
-- [ ] Prompts are stored in separate versioned files, not hardcoded.  
-- [ ] I have a structured test set with diverse cases and expected outputs/criteria.  
-- [ ] I have a repeatable evaluation process for comparing prompt versions.  
-- [ ] Prompt changes are tested against the evaluation set before deployment.  
-- [ ] I have documented my prompt iteration history and key learnings.
+- [x] Prompts are stored in separate versioned files, not hardcoded.  
+- [x] I have a structured test set with diverse cases and expected outputs/criteria.  
+- [x] I have a repeatable evaluation process for comparing prompt versions.  
+- [ ] Prompt changes are tested against the evaluation set before deployment. \<- one version so far  
+- [ ] I have documented my prompt iteration history and key learnings. \<- one version so far
 
 ## 3\. Model Selection & Evaluation
 
 **Candidate Models**
 
-| Model | Provider | Cost (input/output) | Latency (est.) | Quality Notes | License |
+Measured in change 001 on the five-photo test set, all calls through
+OpenRouter (so latency is an upper bound). Cost is per photo for reading and
+per run for choosing, as reported by OpenRouter. Full tables in
+`docs/changes/archive/001-mvp/results.md`.
+
+| Model | Provider | Cost (input/output, $/M) | Latency (p50, read / choose) | Quality Notes | License |
 | :---- | :---- | :---- | :---- | :---- | :---- |
-|  |  |  |  |  | *Ensure the license works for your use case* |
-|  |  |  |  |  |  |
+| Claude Sonnet 5 | Anthropic | 2.00 / 10.00 | 10.0 s / 11.8 s | Reads shelves perfectly, zero invented. $0.015 a photo. Slow for both stages, mostly reasoning tokens. | API terms |
+| Gemini 3.8 Flash | Google | 0.75 / 3.75 | 11.6 s / 11.5 s | Same reading quality as Sonnet at half the cost ($0.008). Spends thousands of reasoning tokens; untested at lower effort. | API terms |
+| GPT-5.4 mini | OpenAI | 0.75 / 4.50 | 2.3 s / 3.2 s | Fastest. Invents 2.6 titles per photo, so not usable for reading. Fine at choosing. | API terms |
+| Qwen 3.8 Flash | Alibaba | 0.15 / 0.47 | 6.1 s / 4.8 s | With reasoning off, recall 0.89 but 1.4 invented per photo. Cheapest by far; valid on every recommendation run. | API terms |
+| Claude Haiku 4.5 | Anthropic | 1.00 / 5.00 | 4.6 s / 4.2 s | Recall 0.42 with 6.8 invented per photo. Not usable for reading. Fine at choosing. | API terms |
 
 **Evaluation Approach**   
-*Describe how you'll compare models. Run each candidate on the same test set and compare performance, cost, and latency using a consistent rubric.*
+Every candidate over every photo at 1568 px, scored against labels; the best
+candidate again at 2400 px. Every candidate over the best extraction of each
+photo with the same preferences file, checked for validity and hand-scored
+for specificity. One adapter and one prompt version per stage, so the only
+variable is the model.
 
 **Model Routing (if applicable)**   
-*If using multiple models, describe the routing strategy. e.g., a cheap/fast model classifies query difficulty and routes simple queries to a small model and complex queries to a larger one.*
+No routing by request difficulty. Two models, one per stage, chosen
+independently: the reading stage needs a model that does not invent (Gemini
+3.8 Flash or Sonnet 5); the choosing stage can use a small model because,
+given a clean list, every candidate was valid on every run.
+
+What the system does need is a **router of its own** so the model behind
+each stage can change without touching pipeline code. The spike showed why:
+the models that passed did not exist eighteen months ago, and the comparison
+was only cheap because every model was a config entry behind one adapter.
+The production shape, decided in change 002:
+
+* One `ModelClient` interface per stage (vision call, text call) with the
+  same result shape the spike logs today: raw text, parsed JSON, tokens,
+  reasoning tokens, cost, latency, finish reason, provider.
+* One adapter per provider behind it (Google, OpenAI, Anthropic to start),
+  using the provider's own SDK for native structured output and reasoning
+  controls.
+* `config/models.toml` names which model serves each stage, with its
+  reasoning setting, image size and price. Changing a model is a config
+  edit plus a rerun of the test set through `report`.
+* Every call logs the model and prompt version, as now, so a swap is
+  visible in the data and reversible.
+
+Retest cadence: rerun the matrix when a provider ships a new model in the
+tier in use, or quarterly, whichever comes first.
 
 **Checklist**:
 
-- [ ] I have tested at least 2–3 models from different providers/sizes on my test set.  
-- [ ] I have compared performance, cost, and latency in a structured way.  
-- [ ] I have ensured the model licenses are appropriate for my use case.  
-- [ ] I have documented the rationale for my final model choice(s).  
-- [ ] If using model routing, I have tested and documented the routing logic.
+- [x] I have tested at least 2–3 models from different providers/sizes on my test set.  
+- [x] I have compared performance, cost, and latency in a structured way.  
+- [x] I have ensured the model licenses are appropriate for my use case. \<- hosted APIs under their standard terms  
+- [x] I have documented the rationale for my final model choice(s).  
+- [ ] If using model routing, I have tested and documented the routing logic. \<- no routing
 
 ## 4\. RAG Implementation
 

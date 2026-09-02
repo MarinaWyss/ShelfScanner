@@ -155,7 +155,7 @@ database. Recommendation 1 was scored 2 3 1 1 2 by Claude to exercise the
 command; Marina can overwrite it by running `score` again. Aggregation is
 tested on hand-built rows.
 
-## 8. Run the matrix and decide
+## 8. Run the matrix and decide — done 2026-09-02
 
 - Every vision candidate over every photo at the default image size; the best
   candidate again at one larger size.
@@ -163,6 +163,11 @@ tested on hand-built rows.
   hand for specificity.
 - Results and the pass/fail against the proposal's criteria written to
   `docs/changes/001-mvp/results.md`.
+- A visual report (added 2026-09-02 at Marina's request) showing what was
+  tested and each model's extraction quality, cost and latency, and
+  separately its recommendation quality, since the vision and language
+  model will likely be chosen independently. Generated from the logged rows
+  by `report --html <file>` so it can be regenerated after hand scoring.
 - `docs/specs/` gets one file per capability now true (photo storage,
   extraction, recommendation, run logging). Scoping doc sections 2 and 3
   tables filled in from the results. README gets setup instructions.
@@ -172,3 +177,18 @@ tested on hand-built rows.
 
 Done when: results.md answers the two questions in the proposal with numbers,
 and the specs describe what the script does today.
+
+Notes: matrix complete, 68 calls, about $0.38 in total. Both questions
+answered yes (results.md). Sonnet 5 was run at 2400 px as the best
+candidate; same aggregate as 1568. Qwen needed a per-model reasoning
+setting (`reasoning_effort` in config, passed as OpenRouter's
+`reasoning.effort`) because its default thinking consumed the output
+budget; that is a small adapter extension beyond task 4. Report grouping
+now takes the latest row per photo (or per extraction) within a model so
+reruns supersede, with error rows still counted. Specs written, scoping
+sections 2 and 3 filled, README written, report.html generated and
+published. Specificity scoring was replaced by overlap with Marina's own
+picks per photo (D6 amended); picks live in `data/prefs/marina_picks.json`
+and overlap is computed when the report is built, with no schema change.
+Photo 4's "any Avatar volume" is a grouped pick; photo 5 has every book
+approved and so carries no signal for stage two.

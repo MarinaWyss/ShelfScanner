@@ -47,7 +47,14 @@ price_output = 3.75
 [models.qwen-flash]
 # Fifth candidate, added 2026-09-02 at Marina's request. The current Qwen
 # flash tier with image input; qwen3.8-27b ($0.42 / $2.55) is the next size up.
+# With its default reasoning it spent the whole 4096-token output budget
+# thinking on 3 of 5 photos and never wrote the JSON; "low" still did on 2 of
+# 5. "none" switches thinking off (0 reasoning tokens) and it then reads the
+# shelf fine. Gemini 3.8 Flash has the same tendency but finished within
+# budget, so it is left at its default; the same key applies if cost or
+# latency matter.
 slug = "qwen/qwen3.8-flash"
 provider = "Alibaba"
 price_input = 0.15
 price_output = 0.47
+reasoning_effort = "none"

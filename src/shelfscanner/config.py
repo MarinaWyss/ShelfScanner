@@ -18,6 +18,7 @@ class Model:
     provider: str
     price_input: float  # USD per million input tokens, for reference only
     price_output: float
+    reasoning_effort: str | None = None  # OpenRouter `reasoning.effort`; None sends nothing (model default)
 
 
 @dataclass(frozen=True)

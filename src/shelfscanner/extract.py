@@ -54,7 +54,7 @@ def extract_photo(photo: dict, model: Model, max_edge: int, prompt_name: str) ->
     cfg = load_config()
     prompt_version, prompt = openrouter.load_prompt(prompt_name)
     img = resize(storage.download_photo(photo["storage_path"]), max_edge)
-    res = openrouter.call(model.slug, prompt, image_jpeg=img.jpeg)
+    res = openrouter.call(model.slug, prompt, image_jpeg=img.jpeg, reasoning_effort=model.reasoning_effort)
 
     extracted = titles_from(res.parsed) if res.ok else []
     s = score(extracted, photo["titles"], photo["partial_titles"], cfg.match_threshold)

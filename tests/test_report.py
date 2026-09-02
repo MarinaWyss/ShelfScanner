@@ -5,13 +5,18 @@ import pytest
 from shelfscanner.report import extraction_stats, recommendation_stats, render
 
 
-def _ex(model="m", edge=1568, found=8, missed=2, invented=1, ms=1000, cost=0.01, error=None):
-    return dict(model=model, image_long_edge=edge, found_count=found, missed_count=missed,
-                invented_count=invented, latency_ms=ms, cost_usd=cost, error=error)
+_ids = iter(range(1, 10_000))
 
 
-def _rec(model="m", n=5, vs_ex=5, vs_gt=4, scores=None, ms=2000, cost=0.002, error=None):
-    return dict(model=model, parsed_recommendations={"recommendations": [{"title": str(i)} for i in range(n)]},
+def _ex(model="m", edge=1568, found=8, missed=2, invented=1, ms=1000, cost=0.01, error=None, photo=None):
+    i = next(_ids)
+    return dict(id=i, photo_id=photo if photo is not None else i, model=model, image_long_edge=edge, found_count=found,
+                missed_count=missed, invented_count=invented, latency_ms=ms, cost_usd=cost, error=error)
+
+
+def _rec(model="m", n=5, vs_ex=5, vs_gt=4, scores=None, ms=2000, cost=0.002, error=None, extraction=None):
+    i = next(_ids)
+    return dict(id=i, extraction_id=extraction if extraction is not None else i, model=model, parsed_recommendations={"recommendations": [{"title": str(i)} for i in range(n)]},
                 valid_vs_extraction=vs_ex, valid_vs_ground_truth=vs_gt, specificity_scores=scores,
                 latency_ms=ms, cost_usd=cost, error=error)
 
@@ -42,3 +47,16 @@ def test_render_handles_empty_and_missing_values():
     assert "(no rows)" in text
     text = render(extraction_stats([_ex(error="e", cost=None, ms=None)]), recommendation_stats([_rec()]))
     assert "  -" in text  # unavailable metrics render as a dash, not a crash
+
+
+def test_rerun_of_same_photo_supersedes_earlier_ok_row_but_errors_still_count():
+    rows = [_ex(photo=1, found=2, missed=8), _ex(photo=1, error="truncated", found=0, missed=10), _ex(photo=1, found=10, missed=0)]
+    s = extraction_stats(rows)[0]
+    assert (s.photos, s.errors) == (1, 1)
+    assert s.median_recall == 1.0
+
+
+def test_recommendation_rerun_on_same_extraction_supersedes():
+    rows = [_rec(extraction=6, vs_ex=3), _rec(extraction=6, vs_ex=5)]
+    s = recommendation_stats(rows)[0]
+    assert s.runs == 1 and s.share_valid_vs_extraction == 1.0
