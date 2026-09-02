@@ -5,3 +5,6 @@ node_modules/
 dist/
 .vercel/
 .claude/settings.local.json
+
+# Shelf photos may show private rooms; never commit them
+data/photos/
