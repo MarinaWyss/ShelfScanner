@@ -49,7 +49,7 @@ new environment variables. `pytest` added as a dev dependency with
 `tests/test_images.py` covering the stripping on an in-memory fixture, so
 the privacy check does not depend on the gitignored photos.
 
-## 4. Model config and the OpenRouter adapter
+## 4. Model config and the OpenRouter adapter — done 2026-09-02
 
 - Config file listing candidate models by OpenRouter slug, with the provider
   name and the direct price for reference, plus match threshold and default
@@ -64,6 +64,21 @@ the privacy check does not depend on the gitignored photos.
 
 Done when: a throwaway call from the REPL returns parsed JSON for one resized
 photo from each of the four candidate slugs, with usage and cost.
+
+Notes: five candidates, not four; Qwen 3.8 Flash added at Marina's request
+and recorded in proposal D10. "Current small model" resolved to gpt-5.4-mini
+and "current Flash" to gemini-3.8-flash, both newer and pricier than the
+proposal's orientation prices. All five returned parsed JSON for photo 4 at
+1568px with usage, cost and upstream provider. Findings from the throwaway
+calls: OpenRouter routes Anthropic models to Amazon Bedrock or Claude
+Platform on AWS, logged per call as designed. Gemini 3.8 Flash spends
+thousands of reasoning tokens inside `max_tokens` (about 4,000 on a 12-book
+shelf, 39 s, $0.016, dearer than Sonnet); at a 1,024 cap it truncated before
+the JSON. The adapter records `finish_reason` and `reasoning_tokens` and
+reports a truncated reply as truncation, not a parse failure, so the two are
+distinguishable in the log. A reasoning-effort setting per model may be
+worth adding before the matrix in task 8. Tests cover config loading,
+model lookup, JSON fence tolerance, and resize geometry.
 
 ## 5. Extraction end to end
 
@@ -98,6 +113,8 @@ five titles with reasons.
 ## 7. Scoring and reporting
 
 - `score` command writing specificity scores onto a recommendation row.
+- Migration adding a check constraint that every `specificity_scores`
+  element is 1, 2 or 3, so a typo cannot skew the report (proposal D6).
 - `report` command: per model, for extraction: photo count, median recall,
   mean invented per photo, p50 latency, mean cost. For recommendation: run
   count, share valid against extraction, share valid against ground truth,

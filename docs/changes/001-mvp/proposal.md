@@ -121,6 +121,11 @@ confirmed in task 4 and recorded in the config.
 | Claude Sonnet 5 | Anthropic | $2.00 / $10.00 | vision + text |
 | GPT-5 mini or current small model | OpenAI | ~$0.25 / $2.00 | vision + text |
 | Gemini Flash-Lite or current Flash | Google | ~$0.10 / $0.40 | vision + text |
+| Qwen current Flash (added 2026-09-02, task 4) | Alibaba | ~$0.15 / $0.47 | vision + text |
+
+Slugs and OpenRouter prices as checked in task 4 are in `config/models.toml`;
+the "current" OpenAI and Google models resolved to newer, pricier releases
+than the orientation figures above.
 
 Rough cost check against the $0.05/scan ceiling: a 1568px image is on the
 order of 2,500 input tokens and an extraction is a few hundred output tokens;

@@ -1,0 +1,53 @@
+# Candidate models for the 001-mvp spike (proposal D10, D13).
+#
+# Every call goes through OpenRouter, addressed by `slug`. The provider and
+# prices are for orientation only: the logged cost comes from OpenRouter's
+# per-request usage accounting. Prices are USD per million tokens, input /
+# output, as listed by OpenRouter.
+#
+# Slugs checked against https://openrouter.ai/api/v1/models on 2026-09-02.
+# Anthropic prices also match the Claude API reference cached 2026-06-24.
+
+[settings]
+# Sequence-ratio threshold for fuzzy title matching (proposal D3).
+match_threshold = 0.85
+# Default long edge in pixels for images sent to a vision model (proposal D7).
+default_max_edge = 1568
+
+[models.haiku]
+slug = "anthropic/claude-haiku-4.5"
+provider = "Anthropic"
+price_input = 1.00
+price_output = 5.00
+
+[models.sonnet]
+slug = "anthropic/claude-sonnet-5"
+provider = "Anthropic"
+price_input = 2.00
+price_output = 10.00
+
+[models.gpt-mini]
+# The proposal said "GPT-5 mini or current small model". gpt-5-mini is still
+# listed ($0.25 / $2.00) but gpt-5.4-mini is the current one.
+slug = "openai/gpt-5.4-mini"
+provider = "OpenAI"
+price_input = 0.75
+price_output = 4.50
+
+[models.gemini-flash]
+# The proposal said "Gemini Flash-Lite or current Flash". gemini-2.5-flash-lite
+# is still listed ($0.10 / $0.40) but gemini-3.8-flash is the current Flash;
+# gemini-3.5-flash-lite ($0.30 / $2.50) is the current Lite if a cheaper
+# fallback is wanted later.
+slug = "google/gemini-3.8-flash"
+provider = "Google"
+price_input = 0.75
+price_output = 3.75
+
+[models.qwen-flash]
+# Fifth candidate, added 2026-09-02 at Marina's request. The current Qwen
+# flash tier with image input; qwen3.8-27b ($0.42 / $2.55) is the next size up.
+slug = "qwen/qwen3.8-flash"
+provider = "Alibaba"
+price_input = 0.15
+price_output = 0.47

@@ -26,12 +26,18 @@ class Settings:
     supabase_secret_key: str
 
 
-def load_settings() -> Settings:
+def _require(*keys: str) -> list[str]:
     load_dotenv(REPO_ROOT / ".env")
-    missing = [k for k in ("SUPABASE_URL", "SUPABASE_SECRET_KEY") if not os.environ.get(k)]
+    missing = [k for k in keys if not os.environ.get(k)]
     if missing:
         raise SystemExit(f"Missing in .env: {', '.join(missing)} (see .env.example)")
-    return Settings(
-        supabase_url=os.environ["SUPABASE_URL"],
-        supabase_secret_key=os.environ["SUPABASE_SECRET_KEY"],
-    )
+    return [os.environ[k] for k in keys]
+
+
+def load_settings() -> Settings:
+    url, key = _require("SUPABASE_URL", "SUPABASE_SECRET_KEY")
+    return Settings(supabase_url=url, supabase_secret_key=key)
+
+
+def openrouter_api_key() -> str:
+    return _require("OPENROUTER_API_KEY")[0]
