@@ -13,6 +13,12 @@ def _photos_sync(_: argparse.Namespace) -> None:
         print(line)
 
 
+def _photos_label(args: argparse.Namespace) -> None:
+    row = storage.promote_scan(args.scan, args.titles, args.partial, args.notes)
+    print(f"ok    scan {args.scan} -> photo {row['id']} ({row['storage_path']}, set {row['set']}, "
+          f"{len(args.titles)} titles, {len(args.partial)} partial). Run `research.matrix vision <alias> --set real` to read it.")
+
+
 def _photos_list(_: argparse.Namespace) -> None:
     rows = storage.list_photos()
     if not rows:
@@ -31,6 +37,12 @@ def build_parser() -> argparse.ArgumentParser:
     photos_sub = photos.add_subparsers(dest="photos_command", required=True)
     photos_sub.add_parser("sync", help="strip EXIF, upload photos, upsert label rows").set_defaults(func=_photos_sync)
     photos_sub.add_parser("list", help="list photo rows").set_defaults(func=_photos_list)
+    lab = photos_sub.add_parser("label", help="promote a real scan into the labelled test set (011)")
+    lab.add_argument("scan", type=int, help="the app scan's photo id")
+    lab.add_argument("--titles", required=True, nargs="+", help="the titles visible in the photo, one argument each")
+    lab.add_argument("--partial", nargs="*", default=[], help="titles only partly legible")
+    lab.add_argument("--notes", default=None)
+    lab.set_defaults(func=_photos_label)
     retention.add_parser(photos_sub)
     photos_fetch.add_parser(photos_sub)
 

@@ -30,9 +30,5 @@ jobs:
         with:
           enable-cache: true
       - run: uv sync --frozen --no-dev
-      - name: Reading primary over every labelled photo
-        run: uv run python -m research.matrix vision $(uv run python -c "from shelfscanner.config import load_config as l; print(l().stage('reading').primary)") --set all
-      - name: Choosing primary over the best extraction per photo
-        run: uv run python -m research.matrix llm $(uv run python -c "from shelfscanner.config import load_config as l; print(l().stage('choosing').primary)")
-      - name: Regression check
-        run: uv run python -m research.check --set ${{ github.event.inputs.set || 'core' }} | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: The eval (reading over every labelled photo, choosing over the set, then the check)
+        run: uv run python -m research.eval --set ${{ github.event.inputs.set || 'core' }} --reading-set all | tee -a "$GITHUB_STEP_SUMMARY"

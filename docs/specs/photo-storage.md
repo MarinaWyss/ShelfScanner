@@ -74,7 +74,7 @@ object is deleted and the row stays for the metrics.
    `.env`, default 30; `--days` overrides it. Rows are aged by `created_at`.
 2. A row is a candidate when it still has a `storage_path`, is older than
    the window, and is not exempt. A row is exempt, and never touched, when
-   its `titles` array is non-empty or its `set` column (006) is
+   its `titles` array is non-empty or its `set` column (006, 011) is
    anything other than the default `core`. The exemption is asked of the
    server and re-checked on every returned row before deletion.
 3. For each candidate the object is removed from `shelf-photos`, then the
@@ -109,3 +109,18 @@ to Vercel cron.
   outside the web form). A row has a `storage_path` or a
   `photo_deleted_at`, enforced by a check constraint.
   RLS enabled, no policies; only `service_role` has data privileges.
+
+## Promoting a real scan (011)
+
+`uv run shelfscanner photos label <scan id> --titles "A" "B" ... [--partial ...] [--notes ...]`
+turns an app scan into a labelled test-set photo: the session photo's
+object is downloaded to `data/photos/real_scan<id>.jpg`, a label file
+`data/labels/real_scan<id>.json` is written with `set: "real"` and a
+`source` naming the scan id and the date, and the photo goes through the
+same upload and upsert as any labelled photo (object `real_scan<id>.jpg`
+at the bucket root, a new `photos` row in set `real`, no session). The
+session row is untouched, so retention still applies to it. The command
+refuses a row with no session (already in the set) or no object
+(retention removed it). `photos sync` treats the promoted photo like any
+other label file. The `set` column's check constraint allows `core`,
+`sourced`, `derived` and `real` (migration `20260903200000_photo_set_real.sql`).

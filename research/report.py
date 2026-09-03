@@ -159,13 +159,116 @@ def price_line(check) -> str:
     return f"PRICES  checked {check.checked.isoformat()}, {check.age_days} days ago: {state}"
 
 
+# --- change 011: prompt versions side by side ---------------------------------------------------
+
+
+@dataclass
+class PromptStats:
+    prompt: str
+    prefs: str  # "export" when the preferences carried rated books, else "flat"
+    adapter: str
+    runs: int
+    errors: int
+    on_list: float | None  # picks on the list over all picks of the ok runs (R1)
+    overlap: dict[int, int]  # photo id -> overlap with Marina's picks, latest run per photo
+    mean_overlap: float | None
+    median_overlap: float | None
+    p50_latency_ms: float | None
+    mean_cost_usd: float | None
+
+
+def prefs_shape(preferences: dict | None) -> str:
+    return "export" if (preferences or {}).get("rated_books") else "flat"
+
+
+def by_prompt(recs: list[dict], photo_of: dict[int, int], picks: dict[int, list], threshold: float,
+              summary_photos: list[int] | None = None) -> list[PromptStats]:
+    """One row per (prompt version, preferences shape, adapter) over the latest run per photo. `recs` are
+    recommendation rows of one model; `photo_of` maps extraction id to photo id. The overlap is
+    `research.check.overlap` against the picks file; the mean and median are over `summary_photos`
+    (default: every photo with picks)."""
+    from research.check import overlap
+    from shelfscanner.recommend import recs_from
+
+    groups: dict[tuple[str, str, str], list[dict]] = defaultdict(list)
+    for r in recs:
+        if r["extraction_id"] not in photo_of:
+            continue
+        key = ((r.get("prompt_version") or "?").removesuffix(".md"), prefs_shape(r.get("preferences")),
+               r.get("adapter") or "openrouter")
+        groups[key].append(dict(r, photo_id=photo_of[r["extraction_id"]]))
+    out = []
+    for (prompt, shape, adapter), rs in sorted(groups.items()):
+        ok = latest_per_key([r for r in rs if not r.get("error")], "photo_id")
+        stage = metrics.stage_stats("choosing", ok + [r for r in rs if r.get("error")])
+        n_recs = [_count_recs(r) for r in ok]
+        total = sum(n_recs)
+        ov = {r["photo_id"]: overlap([x.title for x in recs_from(r["parsed_recommendations"])],
+                                     picks[r["photo_id"]], threshold)
+              for r in ok if picks.get(r["photo_id"])}
+        chosen = [ov[p] for p in (summary_photos or sorted(ov)) if p in ov]
+        out.append(PromptStats(
+            prompt=prompt, prefs=shape, adapter=adapter, runs=len(ok), errors=stage.errors,
+            on_list=(sum(r["valid_vs_extraction"] or 0 for r in ok) / total) if total else None,
+            overlap=ov, mean_overlap=mean(chosen) if chosen else None,
+            median_overlap=metrics.percentile(chosen, 50) if chosen else None,
+            p50_latency_ms=stage.p50_ms, mean_cost_usd=stage.cost_per_scan,
+        ))
+    return out
+
+
+def render_by_prompt(stats: list[PromptStats], model: str, summary_photos: list[int] | None) -> str:
+    photos = sorted({p for s in stats for p in s.overlap})
+    which = ", ".join(str(p) for p in summary_photos) if summary_photos else "every photo with picks"
+    head = (f"PROMPTS  (choosing model {model}; latest run per photo and prompt; overlap = picks that match "
+            f"Marina's own for that shelf; mean and median over photos {which})")
+    cols = f"{'prompt':<14}{'prefs':<8}{'adapter':<11}{'runs':>5}{'errors':>7}{'on-list':>9}"
+    cols += "".join(f"{'p' + str(p):>5}" for p in photos) + f"{'mean':>7}{'median':>8}{'p50 ms':>9}{'cost':>9}"
+    lines = [head, cols]
+    for s in stats:
+        line = f"{s.prompt:<14}{s.prefs:<8}{s.adapter:<11}{s.runs:>5}{s.errors:>7}{_f(s.on_list, '.2f'):>9}"
+        line += "".join(f"{(str(s.overlap[p]) if p in s.overlap else '-'):>5}" for p in photos)
+        line += (f"{_f(s.mean_overlap, '.2f'):>7}{_f(s.median_overlap, '.1f'):>8}"
+                 f"{_f(s.p50_latency_ms, '.0f'):>9}{_f(s.mean_cost_usd, '.4f'):>9}")
+        lines.append(line)
+    if not stats:
+        lines.append("  (no rows)")
+    return "\n".join(lines)
+
+
+def fetch_and_render_by_prompt(set_name: str = "core", summary_photos: list[int] | None = None) -> str:
+    from research.check import load_picks, photos_in_set
+    from shelfscanner.config import load_config
+
+    cfg = load_config()
+    model = cfg.model(cfg.stage("choosing").primary).slug
+    c = get_client()
+    photos = photos_in_set(c.table("photos").select("id, titles, set").execute().data, set_name)
+    ex = c.table("extractions").select("id, photo_id").in_("photo_id", list(photos)).execute().data
+    photo_of = {e["id"]: e["photo_id"] for e in ex}
+    recs = c.table("recommendations").select(
+        "id, extraction_id, model, adapter, prompt_version, preferences, parsed_recommendations, "
+        "valid_vs_extraction, error, latency_ms, cost_usd").eq("model", model).in_("extraction_id", list(photo_of)).execute().data
+    stats = by_prompt(recs, photo_of, load_picks(), cfg.match_threshold, summary_photos)
+    return render_by_prompt(stats, model.split("/")[-1], summary_photos)
+
+
 def main() -> None:
     import argparse
     from pathlib import Path
 
     ap = argparse.ArgumentParser(prog="research.report", description="per-model aggregates for both stages")
     ap.add_argument("--html", type=Path, default=None, help="also write the visual comparison report to this file")
+    ap.add_argument("--by-prompt", action="store_true",
+                    help="prompt versions side by side for the configured choosing model (011)")
+    ap.add_argument("--set", default="core", help="photo set for --by-prompt (default core)")
+    ap.add_argument("--photos", default=None,
+                    help="comma-separated photo ids the --by-prompt mean and median are over, e.g. 1,2,3,4")
     args = ap.parse_args()
+    if args.by_prompt:
+        summary = [int(x) for x in args.photos.split(",")] if args.photos else None
+        print(fetch_and_render_by_prompt(args.set, summary))
+        return
     print(fetch_and_render())
     if args.html:
         from research import html_report

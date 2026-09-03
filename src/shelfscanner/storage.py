@@ -223,3 +223,43 @@ def _sync_photos_006() -> list[str]:
 
 sync_photos = _sync_photos_006  # noqa: F811 - the 006 version replaces the original on import
 PHOTO_COLUMNS = PHOTO_COLUMNS + ", set, provisional, source"
+
+
+# --- change 011 ---
+# A real scan promoted into the labelled test set: the session photo's object is downloaded, saved
+# under data/photos/ with a label file under data/labels/ (set "real", source naming the scan), and
+# then goes through the same upload and upsert as any labelled photo, so `photos sync` treats it
+# like the rest. The session row is untouched: retention still applies to it.
+
+REAL_SET = "real"
+
+
+def promote_scan(scan_id: int, titles: list[str], partial: list[str] | None = None, notes: str | None = None,
+                 *, now: str | None = None) -> dict:
+    """Copy session photo `scan_id` into the labelled set with these titles. Returns the new photos row."""
+    from datetime import UTC, datetime
+
+    res = get_client().table("photos").select("id, storage_path, session_id, titles").eq("id", scan_id).execute()
+    if not res.data:
+        raise SystemExit(f"No photo with id {scan_id}")
+    row = res.data[0]
+    if row.get("session_id") is None:
+        raise SystemExit(f"Photo {scan_id} is not an app scan (no session); it is already in the test set")
+    if not row.get("storage_path"):
+        raise SystemExit(f"Photo {scan_id} has no object any more (retention removed it); nothing to promote")
+    if not titles:
+        raise SystemExit("At least one title is needed")
+    stem = f"real_scan{scan_id}"
+    PHOTOS_DIR.mkdir(parents=True, exist_ok=True)
+    LABELS_DIR.mkdir(parents=True, exist_ok=True)
+    (PHOTOS_DIR / f"{stem}.jpg").write_bytes(download_photo(row["storage_path"]))
+    label = {"titles": list(titles), "partial": list(partial or []), "set": REAL_SET,
+             "source": {"scan_id": scan_id, "promoted_at": now or datetime.now(UTC).date().isoformat()}}
+    if notes:
+        label["notes"] = notes
+    label_path = LABELS_DIR / f"{stem}.json"
+    label_path.write_text(json.dumps(label, indent=2, ensure_ascii=False) + "\n")
+    parsed = read_label(label_path)
+    upload_photo(PHOTOS_DIR / f"{stem}.jpg", parsed.storage_path)
+    return upsert_photo_row_with_extras(parsed, read_label_extras(label_path))
+# --- end change 011 ---

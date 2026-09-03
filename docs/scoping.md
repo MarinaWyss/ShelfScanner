@@ -560,6 +560,7 @@ can wait" decision; the order is revised after each change lands.
 | Hardening: limits, cost cap, retention, errors; caching if measured | 008 | app | 2026-09-23 | done 2026-09-03 |
 | Monitoring: dashboard from the rows, weekly review | 009 | either | 2026-09-23 | built 2026-09-03; closes after the second weekly review |
 | Deployment: Vercel from GitHub | 010 | app | 2026-09-30 | approved |
+| Eval tooling: compare prompts, one eval command, promote a real scan | 011 | quality | 2026-09-03 | done 2026-09-03 |
 
 Fine-tuning and agents: not on the list (sections 5 and 8). Deployment is
 last because it is the only phase that needs an account; until then the

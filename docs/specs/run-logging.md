@@ -36,6 +36,20 @@ rows are logged by the pipeline as usual. The report ends with a
 `PRICES` line: the config's `prices_checked` date and whether it is older
 than 90 days (002 D5).
 
+`uv run python -m research.report --by-prompt [--set core] [--photos 1,2,3,4]`
+(011) prints prompt versions side by side for the configured choosing
+model: one row per prompt, preferences shape (`flat` or `export`) and
+adapter, over the latest run per photo; runs, errors, the share of picks on
+the list, the overlap with Marina's picks per photo, the mean and median
+over `--photos` (default every photo with picks), p50 latency and cost.
+
+`uv run python -m research.eval [--set core] [--reading-set all] [--check-set core] [--reading alias] [--choosing alias]`
+(011) is the eval in one command: the reading primary over `--reading-set`
+(default `--set`), the choosing primary over the best extraction per photo
+in `--set`, then `research.check --set <check-set>`; the verdict is the
+last line and the exit code. The nightly workflow runs
+`research.eval --set core --reading-set all`.
+
 ## Text report
 
 `uv run python -m research.report`
