@@ -1,7 +1,15 @@
 {
-  "titles": [],
+  "titles": [
+    "Daylight Robbery",
+    "Now it's time to act",
+    "My Way",
+    "Brash",
+    "Fighting for New Zealand",
+    "Muldoon",
+    "New York"
+  ],
   "partial": [],
-  "notes": "",
+  "notes": "Portrait, looking down at a stack of seven books on a stool in a second-hand shop, indoor light, slight glare on the glossy dust jackets; a handwritten paper note reading 'Pile of Disgust.' lies across the top cover. English throughout, New Zealand politics. Titles read from the spines (Daylight Robbery also from its cover); the gold Muldoon spine is upside down. New York is a Time-Life 'Great Cities' series volume with the series name cut by the frame ('...IES/NEW YORK'), labelled by the volume name. Left out: the red paperback under the stack, of which only the price sticker and 'AUSTRALIA' show, and the books on the table in the background, out of focus. Three covers carry portrait photographs of the politicians (Wishart, Prebble, Brash). Drafted by claude-sonnet-5 (extraction 71), verified by an agent.",
   "set": "sourced",
   "provisional": true,
   "source": {
