@@ -2,8 +2,8 @@
 
 The numbers the scoping doc's section 7 asks for, computed from the rows
 every scan already writes, shown on one page. `src/shelfscanner/web/metrics.py`
-is the aggregation; `src/shelfscanner/web/admin.py` is the page. The weekly
-review routine is described in change 009's proposal until it has run.
+is the aggregation; `src/shelfscanner/web/admin.py` is the page;
+`research/review.py` drafts the weekly review.
 
 ## Vocabulary
 
@@ -105,3 +105,24 @@ saves and a mark; a failed reading counted as a model failure; every
 window; the sparkline points and the formats. `tests/e2e/test_admin_page.py`
 drives the page in Chromium against the fakes: a scan, the seven-day
 table with it, the thirty-day link off the cookie, 404 without either.
+
+## The weekly review
+
+Every Monday at 06:17 UTC (`.github/workflows/weekly-review.yml`, on when
+the repository variable `WEEKLY_REVIEW` is `1`) `research.review` drafts
+`docs/reviews/<date>.md` from the rows written since the previous review
+file, then a Claude Code agent fills in the two reviewer headings under
+`docs/reviews/PROMPT.md` and opens a pull request titled `Weekly review
+<date>`. The review changes no code; a repeated pattern becomes a
+suggestion Marina turns into a proposal (009 D2).
+
+The draft has, for app scans and the test set separately: scans started,
+complete, saves; model failures (rows with `error`) grouped by stage,
+model and the head of the error text, with up to three examples each;
+application failures (photos with no extraction row); failovers grouped by
+the primary's `failover_error`; every "not for me" mark with the pick's
+title, the model's reason and the model. "Patterns" at the top lists any
+group of three or more and any title marked twice.
+
+`uv run python -m research.review --since 2026-08-27 --stdout` runs the
+draft by hand. Tests: `tests/test_review.py` over seeded rows.

@@ -1,0 +1,60 @@
+# Change 009, task 3: the weekly review. Drafts docs/reviews/<date>.md from the rows
+# (research.review), then a Claude Code agent reads the draft under docs/reviews/PROMPT.md,
+# writes the two reviewer sections, and opens a pull request. It changes no code (009 D2).
+# Skipped until the repository variable WEEKLY_REVIEW is "1"; needs the Supabase secrets
+# and ANTHROPIC_API_KEY.
+name: Weekly review
+
+on:
+  schedule:
+    - cron: "17 6 * * 1" # Mondays, 06:17 UTC
+  workflow_dispatch:
+    inputs:
+      since:
+        description: "First day to include (YYYY-MM-DD, UTC); default: the newest review file"
+        default: ""
+
+permissions:
+  contents: write
+  pull-requests: write
+  id-token: write
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    if: ${{ vars.WEEKLY_REVIEW == '1' }}
+    timeout-minutes: 30
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - run: uv sync --frozen --no-dev
+      - name: Branch for the review
+        id: branch
+        run: |
+          git config user.name "shelfscanner-review[bot]"
+          git config user.email "shelfscanner-review[bot]@users.noreply.github.com"
+          DATE=$(date -u +%F)
+          git checkout -b "review/$DATE"
+          echo "date=$DATE" >> "$GITHUB_OUTPUT"
+      - name: Draft the review from the rows
+        run: uv run python -m research.review ${{ inputs.since != '' && format('--since {0}', inputs.since) || '' }}
+      - name: Write the reviewer sections and open the pull request
+        uses: anthropics/claude-code-action@v1
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          prompt: |
+            REPO: ${{ github.repository }}
+            BRANCH: review/${{ steps.branch.outputs.date }}
+            DRAFT: docs/reviews/${{ steps.branch.outputs.date }}.md
+
+            Follow docs/reviews/PROMPT.md. Fill in the two reviewer headings of DRAFT, then commit
+            that one file on BRANCH, push it, and open a pull request against main as the brief says.
+          claude_args: |
+            --allowedTools "Read,Grep,Glob,Edit,Bash(uv run python -m research.report*),Bash(uv run python -m research.check*),Bash(git add docs/reviews/*),Bash(git commit:*),Bash(git push:*),Bash(gh pr create:*)"
