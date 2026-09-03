@@ -55,6 +55,12 @@ def create_app(*, pipeline: Pipeline | None = None, sessions: SessionStore | Non
     app.include_router(scan.router)
     app.include_router(prefs.router)
     app.include_router(picks.router)
+    # --- change 009 ---
+    from shelfscanner.web import admin, metrics
+
+    app.include_router(admin.router)
+    app.state.metrics_source = metrics.source_for(pipeline)  # the fake's rows in memory, or the tables
+    # --- end change 009 ---
     app.add_middleware(SessionMiddleware, store=sessions)
 
     @app.get("/")
