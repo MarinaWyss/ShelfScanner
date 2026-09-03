@@ -110,11 +110,7 @@ def recommend_from_extraction(extraction: dict, model: Model, prefs: dict, promp
         raise SystemExit(f"Extraction {extraction['id']} has no parsed titles (error: {extraction.get('error')})")
     labels = get_photo(extraction["photo_id"])["titles"]
 
-    text = f"Books on the shelf:
-{shelf_text(extraction['parsed_titles'])}
-
-Reading preferences:
-{prefs_text(prefs, prompt_name)}"
+    text = f"Books on the shelf:\n{shelf_text(extraction['parsed_titles'])}\n\nReading preferences:\n{prefs_text(prefs, prompt_name)}"
     res = router.text(model, prompt, text, client=client, on_progress=on_progress, schema=RECOMMENDATIONS_SCHEMA)
 
     recs = recs_from(res.parsed) if res.ok else []
