@@ -97,3 +97,23 @@ behaviour under test anyway; extending that fake would silence the
 warnings. `lookup_cache` has no expiry job; misses expire by `fetched_at`
 at read time, and records are kept, so the table grows with distinct pairs
 read, roughly one row per new book seen.
+
+**Real store (lead, 2026-09-03, after `supabase db push`).** The same
+five extractions, this time through the `lookup_cache` table itself, with
+`lookups.cache_hits` written. Open Library was unhealthy during the cold
+pass (seven connect timeouts, cold lookups 4.3 to 8.5 s), so the first
+warm pass still re-asked for the errored titles. Once every title had an
+answer:
+
+| pass | lookup p50 | verify p50 | catalogue calls |
+|---|---|---|---|
+| cold (007 baseline) | 4.5 s | – | 1 per title |
+| warm, all titles cached | 128 ms | 262 ms | 0 |
+
+Verify time includes the `books` upsert and the `lookups` insert. A bare
+`lookup_cache` select from this machine is about 80 ms, so the two round
+trips are the whole warm cost. The 3 s verification line is met by a wide
+margin on a repeated shelf; a first-seen shelf is still bound by the
+catalogue. `lookup_cache` held 61 rows after the run; the migration passed
+`supabase db advisors --linked` with only the pre-existing
+`rls_auto_enable()` warning.
