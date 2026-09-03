@@ -5,7 +5,8 @@ Status: wired as verification between extraction and recommendation
 title read off a shelf to an Open Library work record;
 `src/shelfscanner/verify.py` runs it over a whole extraction and decides
 what the chooser sees. Measured numbers are in
-`docs/changes/007-book-lookup/results.md`.
+`docs/changes/archive/007-book-lookup/results.md`; the cache's (change
+008, task 4) in `docs/changes/008-hardening/results.md`.
 
 ## Where it runs
 
@@ -20,7 +21,9 @@ successful extraction and before the recommendation, and
 `verify.verify_extraction(extraction, *, client=None, db=None,
 on_progress=None, concurrency=6) -> Verified` takes an `extractions` row.
 `client` is the catalogue transport and `db` the Supabase client; both
-default to the real ones and both are replaced in tests.
+default to the real ones and both are replaced in tests. The lookup cache
+(below) lives on `db`, so verification reads and writes it through the
+same handle.
 
 ## What verification does
 
@@ -35,7 +38,8 @@ looked up with `lookup_batch`. Then, in the extraction's order:
 - A title the catalogue answered for with no record at the threshold is
   **dropped**, reason `no record at the threshold`, with the nearest
   candidate under the threshold (catalogue title, score) when there was
-  one. The drop is logged at info level under `shelfscanner.verify`.
+  one (a miss answered from the cache carries none). The drop is logged
+  at info level under `shelfscanner.verify`.
 - A second title resolving to a record already kept is **dropped** with
   reason `same record as an earlier title`; the list the chooser sees has
   each record once.
@@ -78,9 +82,11 @@ The cover image is `https://covers.openlibrary.org/b/id/<cover_id>-M.jpg`.
 in the same order, with at most `concurrency` (default 6) requests in
 flight. `lookup_batch(items)` returns the same list plus the counts the
 `lookups` row records (`hits`, `misses`, `errors`, `latency_ms`, wall time
-for the whole list) and, per item in the same order, `item_errors` (the
-error string or None) and `nearest` (the best candidate under the
-threshold, or None).
+for the whole list, and `cache_hits`, the titles the cache answered) and,
+per item in the same order, `item_errors` (the error string or None) and
+`nearest` (the best candidate under the threshold, or None). It takes
+`cache=` (a `CacheStore`; None means no cache, the 007 behaviour);
+`verify_extraction` passes `cache_for(db)`.
 
 ## Queries
 
@@ -99,7 +105,9 @@ otherwise hide a real book.
 
 Measured (007 results): a shelf of 13 titles makes about 15 requests;
 Open Library serves about 6 requests per second to one client whatever
-the concurrency, so a cold scan costs 4.5 s p50 and up to 6 s.
+the concurrency, so a cold scan costs 4.5 s p50 and up to 6 s. With the
+cache (008 results) a repeated shelf makes no request and verifies in
+about 0.1 s, most of it the `books` upsert.
 
 ## Scoring
 
@@ -118,6 +126,50 @@ at 1.0 ("Archie Brown: The Rise and Fall of Communism" resolves to
 "Archie Brown" by Linden Carter). Verification passes such a title;
 enrichment would show the wrong record.
 
+## Cache
+
+Before anything is sent to the catalogue, `lookup_batch` asks the store
+for every pair in the batch in one read (`CacheStore.read(keys)`), and
+after the catalogue has answered it writes every new answer back in one
+write (`CacheStore.write(entries)`). Nothing is read or written per
+title.
+
+The key is `cache_key(title, author)`: `matching.normalise(title)`, the
+separator `|`, and `normalise(author)` (empty when no author was read).
+`normalise` lowercases, strips accents and punctuation and drops a
+leading or trailing article, so "Schalk: Götter und Heldensagen" and
+"Schalk – Gotter und Heldensagen" share a row; an empty title has no key
+and is never cached. The same title read with and without an author is
+two keys.
+
+A cache row says what the catalogue answered for the pair and when:
+
+- **A record** (`catalogue_id` set): resolved from `books` without a
+  network call, scored against the pair as read with the same arithmetic
+  as a live candidate (`record_score`). Records do not expire. If the
+  `books` row has gone, the pair is asked again.
+- **A miss** (`catalogue_id` null): returned as a miss without a call
+  while younger than `MISS_TTL` (30 days); older, the catalogue is asked
+  again, so a newly catalogued book is found. A cached miss has no
+  `nearest` candidate.
+- **An error** is never cached: a title whose lookup failed is asked
+  again on the next scan.
+
+Everything the cache did not answer goes to the catalogue as before, in
+the same pool, and is written back: `books` rows first (so the cache's
+foreign key holds), then cache rows. `Batch.cache_hits` counts the titles
+answered from the cache, record or fresh miss alike; the `lookups` row
+stores it and `Verified.line()` shows it as `cached n/total`.
+
+Two stores implement `CacheStore`. `SupabaseCache` (built by
+`cache_for(db)`) is two selects to read (the cache rows for the keys,
+then the `books` rows they point at; none when every row is a miss) and
+two upserts to write. `MemoryCache` is a dict, for tests and for
+measuring before a migration is pushed. A store failure of any kind,
+read or write, is logged at warning level under `shelfscanner.lookup`
+and the batch runs cold with nothing written back; it never fails a scan
+(the same rule as a catalogue failure, 007 D2).
+
 ## Failure
 
 A transport error, timeout (default 4 s per request), non-200 status or
@@ -128,7 +180,7 @@ the title unverified and the scan continues (007 D2).
 
 ## Tables
 
-Migration `20260903003853_books.sql`.
+Migrations `20260903003853_books.sql` and `20260903160000_lookup_cache.sql`.
 
 - `books`: `id` (identity), `catalogue`, `catalogue_id`, `title`,
   `author`, `first_year`, `cover_id`, `fetched_at`. Unique on
@@ -136,12 +188,18 @@ Migration `20260903003853_books.sql`.
   one row per distinct record, refreshing `fetched_at`.
 - `lookups`: one row per verification, `photo_id` (references `photos`,
   cascade), `hits`, `misses` (errors included, so `hits + misses` is the
-  number of titles looked up), `errors`, `latency_ms`, `created_at`. A
-  row is written even when the extraction read nothing.
+  number of titles looked up), `errors`, `latency_ms`, `cache_hits`
+  (titles the cache answered; the hit rate is `cache_hits / (hits +
+  misses)`), `created_at`. A row is written even when the extraction read
+  nothing.
+- `lookup_cache`: one row per normalised pair, `key` (primary key, see
+  "Cache"), `catalogue`, `catalogue_id` (null records a miss),
+  `fetched_at`. `(catalogue, catalogue_id)` references `books` with
+  cascade, so a cached record always has a book row to resolve from and
+  deleting a book row drops the cache rows pointing at it.
 
-Both: RLS enabled with no policies; only `service_role` has data
-privileges. Whether the lookup reads `books` before calling out is
-change 008's caching decision.
+All three: RLS enabled with no policies; only `service_role` has data
+privileges.
 
 ## Tests
 
@@ -152,4 +210,9 @@ the status and the body, recorded 2026-09-02) through a stubbed client.
 stubbed catalogue and a fake database: all found, some dropped, catalogue
 down, one failed lookup among good ones, misspelling and fragment
 resolved to the canonical title, duplicate records, and the pick
-annotation. No test touches the network.
+annotation. `tests/test_lookup_cache.py` runs the cache over a stubbed
+catalogue and an in-memory store (all cached, a fresh miss, an expired
+miss, a hit whose book row is gone, a cold batch's rows, an error not
+cached, `cache_hits`, an unavailable store) and the Supabase store over a
+fake client that answers its selects and upserts. No test touches the
+network.
