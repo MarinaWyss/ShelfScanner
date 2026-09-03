@@ -123,7 +123,7 @@ work for 008 and for the next lookup change.
 
 **For 008 (caching).** The numbers the proposal asked for: about one
 request per title, 200 ms of catalogue time per request under load, 63
-distinct records across 25 scans of six distinct shelves, and a derived
+distinct records across 25 scans of five distinct photos, and a derived
 set that re-reads the same shelf five times. The 329 strings are 88
 distinct (title, author) pairs, so a cache keyed on the normalised read
 string would have answered about 3 of every 4 lookups on this set and
