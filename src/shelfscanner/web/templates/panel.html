@@ -1,6 +1,6 @@
 {#- The progress list and the result for one scan. Rendered whole for every event. -#}
 {% if live %}<div id="scan-live" hx-ext="sse" sse-connect="/scan/{{ scan_id }}/events"
-     sse-swap="uploaded,reading,done,failed" sse-close="close" data-scan-id="{{ scan_id }}">{% endif %}
+     sse-swap="uploaded,reading,choosing,done,failed" sse-close="close" data-scan-id="{{ scan_id }}">{% endif %}
 <ol class="stages" data-stage="{{ stage }}">
   {% for row in rows %}
   <li id="stage-{{ row.name }}" class="{{ row.state }}">
@@ -10,15 +10,30 @@
   {% endfor %}
 </ol>
 {% if stage == 'done' %}
-  {% if titles %}
-  <ol class="titles" id="titles">
-    {% for title in titles %}<li>{{ title }}</li>
+  {% if picks %}
+  <h2>{% if picks|length == 5 %}Five for you{% else %}Picks for you{% endif %}</h2>
+  <ol class="picks" id="picks" data-recommendation-id="{{ recommendation_id }}">
+    {% for pick in picks %}
+    {% set index = loop.index0 %}
+    {% set state = states[index] %}
+    <li class="pick" id="pick-{{ index }}">
+      <strong class="pick-title">{{ pick.title }}</strong>
+      <p class="reason">{{ pick.reason }}</p>
+      {% include "pick_actions.html" %}
+    </li>
     {% endfor %}
   </ol>
+  <details class="all-titles">
+    <summary>All {{ titles|length }} titles read from the shelf</summary>
+    <ol class="titles" id="titles">
+      {% for title in titles %}<li>{{ title }}</li>
+      {% endfor %}
+    </ol>
+  </details>
   {% else %}
   <p class="empty" id="titles">No titles could be read from this photo. Try closer, with the spines facing the camera.</p>
   {% endif %}
 {% elif stage == 'failed' %}
-  <div class="error" role="alert" id="scan-error"><strong>Reading the shelf failed</strong>{{ error }}</div>
+  <div class="error" role="alert" id="scan-error"><strong>{{ error_title }}</strong>{{ error }}</div>
 {% endif %}
 {% if live %}</div>{% endif %}

@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}ShelfScanner{% endblock %}</title>
+<style>
+  :root { color-scheme: light dark; --ink: #1d1a17; --paper: #fbf8f3; --muted: #6b645c; --line: #ddd5ca;
+          --accent: #b3492e; --ok: #2d7a4f; --card: #f3eee6; }
+  @media (prefers-color-scheme: dark) {
+    :root { --ink: #f1ece4; --paper: #171512; --muted: #a39b90; --line: #3a3530; --accent: #e8734f; --ok: #6fc394;
+            --card: #211e1a; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink);
+         font: 17px/1.45 -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  main { max-width: 32rem; margin: 0 auto; padding: 1.25rem 1rem 3rem; }
+  nav { display: flex; gap: 1rem; align-items: baseline; margin-bottom: 1rem; font-size: .95rem; }
+  nav a { color: var(--muted); text-decoration: none; }
+  nav a[aria-current] { color: var(--ink); font-weight: 600; }
+  nav .brand { margin-right: auto; color: var(--ink); font-weight: 700; font-size: 1.1rem; }
+  h1 { font-size: 1.5rem; margin: 0 0 .25rem; }
+  h2 { font-size: 1.15rem; margin: 1.25rem 0 .5rem; }
+  .lede { margin: 0 0 1.25rem; color: var(--muted); }
+  form { display: grid; gap: .75rem; }
+  .picker { display: block; padding: 1.25rem 1rem; border: 2px dashed var(--line); border-radius: .75rem;
+            text-align: center; cursor: pointer; }
+  .picker input { display: block; width: 100%; margin-top: .5rem; font-size: 1rem; }
+  button, .button { font: inherit; font-weight: 600; padding: .9rem 1rem; border: 0; border-radius: .75rem;
+           background: var(--accent); color: #fff; cursor: pointer; text-align: center; text-decoration: none; }
+  button:disabled { opacity: .55; cursor: wait; }
+  button.secondary, .button.secondary { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+  #scan { margin-top: 1.5rem; }
+  .stages { list-style: none; padding: 0; margin: 0 0 1rem; border-top: 1px solid var(--line); }
+  .stages li { display: flex; gap: .75rem; align-items: baseline; padding: .7rem 0; border-bottom: 1px solid var(--line); }
+  .stages .mark { width: 1.5rem; flex: none; text-align: center; color: var(--muted); }
+  .stages .done .mark { color: var(--ok); }
+  .stages .active .mark { color: var(--accent); animation: pulse 1s ease-in-out infinite; }
+  .stages .failed .mark { color: var(--accent); }
+  .stages .todo { color: var(--muted); }
+  .stages .note { display: block; font-size: .85rem; color: var(--muted); }
+  @keyframes pulse { 50% { opacity: .3; } }
+  .picks { list-style: none; padding: 0; margin: 0; display: grid; gap: .75rem; }
+  .pick { padding: .9rem 1rem; border-radius: .75rem; background: var(--card); }
+  .pick-title { display: block; font-size: 1.05rem; }
+  .pick .reason { margin: .35rem 0 .75rem; color: var(--muted); font-size: .95rem; }
+  .pick-actions { display: flex; gap: .5rem; flex-wrap: wrap; align-items: center; }
+  .pick-actions button { padding: .55rem .9rem; font-size: .95rem; }
+  .pick-actions button.saved { background: var(--ok); }
+  .pick-actions .marked { color: var(--muted); font-size: .95rem; padding: .55rem 0; }
+  .all-titles { margin-top: 1.25rem; color: var(--muted); }
+  .all-titles summary { cursor: pointer; }
+  .titles { padding-left: 1.25rem; margin: .5rem 0 0; }
+  .titles li { padding: .25rem 0; }
+  .empty, .uploading, .hint { color: var(--muted); }
+  .hint { font-size: .9rem; margin: 0; }
+  .error { padding: .9rem 1rem; border-radius: .75rem; background: rgba(179, 73, 46, .12); border: 1px solid var(--accent); }
+  .error strong { display: block; }
+  fieldset { border: 0; padding: 0; margin: 0; }
+  legend { font-weight: 600; margin-bottom: .5rem; }
+  .chips { display: flex; flex-wrap: wrap; gap: .5rem; }
+  .chip { display: inline-flex; align-items: center; gap: .35rem; padding: .45rem .8rem; border: 1px solid var(--line);
+          border-radius: 2rem; cursor: pointer; font-size: .95rem; }
+  .chip:has(input:checked) { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .chip input { margin: 0; }
+  textarea, input[type=text] { font: inherit; padding: .6rem .75rem; border: 1px solid var(--line); border-radius: .75rem;
+                               background: var(--paper); color: var(--ink); width: 100%; }
+  label.field { display: grid; gap: .35rem; font-weight: 600; }
+  .saved-list { list-style: none; padding: 0; margin: 0; display: grid; gap: .75rem; }
+  .saved-pick { padding: .9rem 1rem; border-radius: .75rem; background: var(--card); }
+  .saved-pick .scanned { display: block; font-size: .85rem; color: var(--muted); margin-bottom: .5rem; }
+  .saved-pick button { padding: .55rem .9rem; font-size: .95rem; }
+</style>
+<script src="/static/htmx.min.js"></script>
+<script src="/static/sse.js"></script>
+</head>
+<body>
+<main>
+  <nav>
+    <a class="brand" href="/">ShelfScanner</a>
+    <a href="/" {% if page == 'scan' %}aria-current="page"{% endif %}>Scan</a>
+    <a href="/saved" {% if page == 'saved' %}aria-current="page"{% endif %}>Saved</a>
+    <a href="/preferences" {% if page == 'preferences' %}aria-current="page"{% endif %}>Preferences</a>
+  </nav>
+  {% block content %}{% endblock %}
+</main>
+{% block scripts %}{% endblock %}
+</body>
+</html>

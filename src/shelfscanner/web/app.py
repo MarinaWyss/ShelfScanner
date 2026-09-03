@@ -1,9 +1,9 @@
-"""The ASGI app (003). `app` is what uvicorn and Vercel import; `create_app` is the seam.
+"""The ASGI app (003, 005). `app` is what uvicorn and Vercel import; `create_app` is the seam.
 
     uv run uvicorn shelfscanner.web.app:app --host 0.0.0.0 --port 8000
 
 With SHELFSCANNER_FAKE_PIPELINE=1 the app runs entirely in memory: no Supabase
-project, no provider key, fixed titles. That is what the Playwright suite drives.
+project, no provider key, fixed titles and picks. That is what the Playwright suite drives.
 """
 
 from __future__ import annotations
@@ -11,12 +11,14 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
+from anyio import to_thread
 from fastapi import FastAPI, Request
+from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-from shelfscanner.web import scan
+from shelfscanner.web import picks, prefs, scan
 from shelfscanner.web.pipeline import Pipeline
 from shelfscanner.web.sessions import SessionMiddleware, SessionStore
 
@@ -51,10 +53,17 @@ def create_app(*, pipeline: Pipeline | None = None, sessions: SessionStore | Non
     app.state.templates = Jinja2Templates(env=env)
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
     app.include_router(scan.router)
+    app.include_router(prefs.router)
+    app.include_router(picks.router)
     app.add_middleware(SessionMiddleware, store=sessions)
 
     @app.get("/")
     async def index(request: Request):
+        # First visit: no preferences row yet, so the preferences page comes first (005). It can be
+        # skipped, which stores an empty object, and a scan with none still runs (D2).
+        stored = await to_thread.run_sync(pipeline.preferences, request.state.session_id)
+        if stored is None:
+            return RedirectResponse("/preferences", status_code=302)
         return app.state.templates.TemplateResponse(request, "index.html")
 
     return app

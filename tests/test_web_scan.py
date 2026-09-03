@@ -1,7 +1,8 @@
-"""The scan endpoints (003 task 2) against the fake pipeline and a fake model client.
+"""The scan endpoints (003 task 2, 005 task 3) against the fake pipeline and a fake model client.
 
-Covers the metadata strip, the photos row, the four events, the result, and the
-error paths naming their stage. Nothing here reaches Supabase or a provider.
+Covers the metadata strip, the photos row, the events through reading and
+choosing, the result with five picks, and the error paths naming their stage.
+Nothing here reaches Supabase or a provider.
 """
 
 import io
@@ -11,7 +12,8 @@ from PIL import Image
 
 from shelfscanner.images import has_metadata
 from shelfscanner.web.app import create_app
-from shelfscanner.web.fakes import DEFAULT_TITLES, FakeClient, FakePipeline, MemorySessions
+from shelfscanner.web.fakes import DEFAULT_PICKS, DEFAULT_TITLES, FakeClient, FakePipeline, MemorySessions
+from shelfscanner.web.pipeline import UNKNOWN_TASTE
 from shelfscanner.web.scan import MAX_BODY_BYTES
 from tests.web_images import GPS_IFD, ROTATE_90_CW, jpeg_bytes, shelf_image, small_jpeg
 
@@ -67,27 +69,64 @@ def test_scan_resizes_to_the_configured_long_edge():
         assert max(im.size) == 1568
 
 
-def test_events_stream_the_stages_then_the_result_is_readable():
+def test_events_stream_reading_then_choosing_then_five_picks():
     client, pipeline = make_client()
     scan_id = post_photo(client, small_jpeg()).json()["id"]
     assert client.get(f"/scan/{scan_id}").json() == {"id": scan_id, "status": "pending"}
 
     events = events_of(client, scan_id)
-    assert [name for name, _ in events] == ["uploaded", "reading", "done", "close"]
+    assert [name for name, _ in events] == ["uploaded", "reading", "choosing", "done", "close"]
     assert 'data-stage="reading"' in events[1][1] and 'id="stage-reading" class="active"' in events[1][1]
-    assert "Dune" in events[2][1] and 'id="stage-done" class="done"' in events[2][1]
+    assert 'id="stage-reading" class="done"' in events[2][1] and 'id="stage-choosing" class="active"' in events[2][1]
+    done = events[3][1]
+    assert 'id="stage-done" class="done"' in done and "Five for you" in done
+    assert done.count('class="pick"') == 5 and "Piranesi" in done and "Dune" in done
+    assert 'hx-post="/picks/1/0/save"' in done and 'hx-post="/picks/1/0/not-for-me"' in done
 
-    assert client.get(f"/scan/{scan_id}").json() == {"id": scan_id, "status": "done", "titles": DEFAULT_TITLES}
-    assert pipeline.client.calls == [("vision", "gemini-flash", len(pipeline.blobs[f"sessions/1/{scan_id}.jpg"]))]
+    body = client.get(f"/scan/{scan_id}").json()
+    assert body["status"] == "done" and body["titles"] == DEFAULT_TITLES and body["recommendation_id"] == 1
+    assert [p["title"] for p in body["picks"]] == [p["title"] for p in DEFAULT_PICKS]
+    assert all(p["saved"] is False and p["not_for_me"] is False and p["reason"] for p in body["picks"])
+    assert [c[:2] for c in pipeline.client.calls] == [("vision", "gemini-flash"), ("text", "gpt-mini")]
 
 
-def test_reconnecting_replays_the_result_without_reading_again():
+def test_the_model_sees_the_shelf_and_the_sessions_preferences():
+    client, pipeline = make_client()
+    client.post("/preferences", data={"genres": ["Horror"], "free_text": "Short and eerie."})
+    scan_id = post_photo(client, small_jpeg()).json()["id"]
+    events_of(client, scan_id)
+    (text,) = pipeline.client.inputs
+    assert "- Dune" in text and "Genres: Horror" in text and "About the reader: Short and eerie." in text
+    assert pipeline.recommendations[1]["preferences"]["genres"] == ["Horror"]
+
+
+def test_a_scan_with_no_preferences_still_runs_and_says_taste_is_unknown():
+    client, pipeline = make_client()
+    scan_id = post_photo(client, small_jpeg()).json()["id"]
+    events = events_of(client, scan_id)
+    assert [name for name, _ in events] == ["uploaded", "reading", "choosing", "done", "close"]
+    (text,) = pipeline.client.inputs
+    assert UNKNOWN_TASTE in text
+    assert pipeline.recommendations[1]["preferences"]["free_text"] == UNKNOWN_TASTE, "logged as sent"
+    assert pipeline.prefs == {}, "nothing was stored for the session"
+
+
+def test_reconnecting_replays_the_result_without_calling_any_model_again():
     client, pipeline = make_client()
     scan_id = post_photo(client, small_jpeg()).json()["id"]
     events_of(client, scan_id)
     again = events_of(client, scan_id)
     assert [name for name, _ in again] == ["done", "close"]
-    assert len(pipeline.client.calls) == 1
+    assert len(pipeline.client.calls) == 2
+
+
+def test_reconnecting_after_reading_only_runs_choosing():
+    client, pipeline = make_client()
+    scan_id = post_photo(client, small_jpeg()).json()["id"]
+    pipeline.read(pipeline.photos[scan_id], lambda note: None)  # as if the stream broke after reading
+    events = events_of(client, scan_id)
+    assert [name for name, _ in events] == ["choosing", "done", "close"]
+    assert [c[0] for c in pipeline.client.calls] == ["vision", "text"]
 
 
 def test_model_failure_names_the_reading_stage():
@@ -95,10 +134,34 @@ def test_model_failure_names_the_reading_stage():
     scan_id = post_photo(client, small_jpeg()).json()["id"]
     events = events_of(client, scan_id)
     assert [name for name, _ in events] == ["uploaded", "reading", "failed", "close"]
-    assert "Reading the shelf failed: provider 503: overloaded" in events[2][1]
-    assert 'id="stage-reading" class="failed"' in events[2][1]
+    assert "Reading the shelf failed" in events[2][1] and "provider 503: overloaded" in events[2][1]
+    assert 'id="stage-reading" class="failed"' in events[2][1] and 'id="stage-choosing" class="todo"' in events[2][1]
     body = client.get(f"/scan/{scan_id}").json()
     assert body["status"] == "failed" and body["stage"] == "reading" and "503" in body["error"]
+
+
+def test_model_failure_names_the_choosing_stage():
+    client, pipeline = make_client(FakePipeline(FakeClient(text_error="http 429: rate limited")))
+    scan_id = post_photo(client, small_jpeg()).json()["id"]
+    events = events_of(client, scan_id)
+    assert [name for name, _ in events] == ["uploaded", "reading", "choosing", "failed", "close"]
+    assert "Choosing failed" in events[3][1] and "429" in events[3][1]
+    assert 'id="stage-reading" class="done"' in events[3][1] and 'id="stage-choosing" class="failed"' in events[3][1]
+    body = client.get(f"/scan/{scan_id}").json()
+    assert body["status"] == "failed" and body["stage"] == "choosing" and "429" in body["error"]
+    assert pipeline.recommendations[1]["error"] == "http 429: rate limited", "the failed run is still logged"
+    assert [name for name, _ in events_of(client, scan_id)] == ["failed", "close"], "a failed choosing is not retried"
+
+
+def test_no_titles_read_means_done_without_choosing():
+    client, pipeline = make_client(FakePipeline(FakeClient(parsed={"books": []})))
+    scan_id = post_photo(client, small_jpeg()).json()["id"]
+    events = events_of(client, scan_id)
+    assert [name for name, _ in events] == ["uploaded", "reading", "done", "close"]
+    assert "No titles could be read" in events[2][1]
+    assert [c[0] for c in pipeline.client.calls] == ["vision"]
+    assert client.get(f"/scan/{scan_id}").json() == {"id": scan_id, "status": "done", "titles": [],
+                                                     "recommendation_id": None, "picks": []}
 
 
 def test_store_failure_names_the_upload_stage():
@@ -142,14 +205,18 @@ def test_htmx_requests_get_fragments():
     assert res.status_code == 201
     scan_id = res.text.split('data-scan-id="')[1].split('"')[0]
     assert f'sse-connect="/scan/{scan_id}/events"' in res.text and 'sse-close="close"' in res.text
+    assert "choosing" in res.text.split("sse-swap=")[1].split('"')[1]
     assert 'id="stage-uploaded" class="done"' in res.text
     events_of(client, int(scan_id))
     done = client.get(f"/scan/{scan_id}", headers={"HX-Request": "true"})
-    assert "sse-connect" not in done.text and "Piranesi" in done.text
+    assert "sse-connect" not in done.text and "Piranesi" in done.text and done.text.count('class="pick"') == 5
 
 
-def test_index_page_has_the_picker_and_the_scripts():
+def test_index_page_has_the_picker_the_scripts_and_the_links():
     client, _ = make_client()
+    assert client.get("/", follow_redirects=False).status_code == 302, "first visit goes to preferences"
+    client.post("/preferences", data={"action": "skip"})
     res = client.get("/")
     assert res.status_code == 200
     assert 'name="photo"' in res.text and 'hx-post="/scan"' in res.text and "/static/app.js" in res.text
+    assert 'href="/saved"' in res.text and 'href="/preferences"' in res.text
