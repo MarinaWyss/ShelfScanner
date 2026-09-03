@@ -104,7 +104,8 @@ def shelf_text(parsed_titles: object) -> str:
 
 def recommend_from_extraction(extraction: dict, model: Model | None, prefs: dict, prompt_name: str, *,
                               client: ModelClient | None = None, on_progress: Progress | None = None,
-                              verified: Verified | None = None) -> RecommendationRow:
+                              verified: Verified | None = None, guard: bool = True) -> RecommendationRow:
+    """`guard=False` skips the CLI spend cap, as in `extract.extract_photo`."""
     cfg = load_config()
     prompt_version, prompt = router.load_prompt(prompt_name)
     extracted = titles_from(extraction["parsed_titles"])
@@ -122,7 +123,7 @@ def recommend_from_extraction(extraction: dict, model: Model | None, prefs: dict
     labels = get_photo(extraction["photo_id"])["titles"]
 
     text = f"Books on the shelf:\n{shelf}\n\nReading preferences:\n{prefs_text(prefs, prompt_name)}"
-    if client is None:  # a fake client spends nothing
+    if client is None and guard:  # a fake client spends nothing; the web app has its own cap
         spend.check_spend()
     sr = router.with_failover(
         "choosing", model,

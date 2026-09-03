@@ -144,9 +144,19 @@ def fetch_and_render() -> str:
     ).execute().data
     labelled_extractions = {r["id"] for r in ex}
     rec = [r for r in rec if r["extraction_id"] in labelled_extractions]
-    from shelfscanner.web.metrics import save_rate  # change 005: the primary metric, over session scans
+    from shelfscanner.config import load_config
+    from shelfscanner.web.metrics import price_check, save_rate  # 005: the primary metric; 002 D5: price staleness
 
-    return render(extraction_stats(ex), recommendation_stats(rec)) + "\n\nFEEDBACK  (scans from the app)\n" + save_rate().line()
+    return (render(extraction_stats(ex), recommendation_stats(rec)) + "\n\nFEEDBACK  (scans from the app)\n"
+            + save_rate().line() + "\n\n" + price_line(price_check(load_config().prices_checked)))
+
+
+def price_line(check) -> str:
+    """002 D5: the config prices carry a checked-on date; say so when it is older than 90 days."""
+    if check.checked is None:
+        return "PRICES  no prices_checked date in config/models.toml"
+    state = "STALE, check them" if check.stale else "ok"
+    return f"PRICES  checked {check.checked.isoformat()}, {check.age_days} days ago: {state}"
 
 
 def main() -> None:

@@ -138,7 +138,7 @@ def test_blocked_prompt_with_no_candidates_names_the_reason():
 def test_other_finish_reasons_are_lower_cased():
     client, _ = _client(_response("", types.FinishReason.SAFETY))
     r = client.vision(GEMINI, "p", b"jpeg")
-    assert r.finish_reason == "safety" and not r.truncated and r.error.startswith("json parse:")
+    assert r.finish_reason == "safety" and not r.truncated and r.error == "stop_reason 'safety'"
 
 
 @pytest.mark.parametrize("effort,level", [
@@ -151,15 +151,21 @@ def test_reasoning_effort_maps_to_thinking_level(effort, level):
 
 def test_reasoning_effort_unset_means_no_thinking_config_and_unknown_is_a_config_error():
     assert google.thinking_config(None) is None
-    with pytest.raises(SystemExit, match="reasoning_effort 'extreme'"):
+    with pytest.raises(ValueError, match="reasoning_effort 'extreme'"):
         google.thinking_config("extreme")
+    # Through the client it is a failed result, never a raise (002 D2), and one failover acts on.
+    from dataclasses import replace
+
+    from shelfscanner import router
+    r = GoogleClient(client=object()).vision(replace(GEMINI, reasoning_effort="extreme"), "p", b"jpeg")
+    assert not r.ok and r.error.startswith("config: reasoning_effort 'extreme'") and router.should_fail_over(r)
 
 
 def test_missing_api_key_is_a_clear_failed_result(monkeypatch):
     monkeypatch.setattr(google, "load_dotenv", lambda *a, **k: None)
     monkeypatch.delenv("GEMINI_API_KEY", raising=False)
     r = GoogleClient().vision(GEMINI, "p", b"jpeg")
-    assert not r.ok and r.error == "GEMINI_API_KEY is not set: add it to .env (see .env.example)"
+    assert not r.ok and r.error == "config: GEMINI_API_KEY is not set: add it to .env (see .env.example)"
     assert r.adapter == "google"
 
 

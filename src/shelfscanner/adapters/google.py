@@ -96,7 +96,7 @@ def thinking_config(reasoning_effort: str | None) -> types.ThinkingConfig | None
     try:
         level = THINKING_LEVELS[reasoning_effort.lower()]
     except KeyError:
-        raise SystemExit(
+        raise ValueError(
             f"reasoning_effort {reasoning_effort!r} is not one for the google adapter. "
             f"Known: {', '.join(THINKING_LEVELS)}"
         ) from None
@@ -159,7 +159,10 @@ class GoogleClient:
     def _call(self, model: Model, contents: Any, *, max_tokens: int,
               on_progress: Callable[[str], None] | None, schema: dict[str, Any] | None = None) -> CallResult:
         model_id = model.id_for_adapter
-        config = self._config(model, max_tokens, schema)
+        try:
+            config = self._config(model, max_tokens, schema)
+        except ValueError as e:  # a config error is a failed result, never a raise (002 D2)
+            return failed(model_id, NAME, time.perf_counter(), f"config: {e}")
         if on_progress:
             on_progress(f"{NAME}: {model_id}")
 
@@ -167,7 +170,7 @@ class GoogleClient:
         try:
             response = self._sdk().models.generate_content(model=model_id, contents=contents, config=config)
         except _MissingKey:
-            return failed(model_id, NAME, started, f"{API_KEY_ENV} is not set: add it to .env (see .env.example)")
+            return failed(model_id, NAME, started, f"config: {API_KEY_ENV} is not set: add it to .env (see .env.example)")
         except errors.APIError as e:
             return failed(model_id, NAME, started, f"http {e.code} {e.status}: {str(e.message)[:500]}")
         except httpx.HTTPError as e:
@@ -198,7 +201,11 @@ class GoogleClient:
 
         finish_reason = normalise_finish_reason(candidate.finish_reason)
         raw_text = response.text
-        parsed, error = parse_or_error(raw_text, finish_reason, max_tokens, reasoning_tokens)
+        if finish_reason not in ("stop", "length", None) and not raw_text:
+            # SAFETY, RECITATION, PROHIBITED_CONTENT and the like: the model declined, nothing to parse.
+            parsed, error = None, f"stop_reason {finish_reason!r}"
+        else:
+            parsed, error = parse_or_error(raw_text, finish_reason, max_tokens, reasoning_tokens)
         return CallResult(
             model=model_id, provider=PROVIDER, raw_text=raw_text, parsed=parsed,
             input_tokens=input_tokens, output_tokens=output_tokens, cost_usd=cost,

@@ -23,12 +23,16 @@ top-level `research/` package and is run as a module from the repo root.
 
 ## Matrix drivers
 
-`uv run python -m research.matrix vision <aliases> [--max-dim N]` runs every
-named model over every synced photo, in parallel by model.
-`uv run python -m research.matrix llm <aliases> [--prefs file]` runs every
-named model over the best extraction of each photo (highest recall, fewest
-invented, earliest). Both only decide what to run; rows are logged by the
-pipeline as usual.
+`uv run python -m research.matrix vision <aliases> [--max-dim N] [--set core|sourced|derived|all]`
+runs every named model over every labelled photo of one set (default
+`core`), in parallel by model.
+`uv run python -m research.matrix llm <aliases> [--prefs file] [--prompt name] [--set ...] [--verify]`
+runs every named model over the best extraction of each labelled photo in
+the set (highest recall, fewest invented, earliest); `--verify` runs the
+catalogue check first (`book-lookup.md`). Both only decide what to run;
+rows are logged by the pipeline as usual. The report ends with a
+`PRICES` line: the config's `prices_checked` date and whether it is older
+than 90 days (002 D5).
 
 ## Text report
 

@@ -50,8 +50,12 @@ class OpenRouterClient:
         }
         if model.reasoning_effort:
             body["reasoning"] = {"effort": model.reasoning_effort}
+        try:
+            key = openrouter_api_key()
+        except SystemExit as e:  # settings raises for the CLI; an adapter returns the failure (002 D2)
+            return failed(model.slug, NAME, time.perf_counter(), f"config: {e}")
         headers = {
-            "Authorization": f"Bearer {openrouter_api_key()}",
+            "Authorization": f"Bearer {key}",
             "Content-Type": "application/json",
             "HTTP-Referer": "https://github.com/MarinaWyss/ShelfScanner",
             "X-Title": "ShelfScanner",

@@ -12,8 +12,13 @@ schema=...)`; the router hands the call to the adapter named by
 layer). Both return a `CallResult`: raw text, parsed JSON, input, output
 and reasoning tokens, cost, latency, finish reason (`stop`, `length`, or
 the provider's own value), provider, request id, adapter name, error. An
-adapter never raises for a provider or model failure; the result carries
-the error.
+adapter never raises for a provider, model or configuration failure; the
+result carries the error. Every adapter uses the same error heads: `http
+<status>`, `transport`, `sdk`, `config` (a missing key, an unknown
+`reasoning_effort`), `truncated` (the output cap, even when the reply is
+all thinking), `json parse`, `stop_reason '<reason>'` (the model declined:
+a safety or content filter, a refusal), `no choices` / `no candidates` /
+`prompt blocked` / `model: <code>` (the provider returned no answer).
 
 `schema` is the reply's JSON Schema (`BOOKS_SCHEMA`, `RECOMMENDATIONS_SCHEMA`
 in `adapters/base.py`). Adapters with native structured output attach it;
@@ -53,8 +58,9 @@ aliases. `--model` on `extract` and `recommend`, and `--vision-model` and
 ## Failover
 
 When the model in use is the stage's primary and its call fails for a
-provider reason (HTTP error, transport error, SDK error, missing key,
-truncation), the stage runs once more on the fallback. The row records
+provider reason (`http`, `transport`, `sdk`, `config`, no answer from the
+provider, truncation; `router.FAILOVER_ERROR_PREFIXES`), the stage runs
+once more on the fallback. The row records
 the model that answered in `model` and the first attempt in
 `failover_from` and `failover_error`. A parse failure or a wrong pick
 count is a finding about the model and is not retried. An explicitly

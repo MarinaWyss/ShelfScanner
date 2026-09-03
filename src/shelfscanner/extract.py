@@ -53,11 +53,14 @@ def titles_from(parsed: object) -> list[str]:
 
 
 def extract_photo(photo: dict, model: Model | None, max_edge: int, prompt_name: str, *,
-                  client: ModelClient | None = None, on_progress: Progress | None = None) -> ExtractionRow:
+                  client: ModelClient | None = None, on_progress: Progress | None = None,
+                  guard: bool = True) -> ExtractionRow:
+    """`guard=False` skips the CLI spend cap (`spend.check_spend`): the web app has its own daily cap
+    (008) and must never see the guard's SystemExit."""
     cfg = load_config()
     prompt_version, prompt = router.load_prompt(prompt_name)
     img = resize(storage.download_photo(photo["storage_path"]), max_edge)
-    if client is None:  # a fake client spends nothing
+    if client is None and guard:  # a fake client spends nothing; the web app has its own cap
         spend.check_spend()
     sr = router.with_failover(
         "reading", model,
@@ -106,9 +109,11 @@ def extract_photo(photo: dict, model: Model | None, max_edge: int, prompt_name: 
 
 def resolve_photos(spec: str) -> list[dict]:
     if spec == "all":
-        photos = storage.list_photos()
+        # The labelled test set with an object in the bucket: never app uploads (private, unlabelled,
+        # scored as all invented) and never a row retention has emptied.
+        photos = [p for p in storage.list_photos() if p.get("titles") and p.get("storage_path")]
         if not photos:
-            raise SystemExit("No photos synced. Run `shelfscanner photos sync` first.")
+            raise SystemExit("No labelled photos synced. Run `shelfscanner photos sync` first.")
         return photos
     return [storage.get_photo(int(spec))]
 

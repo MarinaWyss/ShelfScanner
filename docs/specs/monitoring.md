@@ -15,6 +15,9 @@ The page and the CLI report use these words the same way.
 - A **scan with picks** is a recommendation row without an error: one that
   put picks on a screen. It is the denominator of the save rate (005).
 - A scan is **complete** when it has a recommendation row without an error.
+  A choosing that failed before a model ran (the catalogue check dropped
+  every title) also has a row, with `error` prefixed `checking:`; it counts
+  as a model failure on the page and shows up under that kind in the review.
 - **App scans** are photos with a session (003). **Test set** photos are
   the ones with ground-truth titles, the same filter the report applies.
   The page shows the two populations side by side; nothing is mixed.

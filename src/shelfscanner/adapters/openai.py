@@ -184,6 +184,10 @@ class OpenAIClient:
         if raw_text is None and refusal:
             return CallResult(raw_text=None, parsed=None, finish_reason=finish_reason,
                               error=f"refusal: {refusal[:500]}", **base)
+        if raw_text is None and finish_reason not in ("stop", "length", None):
+            # `content_filter` and any other incomplete reason without text: the model declined.
+            return CallResult(raw_text=None, parsed=None, finish_reason=finish_reason,
+                              error=f"stop_reason {finish_reason!r}", **base)
 
         parsed, error = parse_or_error(raw_text, finish_reason, max_tokens, reasoning_tokens)
         return CallResult(raw_text=raw_text, parsed=parsed, finish_reason=finish_reason, error=error, **base)

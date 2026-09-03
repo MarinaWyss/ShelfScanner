@@ -38,8 +38,10 @@ _EPS = 1e-9
 
 
 def photos_in_set(photos: list[dict], set_name: str) -> dict[int, dict]:
-    """Labelled photos of one set, by id. A photo without a `set` is core (006 contract)."""
-    return {p["id"]: p for p in photos if p.get("titles") and (p.get("set") or "core") == set_name}
+    """Labelled photos of one set, by id; `all` is every labelled photo. A photo without a `set` is core
+    (006 contract)."""
+    return {p["id"]: p for p in photos
+            if p.get("titles") and (set_name == "all" or (p.get("set") or "core") == set_name)}
 
 
 def load_picks(path: Path = PICKS_PATH) -> dict[int, list]:
@@ -59,17 +61,29 @@ def overlap(rec_titles: list[str], picks: list, threshold: float) -> int:
     return min(hit, len(rec_titles))
 
 
+def pick_adapter(stats: list, adapter: str):
+    """The stats row for the adapter config names for the stage; failing that, the adapter with the most
+    rows. Rows for one model can come through more than one adapter (001 through OpenRouter, 002 direct),
+    and the report keeps them apart; the check must not silently take the alphabetically first."""
+    for s in stats:
+        if s.adapter == adapter:
+            return s
+    return max(stats, key=lambda s: getattr(s, "photos", None) or getattr(s, "runs", 0))
+
+
 def measure(rows: dict[str, list[dict]], cfg: Config, set_name: str, picks: dict[int, list]) -> dict:
     """The numbers for the primaries on one set. `rows` holds `photos`, `extractions` and `recommendations`
     as fetched (or hand-built); nothing here touches the database."""
-    reading_model = cfg.model(cfg.stage("reading").primary).slug
-    choosing_model = cfg.model(cfg.stage("choosing").primary).slug
+    reading_cfg = cfg.model(cfg.stage("reading").primary)
+    choosing_cfg = cfg.model(cfg.stage("choosing").primary)
+    reading_model, choosing_model = reading_cfg.slug, choosing_cfg.slug
     edge = cfg.default_max_edge
     photos = photos_in_set(rows["photos"], set_name)
 
     ex = [r for r in rows["extractions"] if r["photo_id"] in photos]
     ex_stats = extraction_stats([r for r in ex if r["model"] == reading_model and r["image_long_edge"] == edge])
-    reading = asdict(ex_stats[0]) if ex_stats else {"model": reading_model, "long_edge": edge, "photos": 0, "errors": 0}
+    reading = asdict(pick_adapter(ex_stats, reading_cfg.adapter)) if ex_stats else {
+        "model": reading_model, "long_edge": edge, "photos": 0, "errors": 0}
 
     # A recommendation belongs to the photo of its extraction, whichever model made that extraction;
     # the latest run per photo counts, as the latest extraction per photo does above.
@@ -78,7 +92,8 @@ def measure(rows: dict[str, list[dict]], cfg: Config, set_name: str, picks: dict
            if r["model"] == choosing_model and r["extraction_id"] in photo_of]
     ok = latest_per_key([r for r in rec if not r.get("error")], "photo_id")
     rec_stats = recommendation_stats(ok + [r for r in rec if r.get("error")])
-    choosing = asdict(rec_stats[0]) if rec_stats else {"model": choosing_model, "runs": 0, "errors": 0}
+    choosing = asdict(pick_adapter(rec_stats, choosing_cfg.adapter)) if rec_stats else {
+        "model": choosing_model, "runs": 0, "errors": 0}
     overlaps = [overlap([x.title for x in recs_from(r["parsed_recommendations"])], picks[r["photo_id"]], cfg.match_threshold)
                 for r in ok if picks.get(r["photo_id"])]
     choosing["median_overlap"] = median(overlaps) if overlaps else None
@@ -176,11 +191,12 @@ def fetch() -> dict[str, list[dict]]:
     return {
         "photos": c.table("photos").select("*").order("id").execute().data,
         "extractions": c.table("extractions").select(
-            "id, photo_id, model, image_long_edge, error, found_count, missed_count, invented_count, latency_ms, cost_usd"
+            "id, photo_id, model, image_long_edge, error, found_count, missed_count, invented_count, latency_ms, cost_usd, "
+            "adapter"
         ).order("id").execute().data,
         "recommendations": c.table("recommendations").select(
             "id, extraction_id, model, error, parsed_recommendations, valid_vs_extraction, valid_vs_ground_truth, "
-            "specificity_scores, latency_ms, cost_usd"
+            "specificity_scores, latency_ms, cost_usd, adapter"
         ).order("id").execute().data,
     }
 

@@ -57,12 +57,17 @@ def spend_since(config_path: Path | None = None) -> datetime:
     raise SystemExit(f"settings.{SINCE_KEY} in {config_path} must be a date, got {raw!r}")
 
 
+def sum_cost(rows: list[dict]) -> float:
+    return sum(float(r["cost_usd"]) for r in rows if r.get("cost_usd") is not None)
+
+
 def spent_since(client, since: datetime) -> float:
-    """`cost_usd` summed over both runs tables for rows created at or after `since`."""
+    """`cost_usd` summed over both runs tables for rows created at or after `since`, whoever made them:
+    the research guard. The app's daily cap sums only its own rows (`web.pipeline.SupabasePipeline.spent_since`)."""
     total = 0.0
     for table in TABLES:
         rows = client.table(table).select("cost_usd").gte("created_at", since.isoformat()).execute().data
-        total += sum(float(r["cost_usd"]) for r in rows if r.get("cost_usd") is not None)
+        total += sum_cost(rows)
     return total
 
 

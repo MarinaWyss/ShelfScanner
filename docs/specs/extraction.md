@@ -8,7 +8,9 @@ labels and logged.
 `uv run shelfscanner extract --photo <id|all> [--model <alias|slug>] [--max-dim N] [--prompt name]`
 
 `--model` unset means the reading stage's primary from config, with
-failover to its fallback (see `model-router.md`).
+failover to its fallback (see `model-router.md`). `all` is every labelled
+photo that still has an object in the bucket: never an app upload, never
+a row retention has emptied.
 
 For each photo:
 

@@ -52,6 +52,8 @@ def similarity(extracted: str, label: str) -> float:
     reading error. The reverse (a fragment of the label) is not accepted.
     """
     ef, lf = forms(extracted), forms(label)
+    if not ef or not lf:  # a title with no letters or digits ("...", "—") matches nothing
+        return 0.0
     best = max(SequenceMatcher(None, x, y).ratio() for x in ef for y in lf)
     if best < 1.0:
         for y in lf:

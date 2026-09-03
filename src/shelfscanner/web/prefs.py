@@ -20,6 +20,8 @@ from shelfscanner.web.pipeline import Pipeline
 
 GENRES = ["Literary fiction", "Science fiction", "Fantasy", "Mystery & crime", "Thriller", "Romance",
           "Historical fiction", "Horror", "Biography & memoir", "History", "Science & nature", "Essays & ideas"]
+MAX_EXPORT_BYTES = 4 * 1024 * 1024  # the scan route's limit; a Goodreads export is usually under 1 MB
+EXPORT_TOO_BIG = "That file is over 4 MB. A Goodreads export is usually well under 1 MB; check you picked the CSV."
 NOT_AN_EXPORT = ("That file is not a Goodreads export. In Goodreads, open My Books, choose Import and export, "
                  "then Export library, and upload the CSV it gives you.")
 
@@ -81,7 +83,9 @@ async def save_preferences(request: Request, genres: Annotated[list[str], Form()
     else:
         export = None
         if goodreads is not None and goodreads.filename:
-            data = await goodreads.read()
+            data = await goodreads.read(MAX_EXPORT_BYTES + 1)
+            if len(data) > MAX_EXPORT_BYTES:
+                return _page(request, existing, error=EXPORT_TOO_BIG, status=413)
             if data:
                 export = data.decode("utf-8-sig", errors="replace")
         try:

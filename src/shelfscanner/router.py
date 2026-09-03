@@ -97,8 +97,10 @@ def prompt_path(name: str) -> Path:
 
 # Errors that mean the provider, not the model's answer, failed. A parse failure or a wrong
 # count is a finding about the model and is not retried elsewhere.
-FAILOVER_ERROR_PREFIXES = ("http ", "transport", "sdk", "config", "no choices", "GEMINI_API_KEY", "OPENAI_API_KEY",
-                           "ANTHROPIC_API_KEY")
+# Provider-side failures: the request did not get a usable answer from the provider. A reply the model
+# gave (a parse failure, a refusal, a wrong count) is not one; failover would just pay twice for it.
+FAILOVER_ERROR_PREFIXES = ("http ", "transport", "sdk", "config", "no choices", "no candidates", "prompt blocked",
+                           "model:", "GEMINI_API_KEY", "OPENAI_API_KEY", "ANTHROPIC_API_KEY")
 
 
 def should_fail_over(res: CallResult) -> bool:

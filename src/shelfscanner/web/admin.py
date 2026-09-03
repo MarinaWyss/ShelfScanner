@@ -14,9 +14,11 @@ import secrets
 from datetime import datetime
 
 from anyio import to_thread
+from dotenv import load_dotenv
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse
 
+from shelfscanner.settings import REPO_ROOT
 from shelfscanner.web import metrics
 from shelfscanner.web.metrics import Dashboard, StageStats, Summary
 
@@ -31,12 +33,18 @@ STAGE_LABELS = {"reading": "Reading", "checking": "Checking", "choosing": "Choos
 DASH = "–"
 
 
+def secret() -> str:
+    load_dotenv(REPO_ROOT / ".env")  # read here, not by way of another module's side effect
+    return os.environ.get(SECRET_ENV, "")
+
+
 def authorised(request: Request) -> bool:
-    secret = os.environ.get(SECRET_ENV, "")
-    if not secret:
+    secret_value = secret()
+    if not secret_value:
         return False
     given = (request.query_params.get("key"), request.cookies.get(COOKIE))
-    return any(g is not None and secrets.compare_digest(g, secret) for g in given)
+    # Bytes, not str: `compare_digest` raises on non-ASCII text, and a 500 would reveal the route.
+    return any(g is not None and secrets.compare_digest(g.encode("utf-8"), secret_value.encode("utf-8")) for g in given)
 
 
 @router.get("/admin")
@@ -51,7 +59,7 @@ async def admin(request: Request, window: str = metrics.DEFAULT_WINDOW):
     html = request.app.state.templates.get_template("admin.html").render(**view(board))
     response = HTMLResponse(html)
     # No `Secure` until the app is served over https (010), like the session cookie.
-    response.set_cookie(COOKIE, os.environ[SECRET_ENV], max_age=COOKIE_MAX_AGE, path="/admin", httponly=True,
+    response.set_cookie(COOKIE, secret(), max_age=COOKIE_MAX_AGE, path="/admin", httponly=True,
                         samesite="lax")
     return response
 

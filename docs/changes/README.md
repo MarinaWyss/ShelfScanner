@@ -85,6 +85,13 @@ file; 353 tests, CI green, advisors clean. Still open in 002, 003, 004,
 005, 006: the runs on the primaries (keys), the phone scans, the nightly
 job's two green nights.
 
+A four-reviewer scan of everything built (2026-09-03, specs vs code,
+decisions vs code, core library, web and infrastructure) found five crash
+bugs, two cap and gate bugs and a handful of robustness gaps, all fixed the
+same day with a test each in `tests/test_review_fixes.py`; the document
+drift it listed (scoping section 3 and 6, ticks, deadlines) is a separate
+pass.
+
 **Wave 4**, ends 2026-09-30. 010, once Marina has connected the repo to
 Vercel.
 

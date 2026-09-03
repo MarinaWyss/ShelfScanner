@@ -150,7 +150,7 @@ def inspect_upload(content_type: str | None, data: bytes) -> str | None:
     try:
         with Image.open(io.BytesIO(data)) as im:
             fmt, width, height = im.format, im.width, im.height
-    except (UnidentifiedImageError, OSError, ValueError):
+    except (UnidentifiedImageError, Image.DecompressionBombError, OSError, ValueError):
         return NOT_AN_IMAGE
     if fmt not in ALLOWED_FORMATS:
         return WRONG_TYPE.format(type=f"a {fmt}" if fmt else "of an unknown type")
@@ -186,7 +186,7 @@ async def create_scan(request: Request, photo: Annotated[UploadFile, File()],
 
     try:
         img = await to_thread.run_sync(resize, data, load_config().default_max_edge)
-    except (UnidentifiedImageError, OSError, ValueError):
+    except (UnidentifiedImageError, Image.DecompressionBombError, OSError, ValueError):
         return _refuse(request, 400, NOT_AN_IMAGE, "uploading")
 
     try:
@@ -230,7 +230,8 @@ async def _run_stage(scan_id: int, fn: Callable[..., Any], *args) -> AsyncIterat
         yield "note", notes.get_nowait()
     try:
         yield "result", future.result()
-    except Exception as e:  # the pipeline reports model failures in the row; this is anything else
+    except (Exception, SystemExit) as e:  # model failures are in the row; this is anything else, and a
+        # SystemExit (the CLI-shaped failure) must never reach the event loop, which would exit the server
         log.exception("scan %s: %s raised", scan_id, fn.__name__)
         yield "error", f"{type(e).__name__}: {e}"
 
@@ -244,7 +245,7 @@ def read_marked(pipeline: Pipeline, photo: dict, clock: Callable[[], datetime], 
     yet claimed). An exception puts the scan back to `pending` so a reconnect can try again."""
     try:
         reading = pipeline.read(photo, on_progress)
-    except Exception:
+    except (Exception, SystemExit):
         pipeline.set_status(photo["id"], "pending", clock())
         raise
     if not reading.ok:
@@ -260,7 +261,7 @@ def choose_marked(pipeline: Pipeline, photo: dict, reading: Reading, prefs: dict
     reading is done, the choosing is not) so a reconnect can try the choosing again."""
     try:
         choosing = pipeline.choose(photo, reading, prefs, on_progress)
-    except Exception:
+    except (Exception, SystemExit):
         pipeline.set_status(photo["id"], "reading", clock())
         raise
     pipeline.set_status(photo["id"], "done" if choosing.ok else "failed", clock())

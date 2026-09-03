@@ -13,10 +13,10 @@ what the chooser sees. Measured numbers are in
 `shelfscanner run` extracts, verifies, then recommends from the verified
 list; `--no-verify` skips the middle step. `research.matrix llm --verify`
 does the same for a comparison run and is off by default, so comparison
-rows stay like for like with earlier ones. The web scan (`web.md`) does
-not run it yet; when it does, it belongs in the same place, after a
-successful extraction and before the recommendation, and
-`verify_extraction`'s `on_progress` reports `checking titles`.
+rows stay like for like with earlier ones. The web scan (`web.md`) runs
+it inside its choosing stage, after a successful extraction and before
+the recommendation, and `verify_extraction`'s `on_progress` reports
+`checking titles`, which the page shows as the `checking` stage.
 
 `verify.verify_extraction(extraction, *, client=None, db=None,
 on_progress=None, concurrency=6) -> Verified` takes an `extractions` row.
@@ -44,7 +44,9 @@ looked up with `lookup_batch`. Then, in the extraction's order:
   reason `same record as an earlier title`; the list the chooser sees has
   each record once.
 - A title whose lookup **failed** (transport, timeout, non-200, malformed
-  reply) is kept as read, `verified = False`, record `None`. The scan goes
+  reply, a JSON body that is not an object) is kept as read,
+  `verified = False`, record `None`. A title with no letters or digits
+  ("...") scores 0 against everything and is a miss, never an exception. The scan goes
   on (007 D2). When every lookup failed, `Verified.catalogue_down` is true
   and a warning is logged; the whole list goes through unverified.
 

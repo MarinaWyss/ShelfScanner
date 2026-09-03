@@ -241,6 +241,15 @@ def _states(saved_rows: list[dict], feedback_rows: list[dict]) -> dict[int, Pick
     return {i: PickState(saved=i in live, not_for_me=i in marked) for i in live | marked}
 
 
+def split_step(error: str) -> tuple[str, str]:
+    """A stored choosing error is `<step>: <message>` when the failure was the catalogue check (007) or
+    an empty list, and a bare message when a model failed. Returns (step, message)."""
+    for step in ("checking", "choosing"):
+        if error.startswith(f"{step}: "):
+            return step, error[len(step) + 2:]
+    return "choosing", error
+
+
 def claimable(status: str | None, status_at: datetime | None, stage: str, now: datetime) -> bool:
     """The claim rule of `Pipeline.claim`, over the row's values. Shared by the fake and the tests;
     the real pipeline sends the same rule to the server as a filter."""
@@ -291,7 +300,7 @@ class SupabasePipeline:
     def read(self, photo: dict, on_progress: Progress) -> Reading:
         cfg = load_config()
         row = extract.extract_photo(photo, router.primary("reading"), cfg.default_max_edge, extract.DEFAULT_PROMPT,
-                                    client=self.client, on_progress=on_progress)
+                                    client=self.client, on_progress=on_progress, guard=False)  # the app has its own cap
         ex = extract.get_extraction(row.id)
         attempts = {"model": ex.get("model"), "failover_from": ex.get("failover_from"),
                     "failover_error": ex.get("failover_error")}
@@ -308,13 +317,14 @@ class SupabasePipeline:
 
         verified = verify.verify_extraction(extraction, on_progress=on_progress)
         if not verified.kept:
-            return Choosing(error=f"none of the {len(verified.dropped)} titles read matched a catalogue record",
-                            step="checking")
+            message = f"none of the {len(verified.dropped)} titles read matched a catalogue record"
+            rid = self._record_failed_step(extraction, prefs, "checking", message)
+            return Choosing(error=message, step="checking", recommendation_id=rid)
         try:
             row = recommend.recommend_from_extraction(extraction, None, prefs, CHOOSING_PROMPT, client=self.client,
-                                                      on_progress=on_progress, verified=verified)
+                                                      on_progress=on_progress, verified=verified, guard=False)
         except SystemExit as e:  # the CLI-shaped failure for an empty list; the page names the stage instead
-            return Choosing(error=str(e))
+            return Choosing(error=str(e), recommendation_id=self._record_failed_step(extraction, prefs, "choosing", str(e)))
         rec = (self._db().table("recommendations").select("model, failover_from, failover_error")
                .eq("id", row.id).execute().data)
         attempts = ({"model": rec[0]["model"], "failover_from": rec[0]["failover_from"],
@@ -341,7 +351,8 @@ class SupabasePipeline:
         rec = res.data[0]
         attempts = {"model": rec["model"], "failover_from": rec["failover_from"], "failover_error": rec["failover_error"]}
         if rec["error"]:
-            return Scan(reading, Choosing(error=rec["error"], recommendation_id=rec["id"], **attempts))
+            step, message = split_step(rec["error"])
+            return Scan(reading, Choosing(error=message, step=step, recommendation_id=rec["id"], **attempts))
         picks = [Pick(r.title, r.reason) for r in recommend.recs_from(rec["parsed_recommendations"])]
         return Scan(reading, Choosing(picks=picks, recommendation_id=rec["id"], **attempts))
 
@@ -353,7 +364,31 @@ class SupabasePipeline:
         return res.count if res.count is not None else len(res.data)
 
     def spent_since(self, since: datetime) -> float:
-        return spend.spent_since(self._db(), since)
+        """The app's own spend: rows joined to session photos stored since `since`. Research and nightly
+        runs have no session and count against the CLI cap instead (008)."""
+        db = self._db()
+        photos = (db.table("photos").select("id").not_.is_("session_id", "null")
+                  .gte("created_at", since.isoformat()).execute().data)
+        ids = [p["id"] for p in photos]
+        if not ids:
+            return 0.0
+        ex = db.table("extractions").select("id, cost_usd").in_("photo_id", ids).execute().data
+        total = spend.sum_cost(ex)
+        if ex:
+            recs = db.table("recommendations").select("cost_usd").in_("extraction_id", [e["id"] for e in ex]).execute().data
+            total += spend.sum_cost(recs)
+        return total
+
+    def _record_failed_step(self, extraction: dict, prefs: dict, step: str, message: str) -> int | None:
+        """A choosing that failed before any model ran (the catalogue check dropped every title, or the
+        list was empty) still gets a `recommendations` row, so `result()` can replay the failure on a
+        reconnect instead of waiting for a row that never comes. The step is the error's prefix."""
+        prompt_version, _ = router.load_prompt(CHOOSING_PROMPT)
+        res = self._db().table("recommendations").insert({
+            "extraction_id": extraction["id"], "model": router.primary("choosing").slug,
+            "prompt_version": prompt_version, "preferences": prefs, "error": f"{step}: {message}",
+        }).execute()
+        return res.data[0]["id"] if res.data else None
 
     # --- preferences ----------------------------------------------------------------------------
 

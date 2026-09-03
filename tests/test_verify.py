@@ -49,16 +49,34 @@ class FakeTable:
         self.op = ("upsert", rows, on_conflict)
         return self
 
+    def select(self, columns):  # the cache store reads `lookup_cache` and `books` (008)
+        self.op = ("select", None, None)
+        self.filter = None
+        return self
+
+    def in_(self, column, values):
+        self.filter = (column, set(values))
+        return self
+
     def insert(self, row):
         self.op = ("insert", row, None)
         return self
 
     def execute(self):
         kind, payload, on_conflict = self.op
-        rows = payload if isinstance(payload, list) else [payload]
         store = self.db.tables.setdefault(self.name, [])
+        if kind == "select":
+            column, values = self.filter or (None, None)
+            return SimpleNamespace(data=[r for r in store if column is None or r.get(column) in values])
+        rows = payload if isinstance(payload, list) else [payload]
         out = []
+        keys = on_conflict.split(",") if on_conflict else None
         for r in rows:
+            existing = next((s for s in store if keys and all(s.get(k) == r.get(k) for k in keys)), None)
+            if existing is not None:  # Postgres would update the row in place
+                existing.update(r)
+                out.append(existing)
+                continue
             row = {**r, "id": len(store) + 1}
             store.append(row)
             out.append(row)

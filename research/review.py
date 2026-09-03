@@ -117,7 +117,8 @@ def collect(rows: metrics.Rows, since: datetime, until: datetime, population: st
     failover_errors = failover_errors or {}
     r = Review(since=since, until=until, population=population)
     r.scans = len(rows.photos)
-    r.complete = len({x["extraction_id"] for x in rows.recommendations if not x.get("error")})
+    photo_of = {e["id"]: e["photo_id"] for e in rows.extractions}
+    r.complete = len({photo_of.get(x["extraction_id"]) for x in rows.recommendations if not x.get("error")})
     r.saves = sum(1 for s in rows.saved if not s.get("removed_at"))
     photos_with_row = {e["photo_id"] for e in rows.extractions}
     for p in rows.photos:

@@ -247,6 +247,8 @@ class AnthropicClient:
             if finish_reason == "refusal" and getattr(response, "stop_details", None) is not None:
                 error += f": {response.stop_details.category} {response.stop_details.explanation}"
             parsed = None
+        elif raw_text is None and finish_reason == "length":
+            parsed, error = parse_or_error("", finish_reason, max_tokens, reasoning_tokens)  # thinking ate the budget
         elif raw_text is None:
             parsed, error = None, f"no text block in response (blocks: {[getattr(b, 'type', '?') for b in response.content]})"
         else:

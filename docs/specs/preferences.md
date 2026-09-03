@@ -25,6 +25,9 @@ treated as the new shape and missing keys are filled with empty values.
 
 ## Importing a Goodreads export
 
+On the web page the export file is refused with 413 when it is over 4 MB
+(the scan route's limit; an export is usually well under 1 MB).
+
 `uv run shelfscanner prefs import --csv <export.csv> [--base <prefs.json>] [--genres g ...] [--free-text "..."] [--avoid a ...] [--max-rated N] [--max-to-read N] [--name n | --out path | --session id]`
 
 Reads the CSV Goodreads produces under "Export library". Only `Title`,

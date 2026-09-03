@@ -14,6 +14,7 @@ from typing import Protocol
 from anyio import to_thread
 from starlette.datastructures import Headers, MutableHeaders
 from starlette.requests import cookie_parser
+from starlette.routing import Match
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 COOKIE = "shelfscanner_session"
@@ -80,12 +81,20 @@ class SupabaseSessions:
 class SessionMiddleware:
     """Resolve or create the device session and expose its id as `request.state.session_id`."""
 
-    def __init__(self, app: ASGIApp, store: SessionStore) -> None:
+    def __init__(self, app: ASGIApp, store: SessionStore, routes: list | None = None) -> None:
         self.app = app
         self.store = store
+        self.routes = routes  # the app's routes: a request no route serves gets no session row
+
+    def routed(self, scope: Scope) -> bool:
+        """Whether some route fully matches the request. A 404 (a crawler, `/favicon.ico`, a typo) must
+        not insert a `sessions` row and set a cookie; only pages and endpoints do."""
+        if self.routes is None:
+            return True
+        return any(route.matches(scope)[0] == Match.FULL for route in self.routes)
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        if scope["type"] != "http" or scope["path"].startswith(UNSESSIONED_PREFIXES):
+        if scope["type"] != "http" or scope["path"].startswith(UNSESSIONED_PREFIXES) or not self.routed(scope):
             await self.app(scope, receive, send)
             return
 

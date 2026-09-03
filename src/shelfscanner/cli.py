@@ -108,8 +108,8 @@ def _extract(args: argparse.Namespace) -> None:
     ok = [r for r in rows if not r.error]
     if len(rows) > 1 and ok:
         recall = sorted(r.found / (r.found + r.missed) for r in ok if r.found + r.missed)
-        med = recall[len(recall) // 2]
-        print(f"{len(ok)}/{len(rows)} ok  median recall {med:.2f}  invented total {sum(r.invented for r in ok)}  "
+        med = f"{recall[len(recall) // 2]:.2f}" if recall else "n/a"
+        print(f"{len(ok)}/{len(rows)} ok  median recall {med}  invented total {sum(r.invented for r in ok)}  "
               f"cost ${sum(r.cost_usd or 0 for r in ok):.4f}")
 
 

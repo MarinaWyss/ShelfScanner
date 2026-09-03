@@ -36,7 +36,9 @@ with `created_at` and `last_seen_at`. A request that carries a known token
 touches `last_seen_at` when the stored value is ten minutes old or more
 (`web/sessions.py:LAST_SEEN_THROTTLE_S`), so a page of requests writes the
 row once, not once per request; an unknown or missing token gets a new row
-and a new cookie. Requests under `/static/` do not touch sessions.
+and a new cookie. Requests under `/static/` and `/admin` do not touch
+sessions, and neither does a request no route serves (a 404, a crawler,
+`/favicon.ico`): those get no row and no cookie.
 
 Scans, preferences, saves and feedback belong to the session that made
 them: another device gets 404 for their ids and an empty saved list.
@@ -95,15 +97,20 @@ stored, both refused with a message that states the number (008 D1):
   stage `rate`: "This device has scanned N shelves in the last hour, and
   the limit is N per hour. Try again in a while."
 - **The app's daily spend**: `SHELFSCANNER_APP_DAILY_CAP_USD`, default 5.
-  `cost_usd` summed over `extractions` and `recommendations` since
-  midnight UTC, every session together. At or over the cap the response
+  `cost_usd` summed over the `extractions` and `recommendations` rows of
+  photos with a session stored since midnight UTC, every session
+  together; research and nightly runs have no session and count against
+  the CLI cap instead. At or over the cap the response
   is `503` with stage `cap`: "ShelfScanner has spent $X on scans today,
   which reaches its daily limit of $Y. Scans start again tomorrow (UTC)."
 
 The device limit is checked first, so a device at its limit is told that
 even when the app is also out of budget. The CLI's spend cap
-(`SHELFSCANNER_SPEND_CAP_USD`, `run-logging.md`) still applies to every model
-call underneath; this one is the app's own, per day.
+(`SHELFSCANNER_SPEND_CAP_USD`, `run-logging.md`) does not apply to the app:
+the web pipeline calls the stages with `guard=False`, so the CLI's
+`SystemExit` can never reach the event loop. A stage that raises anything,
+`SystemExit` included, is reported as a failed scan and the row goes back
+to `pending` for a retry; the server stays up.
 
 ## Upload
 
@@ -113,7 +120,8 @@ the page shrank the photo in the browser, otherwise `0`). In order:
 1. A body over 4 MB is refused with 413.
 2. The limits above are checked; a refusal is 429 or 503.
 3. The file is refused with 400 unless its declared content type is
-   `image/jpeg` or `image/png`, its bytes decode as a JPEG or PNG (the
+   `image/jpeg` or `image/png`, its bytes decode as a JPEG or PNG (a
+   header claiming a decompression-bomb size counts as not an image; the
    bytes decide: a GIF named `.jpg` is refused as a GIF; a phone JPEG with
    an embedded second picture, which Pillow calls MPO, is a JPEG), and its long edge
    is at least 400 px (`web/scan.py:MIN_LONG_EDGE`; the message gives the
@@ -209,7 +217,10 @@ taste is unknown and the logged `preferences` column is exactly what it
 was given. Nothing is stored for the session in that case.
 
 Connecting again for a scan that already has a result replays `done` or
-`failed` at once without calling a model. Connecting again after the
+`failed` at once without calling a model. A choosing that failed before
+any model ran (the catalogue check dropped every title, or the list was
+empty) still writes a `recommendations` row, with the error prefixed by
+the step (`checking: ...`), so the replay has something to read. Connecting again after the
 reading finished but before the choosing did runs the choosing only. A
 failed choosing is not retried on the same scan; "Try again" starts a new
 one.

@@ -210,7 +210,8 @@ def _search(title: str, author: str | None, *, client: Transport | None,
         if r.status_code != 200:
             error = f"http {r.status_code}"
         else:
-            docs = r.json().get("docs")
+            body = r.json()
+            docs = body.get("docs") if isinstance(body, dict) else None
             if not isinstance(docs, list):
                 error = "malformed reply"
             else:
