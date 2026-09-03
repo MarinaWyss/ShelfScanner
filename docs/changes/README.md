@@ -77,6 +77,66 @@ decision.
 **Wave 4**, ends 2026-09-30. 010, once Marina has connected the repo to
 Vercel.
 
+### Contracts for wave 1
+
+Written by the lead on 2026-09-02 and merged to main before the fan-out.
+Workers implement these; a worker that finds one wrong stops and says so.
+
+**Model calls** (`src/shelfscanner/router.py`, `adapters/base.py`). An
+adapter is a class with `vision(model, prompt, image_jpeg, *, max_tokens,
+on_progress)` and `text(model, prompt, input_text, *, max_tokens,
+on_progress)`, both returning `CallResult`. `model` is the `Model` from
+config: use `model.id_for_adapter` as the id, `model.reasoning_effort` for
+the reasoning control, `cost_from_tokens(model, in, out)` for cost with
+reasoning tokens counted in output. Never raise for a model or transport
+failure: return a result with `error` set (`failed()` helps). Report a
+reply cut off by the output cap with `finish_reason="length"` so
+`parse_or_error` records truncation, not a parse failure. Fill
+`request_id` and `adapter`. The class is registered by name in
+`router.ADAPTERS` already: `google` → `adapters/google.py:GoogleClient`,
+`openai` → `adapters/openai.py:OpenAIClient`, `anthropic` →
+`adapters/anthropic.py:AnthropicClient`. Each adapter module is the only
+file that imports its SDK. Pipeline code passes `client=` to inject a
+fake; `tests/test_router.py` shows one.
+
+**Config** (`config/models.toml`). A model block gains `adapter` and
+`model_id` when it goes direct; `slug` stays and is what the `model`
+columns log. `[stages.reading]` and `[stages.choosing]` name `primary`
+and `fallback` aliases. New columns on both run tables: `adapter`,
+`request_id`.
+
+**Preferences object** (004). JSON with keys `genres` (list of strings),
+`free_text` (string), `rated_books` (list of `{title, author, rating}`,
+rating 1 to 5), `to_read` (list of `{title, author}`), `avoid` (list of
+strings). The importer produces it; `recommend_v2` consumes it; the old
+flat shape (`genres`, `likes`, `loved_books`, `avoid`) is still accepted
+by `recommend_v1` and converted by `preferences.upgrade()` for v2.
+
+**Label files** (006). Existing keys unchanged: `titles`, `partial`,
+`notes`. New optional keys: `set` (`core`, `sourced`, `derived`; absent
+means `core`), `provisional` (bool), `source` (`{url, author, license,
+license_url, query}`), `derived_from` (stem of the original),
+`degradation` (`{kind, params}`). Sourced photos are fetched by
+`shelfscanner photos fetch` from `source.url` into `data/photos/`. The
+`photos` table gains `set`, `provisional`, `source` (jsonb).
+
+**Sessions** (003). Table `sessions(id identity, token_hash text unique,
+created_at, last_seen_at)`; `photos.session_id bigint null references
+sessions`. Test-set photos have a null session. The cookie holds the raw
+token; only its hash is stored.
+
+**Book records** (007). Table `books(id identity, catalogue text,
+catalogue_id text, title, author, first_year int, cover_id text,
+fetched_at)`, unique on `(catalogue, catalogue_id)`. The lookup module's
+one public function is `lookup(title, author) -> Match | None` with
+`Match(record, score)`.
+
+**CLI additions.** A worker that adds a command puts an
+`add_parser(subparsers)` function in its own module; the lead wires one
+line in `cli.py`. Workers do not edit `cli.py`, `db.py`, `config.py`,
+`settings.py` or `pyproject.toml`; the SDKs and web and test dependencies
+are already installed.
+
 Rules that make the fan-out safe:
 
 - **Contracts before workers.** A worker never invents a shared interface;

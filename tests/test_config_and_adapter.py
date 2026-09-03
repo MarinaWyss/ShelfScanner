@@ -8,7 +8,7 @@ from PIL import Image
 
 from shelfscanner.config import load_config
 from shelfscanner.images import resize
-from shelfscanner.openrouter import parse_json
+from shelfscanner.adapters.base import parse_json
 
 
 def test_config_has_four_candidates_with_slugs_and_settings():
@@ -18,6 +18,16 @@ def test_config_has_four_candidates_with_slugs_and_settings():
     assert all("/" in m.slug for m in cfg.models.values())
     assert 0 < cfg.match_threshold < 1
     assert cfg.default_max_edge == 1568
+
+
+def test_stages_name_known_models_with_fallbacks():
+    cfg = load_config()
+    assert set(cfg.stages) == {"reading", "choosing"}
+    for st in cfg.stages.values():
+        assert cfg.model(st.primary).alias == st.primary
+        assert st.fallback is not None and cfg.model(st.fallback).alias == st.fallback
+    assert all(m.adapter == "openrouter" for m in cfg.models.values())
+    assert cfg.prices_checked is not None
 
 
 def test_model_lookup_by_alias_and_slug():

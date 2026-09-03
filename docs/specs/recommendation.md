@@ -58,7 +58,7 @@ column and command exist but the spike's quality measure is overlap.
 
 ## Logged row
 
-`recommendations`: `extraction_id`, `provider`, `model`, `prompt_version`,
+`recommendations`: `extraction_id`, `provider`, `adapter`, `request_id`, `model`, `prompt_version`,
 `preferences` (as sent), `raw_output`, `parsed_recommendations`,
 `valid_vs_extraction`, `valid_vs_ground_truth`, `specificity_scores`,
 `latency_ms`, `input_tokens`, `output_tokens`, `cost_usd`, `error`,

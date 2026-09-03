@@ -47,23 +47,26 @@ Recall is `found / (found + missed)`.
 
 ## Model config
 
-`config/models.toml` lists candidates by alias with the OpenRouter slug,
-provider, reference prices and an optional `reasoning_effort`, which is
-passed to OpenRouter as `reasoning.effort`. `--model` accepts an alias or a
-slug.
+`config/models.toml` lists models by alias with the OpenRouter slug,
+provider, prices, an optional `reasoning_effort`, and the `adapter` that
+serves it (default `openrouter`) with the provider's own `model_id` when
+direct. `[stages.reading]` and `[stages.choosing]` name a primary and a
+fallback alias. `--model` accepts an alias, a slug or a model id.
 
-## Adapter
+## Router and adapters
 
-One POST to OpenRouter's chat completions endpoint via httpx with usage
-accounting on. Returns the raw text, parsed JSON, input and output tokens,
-reasoning tokens, cost as reported by OpenRouter, the upstream provider it
-routed to, latency and finish reason. A reply cut off by `max_tokens` is
-reported as truncation, distinct from a JSON parse failure. Nothing is
-retried.
+Pipeline code calls `router.vision` or `router.text` with a `Model`; the
+router instantiates the adapter named in config, or uses a client passed
+in by the caller (tests, the web layer). Every adapter returns the same
+result: raw text, parsed JSON, input, output and reasoning tokens, cost,
+latency, finish reason, provider, request id, adapter name. A reply cut
+off by the output cap is reported as truncation, distinct from a JSON
+parse failure. The OpenRouter adapter is one POST via httpx with usage
+accounting on and cost as OpenRouter reports it. Nothing is retried.
 
 ## Logged row
 
-`extractions`: `photo_id`, `provider`, `model` (slug), `prompt_version`
+`extractions`: `photo_id`, `provider`, `adapter`, `request_id`, `model` (slug), `prompt_version`
 (prompt filename), `image_long_edge`, `image_width`, `image_height`,
 `raw_output`, `parsed_titles`, the four lists above, `found_count`,
 `missed_count`, `invented_count`, `latency_ms`, `input_tokens`,

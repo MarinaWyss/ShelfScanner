@@ -1,9 +1,10 @@
-# Candidate models for the 001-mvp spike (proposal D10, D13).
+# Models, stages and pipeline settings (001 D10, D13; 002 D4, D5, D6, D8).
 #
-# Every call goes through OpenRouter, addressed by `slug`. The provider and
-# prices are for orientation only: the logged cost comes from OpenRouter's
-# per-request usage accounting. Prices are USD per million tokens, input /
-# output, as listed by OpenRouter.
+# Each model names an `adapter` (default "openrouter") and, for a direct
+# adapter, the provider's own `model_id`. `slug` is the OpenRouter slug and is
+# what the `model` columns log, so rows from change 001 stay comparable.
+# Prices are USD per million tokens, input / output; direct adapters compute
+# cost from them (reasoning priced as output), OpenRouter reports its own.
 #
 # Slugs checked against https://openrouter.ai/api/v1/models on 2026-09-02.
 # Anthropic prices also match the Claude API reference cached 2026-06-24.
@@ -13,6 +14,19 @@
 match_threshold = 0.85
 # Default long edge in pixels for images sent to a vision model (proposal D7).
 default_max_edge = 1568
+# `report` warns when the prices are older than 90 days (002 D5).
+prices_checked = 2026-09-02
+
+# Which model serves each stage, with a fallback used on provider error,
+# timeout or truncation (002 D8). Changing a model is an edit here plus
+# `uv run python -m research.check` (002 D6).
+[stages.reading]
+primary = "gemini-flash"
+fallback = "sonnet"
+
+[stages.choosing]
+primary = "gpt-mini"
+fallback = "qwen-flash"
 
 [models.haiku]
 slug = "anthropic/claude-haiku-4.5"

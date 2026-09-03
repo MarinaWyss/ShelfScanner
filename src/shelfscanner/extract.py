@@ -4,11 +4,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from shelfscanner import openrouter, storage
+from shelfscanner import router, storage
 from shelfscanner.config import Model, load_config
 from shelfscanner.db import get_client
 from shelfscanner.images import resize
 from shelfscanner.matching import score
+from shelfscanner.router import ModelClient, Progress
 
 DEFAULT_PROMPT = "extract_v1"
 
@@ -50,11 +51,12 @@ def titles_from(parsed: object) -> list[str]:
     return out
 
 
-def extract_photo(photo: dict, model: Model, max_edge: int, prompt_name: str) -> ExtractionRow:
+def extract_photo(photo: dict, model: Model, max_edge: int, prompt_name: str, *,
+                  client: ModelClient | None = None, on_progress: Progress | None = None) -> ExtractionRow:
     cfg = load_config()
-    prompt_version, prompt = openrouter.load_prompt(prompt_name)
+    prompt_version, prompt = router.load_prompt(prompt_name)
     img = resize(storage.download_photo(photo["storage_path"]), max_edge)
-    res = openrouter.call(model.slug, prompt, image_jpeg=img.jpeg, reasoning_effort=model.reasoning_effort)
+    res = router.vision(model, prompt, img.jpeg, client=client, on_progress=on_progress)
 
     extracted = titles_from(res.parsed) if res.ok else []
     s = score(extracted, photo["titles"], photo["partial_titles"], cfg.match_threshold)
@@ -62,6 +64,8 @@ def extract_photo(photo: dict, model: Model, max_edge: int, prompt_name: str) ->
     row = {
         "photo_id": photo["id"],
         "provider": res.provider,
+        "adapter": res.adapter,
+        "request_id": res.request_id,
         "model": model.slug,
         "prompt_version": prompt_version,
         "image_long_edge": max_edge,

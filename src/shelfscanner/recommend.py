@@ -6,11 +6,12 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
-from shelfscanner import openrouter
+from shelfscanner import router
 from shelfscanner.config import Model, load_config
 from shelfscanner.db import get_client
 from shelfscanner.extract import get_extraction, titles_from
 from shelfscanner.matching import similarity
+from shelfscanner.router import ModelClient, Progress
 from shelfscanner.storage import get_photo
 
 DEFAULT_PROMPT = "recommend_v1"
@@ -99,16 +100,17 @@ def shelf_text(parsed_titles: object) -> str:
     return "\n".join(lines)
 
 
-def recommend_from_extraction(extraction: dict, model: Model, prefs: dict, prompt_name: str) -> RecommendationRow:
+def recommend_from_extraction(extraction: dict, model: Model, prefs: dict, prompt_name: str, *,
+                              client: ModelClient | None = None, on_progress: Progress | None = None) -> RecommendationRow:
     cfg = load_config()
-    prompt_version, prompt = openrouter.load_prompt(prompt_name)
+    prompt_version, prompt = router.load_prompt(prompt_name)
     extracted = titles_from(extraction["parsed_titles"])
     if not extracted:
         raise SystemExit(f"Extraction {extraction['id']} has no parsed titles (error: {extraction.get('error')})")
     labels = get_photo(extraction["photo_id"])["titles"]
 
     text = f"Books on the shelf:\n{shelf_text(extraction['parsed_titles'])}\n\nReading preferences:\n{json.dumps(prefs, indent=2, ensure_ascii=False)}"
-    res = openrouter.call(model.slug, prompt, text=text, reasoning_effort=model.reasoning_effort)
+    res = router.text(model, prompt, text, client=client, on_progress=on_progress)
 
     recs = recs_from(res.parsed) if res.ok else []
     validity = check(recs, extracted, labels, cfg.match_threshold) if res.ok else None
@@ -119,6 +121,8 @@ def recommend_from_extraction(extraction: dict, model: Model, prefs: dict, promp
     row = {
         "extraction_id": extraction["id"],
         "provider": res.provider,
+        "adapter": res.adapter,
+        "request_id": res.request_id,
         "model": model.slug,
         "prompt_version": prompt_version,
         "preferences": prefs,
