@@ -45,6 +45,8 @@ price_output = 10.00
 # listed ($0.25 / $2.00) but gpt-5.4-mini is the current one.
 slug = "openai/gpt-5.4-mini"
 provider = "OpenAI"
+adapter = "openai"
+model_id = "gpt-5.4-mini"
 price_input = 0.75
 price_output = 4.50
 
