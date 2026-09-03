@@ -6,12 +6,12 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
-from shelfscanner import router
+from shelfscanner import router, spend
+from shelfscanner.adapters.base import RECOMMENDATIONS_SCHEMA
 from shelfscanner.config import Model, load_config
 from shelfscanner.db import get_client
 from shelfscanner.extract import get_extraction, titles_from
 from shelfscanner.matching import similarity
-from shelfscanner.adapters.base import RECOMMENDATIONS_SCHEMA
 from shelfscanner.router import ModelClient, Progress
 from shelfscanner.storage import get_photo
 
@@ -111,6 +111,8 @@ def recommend_from_extraction(extraction: dict, model: Model, prefs: dict, promp
     labels = get_photo(extraction["photo_id"])["titles"]
 
     text = f"Books on the shelf:\n{shelf_text(extraction['parsed_titles'])}\n\nReading preferences:\n{prefs_text(prefs, prompt_name)}"
+    if client is None:  # a fake client spends nothing
+        spend.check_spend()
     res = router.text(model, prompt, text, client=client, on_progress=on_progress, schema=RECOMMENDATIONS_SCHEMA)
 
     recs = recs_from(res.parsed) if res.ok else []

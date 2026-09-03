@@ -7,9 +7,10 @@ A test or the web layer can pass its own `ModelClient` to bypass every provider.
 from __future__ import annotations
 
 import importlib
-from functools import lru_cache
+from collections.abc import Callable
+from functools import cache
 from pathlib import Path
-from typing import Callable, Protocol
+from typing import Protocol
 
 from shelfscanner.adapters.base import DEFAULT_MAX_TOKENS, CallResult
 from shelfscanner.config import Model, Stage, load_config
@@ -47,7 +48,7 @@ def load_prompt(name: str) -> tuple[str, str]:
     return path.name, path.read_text()
 
 
-@lru_cache(maxsize=None)
+@cache
 def client_for(adapter: str) -> ModelClient:
     """Instantiate the adapter class named in config. Import happens here, so a missing SDK only
     fails when that provider is actually used."""

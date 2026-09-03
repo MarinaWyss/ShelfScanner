@@ -16,6 +16,8 @@ match_threshold = 0.85
 default_max_edge = 1568
 # `report` warns when the prices are older than 90 days (002 D5).
 prices_checked = 2026-09-02
+# The spend guard sums cost_usd over the runs tables from this date (002 task 0).
+spend_since = 2026-09-02
 
 # Which model serves each stage, with a fallback used on provider error,
 # timeout or truncation (002 D8). Changing a model is an edit here plus
