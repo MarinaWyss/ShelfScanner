@@ -117,3 +117,70 @@ margin on a repeated shelf; a first-seen shelf is still bound by the
 catalogue. `lookup_cache` held 61 rows after the run; the migration passed
 `supabase db advisors --linked` with only the pre-existing
 `rls_auto_enable()` warning.
+
+## Limits, errors and validation
+
+Date: 2026-09-03, tasks 1 and 2, one worker. Spend: $0.01 (one live scan
+by the lead). Spec: `docs/specs/web.md` (limits, validation, the status
+lock, the five visible stages, retry), `docs/specs/photo-storage.md` (the
+`status`, `status_at` and `resized_by_client` columns, migration
+`20260903170000_scan_status.sql`, pushed 2026-09-03).
+
+- **Limits.** Ten scans per device per rolling hour (429) and a $5 app-wide
+  spend per UTC day summed from the runs tables (503), both from env,
+  both with the number in the message. `tests/test_web_limits.py` (10) with
+  a fixed clock and seeded rows; `tests/e2e/test_hardening.py` drives the
+  N+1th scan and the cap through the page.
+- **Errors.** A failover that also fails names both attempts on the page
+  and offers "Try again", which is a new scan. The fake pipeline now runs
+  through `router.with_failover`, so the Playwright case exercises the
+  real path. Checking is shown as its own stage.
+- **Validation.** Declared type and bytes must both be JPEG or PNG (MPO
+  from phones counts as JPEG), long edge at least 400 px, checked on the
+  header before the resize; refused uploads store no row.
+- **003's open issues closed.** `photos.status` is the lock: a second
+  connection to the event stream waits on the claim instead of running the
+  model twice; `last_seen_at` is written at most once per ten minutes;
+  `resized_by_client` records the browser-resize fallback rate.
+- **Live check by the lead** against the real project after the migration
+  push: one scan through the app, reading (failover to Sonnet) → checking →
+  choosing (failover to Haiku) → done in 18 s; the row ended
+  `status = done`, `resized_by_client = true`; `/admin` was 404 without the
+  key and 200 with it. The PostgREST claim filter the worker could not
+  test live worked on the first try.
+
+## Retention
+
+Task 3, 2026-09-03. `photos retain [--dry-run] [--days]` deletes bucket
+objects for unlabelled session photos older than the window (default 30
+days), nulls `storage_path`, sets `photo_deleted_at`, never touches a
+labelled photo. `tests/test_retention.py` (20). Scheduled daily by
+`.github/workflows/retention.yml` until 010 moves it to Vercel cron. The
+first scheduled run (2026-09-03 08:58 UTC) failed in nine seconds: the
+repository has no `SUPABASE_URL` / `SUPABASE_SECRET_KEY` secrets yet, which
+is on Marina's list. It will pass the night after they are added; nothing
+to change.
+
+## Gates
+
+| Question | Pass |
+|---|---|
+| Limits | `tests/e2e/test_hardening.py`: the N+1th scan in an hour is refused with the message; the cap stops scans |
+| Errors | Playwright: a stubbed provider failure after failover shows the stage and "Try again" |
+| Retention | `tests/test_retention.py`: a photo dated 31 days ago is gone after the job, a test-set photo is not |
+| Caching | Above: 4.5 s cold → 0.26 s warm on a repeated shelf, 0 catalogue calls |
+
+Suite after the merges: 353 tests, ruff clean, `research.check` PASS, CI
+green. The `/code-review` reviewer agent was killed by the Claude Code
+spend limit on tasks 1 and 2; the lead reviewed the diff by hand instead.
+
+Also in this change: `revoke execute` on `public.rls_auto_enable()` from
+`anon`, `authenticated` and `public` (migration
+`20260903180000_revoke_rls_auto_enable.sql`), the one advisor warning the
+project had carried since before 001. The function is not ours and no
+client calls it; if it turns out to be wanted through the API, one
+`grant` puts it back.
+
+Open for later: `lookup_cache` has no cleanup job (grows one row per new
+pair read); `docs/specs/run-logging.md` describes the CLI spend cap and
+points to `web.md` for the app's.
