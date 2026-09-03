@@ -16,9 +16,13 @@ Specs live in files, not in chat. Chat is gone next session; files aren't.
 
 ## Rules
 
-1. No implementation code until there is a proposal in `docs/changes/` that I
-   have approved. If I ask for code without one, write the proposal first and ask.
-2. Work the task list in order, one task at a time. Stop after each for review.
+1. No implementation code without an approved proposal in `docs/changes/`.
+   The roadmap in `docs/changes/README.md` is approved as written (002 to
+   010, 2026-09-02); a scope change needs a new proposal. If I ask for code
+   outside it, write the proposal first and ask.
+2. Work the task list in order. Gates in `docs/changes/README.md` replace
+   the per-task review: stop at the end of a phase with `results.md`, or at
+   a stop condition, not after each task.
 3. When a change is complete, update `docs/specs/` to match what is now true and
    move the change folder to `docs/changes/archive/`.
 4. Specs describe behavior. Proposals record decisions. Don't mix them.

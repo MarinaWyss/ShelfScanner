@@ -12,3 +12,6 @@ data/photos/
 # Python
 __pycache__/
 .pytest_cache/
+
+# Personal exports; never committed
+data/prefs/goodreads*.csv

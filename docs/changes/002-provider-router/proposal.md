@@ -1,7 +1,9 @@
 # 002 — Provider adapters behind our own router
 
-Status: proposed
+Status: approved 2026-09-02
 Date: 2026-09-02
+Deadline: 2026-09-09
+Spend cap: $5
 
 ## Why
 
@@ -17,7 +19,7 @@ three findings that shape what comes next.
    comparison was cheap only because every model was a config entry behind
    one adapter. Whatever replaces the OpenRouter adapter must keep that.
 3. **The preferences input limits recommendations more than the model.**
-   That is a separate change (003), noted here because the router must not
+   That is a separate change (004), noted here because the router must not
    assume the preferences shape is fixed.
 
 This change replaces the throwaway OpenRouter adapter with the real
@@ -46,8 +48,8 @@ controls to bring latency down. It does not add features.
 
 ### Out of scope
 
-- Preferences capture, Goodreads import (003).
-- A larger test set (004). This change reruns the existing five photos.
+- Preferences capture, Goodreads import (004).
+- A larger test set (006). This change reruns the existing five photos.
 - Book-database lookup, UI, deployment.
 
 ## Decisions
@@ -80,6 +82,17 @@ days.
 **D6. Swapping a model is a config change plus a rerun of the test set.**
 The `report` output on the five photos is the acceptance test for any
 model change, compared against the numbers in change 001's results.
+
+**D8. Failover is automatic and logged.** Each stage names a primary and a
+fallback model in config. On a provider error, timeout or truncated reply
+the router retries once on the fallback, and the row records both
+attempts. Failover is for outages, not quality: the fallback is a model
+that passed the same test, and `report` shows how often it was used.
+
+**D9. This change also lays the rails for unattended work.** CI running
+tests and lint on every push, and `research.check`, which compares the
+five-photo report to a committed baseline and fails on regression. Every
+later phase relies on both, so they come first.
 
 **D7. Streaming is out of scope here but the interface leaves room for it.**
 The result shape gains an optional progress callback so the later UI change

@@ -89,7 +89,7 @@ Deferred, with the number that would bring it back:
   calls cost about a cent, so a lookup that costs more than they do is the
   signal. Until then every scan looks every title up.
 * **Photo retention.** Photos are kept while a session needs them; a
-  deletion window is decided in the sessions change, not here.
+  deletion window is decided in the hardening change (008), not here.
 
 **Constraints**
 
@@ -139,12 +139,12 @@ behaviour is true today and has a spec.
   the pick is shown with those, not with the model's transcription.
 - [ ] Open: what happens when the lookup service is unavailable. Either
   the scan completes with picks marked unverified, or it fails. Decided
-  in the lookup change with the measured failure rate in hand.
+  in the lookup change (007) with the measured failure rate in hand.
 
 *Recommendation*
 
 - [x] R1. Every recommendation is a book from that photo. Given the list
-  the model was handed (today the extraction; after the lookup change,
+  the model was handed (today the extraction; after change 007,
   the verified records), when it returns picks, then each pick matches a
   title on that list, checked in code with the same matcher as
   extraction. A reply that fails the check is logged with an error and
@@ -244,7 +244,7 @@ prompts/
 | Test set composition | Landscape and portrait; straight-on and angled; upright spines and horizontal stacks; Fraktur and faded cloth spines; library stickers; a plant in frame; a run of five near-identical series volumes. |
 | Metrics | Extraction: recall, missed, invented (kept separate) against labels via normalised fuzzy match at 0.85. Recommendation: valid against the extraction (hard), valid against labels, overlap with the user's own five picks for the shelf. Plus cost and latency per stage. |
 | Evaluation tooling | The CLI logs every call to Supabase; `research/` holds the matrix drivers and the text and visual reports that aggregate them. No LLM-as-judge; the set is small enough to read. |
-| Update cadence | Not yet. The test set grows in its own change once the bookstore photos exist. |
+| Update cadence | Not yet. The test set grows in change 006 from openly licensed shelf photos and degraded copies of the five. |
 
 **Checklist**:
 
@@ -376,7 +376,7 @@ decided in the change that builds it (section 10).
 
 | Aspect | Approach |
 | :---- | :---- |
-| Framework | A Python service wrapping the existing pipeline package, so the CLI and the app run the same code. Which web framework: open. |
+| Framework | FastAPI wrapping the existing pipeline package, so the CLI and the app run the same code. Laid out for Vercel's Python runtime. |
 | Streaming | Yes, progress per stage. The router interface from change 002 carries a progress callback for this. The user sees "reading the shelf", "checking titles", "choosing", not a spinner (S1). |
 | Authentication | None. A device-scoped session token, issued on first visit and stored on the device (F3). |
 | Rate limiting | Per session token, scans per hour. The number is set from the measured cost per scan. |
@@ -386,7 +386,7 @@ decided in the change that builds it (section 10).
 
 | Aspect | Approach |
 | :---- | :---- |
-| UI framework | Open. Phone-first: the user is standing at a shelf. |
+| UI framework | Server-rendered pages with htmx; the photo is resized on the phone before upload. Phone-first: the user is standing at a shelf. |
 | Key interactions | Pick genres, optionally upload a Goodreads export (R4). Take or choose a photo. Watch the stages complete. See five picks with reasons. Save any of them; mark any as bad. Open the saved list later on the same device. |
 | Feedback mechanism | Save (the primary metric) and a per-pick "not for me" (F1, F2). Both are rows tied to the recommendation row that produced the pick, so feedback can be joined to the model, prompt version and preferences behind it. |
 
@@ -408,15 +408,15 @@ Postgres next to the tables the spike already writes.
 
 | Aspect | Approach |
 | :---- | :---- |
-| Hosting | Supabase for the bucket and Postgres (in place). Service hosting: open. |
-| Containerization | Docker for the service, in the change that creates the service. |
-| CI/CD | Tests on push. Not set up yet. |
+| Hosting | Supabase for the bucket and Postgres (in place). Vercel from GitHub for the app (change 010). |
+| Containerization | None. Vercel builds from the repo. |
+| CI/CD | GitHub Actions runs tests and lint on every push (change 002); Vercel deploys main and previews branches (change 010). |
 
 **Checklist**:
 
 - [ ] My API handles streaming, errors, and rate limiting.  
 - [ ] My UI is accessible and provides a way for users to give feedback.  
-- [ ] My application is containerized with Docker.  
+- [ ] My application is containerized with Docker. \<- not applicable; Vercel builds from the repo  
 - [ ] I have CI/CD set up so tests run automatically on push.  
 - [x] I have a live demo link or clear setup instructions in my README. \<- setup instructions; no demo of this codebase yet
 
@@ -532,24 +532,29 @@ ShelfScanner/
 
 ## 10\. Project Timeline & Milestones
 
-Milestones are changes in `docs/changes/`. A solo project with one change
-in flight at a time does not get target dates; it gets an order, and the
-order is revised after each change lands. Numbers beyond 004 are
-provisional.
+Milestones are changes in `docs/changes/`; the roadmap, the waves of
+parallel work, and the rules for running them unattended are in
+`docs/changes/README.md`. A task starts when what it needs exists, not when
+its phase begins, so the phases below overlap. Deadlines force the "what
+can wait" decision; the order is revised after each change lands.
 
-| Milestone | Change | Status |
-| :---- | :---- | :---- |
-| Problem scoping and design | this document | first draft, then revised from the MVP on 2026-09-02 |
-| MVP spike: can models read a shelf and recommend from it | 001 | done 2026-09-02 |
-| Provider adapters behind our own router; both model calls under 10 s | 002 | proposed |
-| Richer preferences: structured genre picks and the Goodreads export | 003 | next |
-| Larger test set: bookstore lighting, glare, angles, unfamiliar stock | 004 | planned |
-| Book lookup against a real database (L1, L2) | 005 | planned |
-| Sessions, saved list, feedback (F1 to F3) | 006 | planned |
-| Web service and phone-first UI with progress per stage; deployment | 007 | planned |
-| Monitoring in use; caching if the numbers in section 1 say so | later | |
+| Milestone | Change | Track | Deadline | Status |
+| :---- | :---- | :---- | :---- | :---- |
+| Problem scoping and design | this document | | | first draft, revised from the MVP on 2026-09-02 |
+| MVP spike: can models read a shelf and recommend from it | 001 | | | done 2026-09-02 |
+| Provider router, failover, CI and the regression gate | 002 | quality | 2026-09-09 | approved |
+| App shell: photo to titles on a phone, over the local network | 003 | app | 2026-09-16 | approved |
+| Preferences: Goodreads export, prompt v2, overlap eval | 004 | quality | 2026-09-16 | approved |
+| Recommendations in the app, saved list, feedback | 005 | app | 2026-09-23 | approved |
+| Test set: sourced shelf photos, nightly eval, the lookup decision | 006 | quality | 2026-09-16 | approved |
+| Book lookup or enrichment, whichever 006 decides | 007 | quality | 2026-09-23 | approved |
+| Hardening: limits, cost cap, retention, errors; caching if measured | 008 | app | 2026-09-23 | approved |
+| Monitoring: dashboard from the rows, weekly review | 009 | either | 2026-09-23 | approved |
+| Deployment: Vercel from GitHub | 010 | app | 2026-09-30 | approved |
 
-Fine-tuning and agents: not on the list (sections 5 and 8).
+Fine-tuning and agents: not on the list (sections 5 and 8). Deployment is
+last because it is the only phase that needs an account; until then the
+phone reaches the laptop over the local network.
 
 ## 11\. Appendix
 
@@ -618,7 +623,7 @@ recorded where it was made, so the reasoning stays next to the evidence.
 | Cost computed from tokens and config prices with a checked-on date | 002 D5 |
 | The five-photo report is the acceptance test for any model or prompt change | 002 D6 |
 | Invention is a model property; the book lookup is verification, not the primary defence | 001 results; section 1 |
-| Preferences, not the model, limit recommendation quality; richer capture before a stronger model | 001 results; change 003 |
+| Preferences, not the model, limit recommendation quality; richer capture before a stronger model | 001 results; change 004 |
 | No RAG, no agents, no fine-tuning | sections 4, 5, 8 |
 | No accounts; device-scoped session | section 1, F3 |
 | Purchase links, translation, accounts out of v1; caching deferred behind a measured number | section 1 |
