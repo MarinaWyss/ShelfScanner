@@ -9,6 +9,7 @@ object key, and it is the upsert key.
 from __future__ import annotations
 
 import json
+import uuid
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -122,3 +123,38 @@ def sync_photos() -> list[str]:
     for stem in unlabelled:
         lines.append(f"skip  {stem}: photo has no label file")
     return lines
+
+
+# --- change 003 ---
+# Photos a device scans from the web app: stored under sessions/<id>/ in the
+# same bucket, with a `photos` row that carries the session and no labels.
+
+SESSION_PHOTO_COLUMNS = PHOTO_COLUMNS + ", session_id"
+
+
+def store_session_photo(session_id: int, jpeg: bytes) -> dict:
+    """Upload stripped JPEG bytes for a session and insert the unlabelled `photos` row.
+
+    The caller has already resized and re-encoded (see `images.resize`); this
+    refuses if any metadata survived, uploads to a fresh key so nothing is ever
+    overwritten, and returns the inserted row.
+    """
+    if has_metadata(jpeg):
+        raise RuntimeError("metadata survived stripping; refusing to upload")
+    storage_path = f"sessions/{session_id}/{uuid.uuid4().hex}.jpg"
+    get_client().storage.from_(PHOTO_BUCKET).upload(storage_path, jpeg, {"content-type": "image/jpeg"})
+    row = {"storage_path": storage_path, "session_id": session_id}
+    return get_client().table("photos").insert(row).execute().data[0]
+
+
+def get_session_photo(photo_id: int, session_id: int) -> dict | None:
+    """The photo row if it exists and belongs to the session; None otherwise."""
+    res = (
+        get_client()
+        .table("photos")
+        .select(SESSION_PHOTO_COLUMNS)
+        .eq("id", photo_id)
+        .eq("session_id", session_id)
+        .execute()
+    )
+    return res.data[0] if res.data else None

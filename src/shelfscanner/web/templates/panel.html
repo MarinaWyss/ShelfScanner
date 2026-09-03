@@ -1,0 +1,24 @@
+{#- The progress list and the result for one scan. Rendered whole for every event. -#}
+{% if live %}<div id="scan-live" hx-ext="sse" sse-connect="/scan/{{ scan_id }}/events"
+     sse-swap="uploaded,reading,done,failed" sse-close="close" data-scan-id="{{ scan_id }}">{% endif %}
+<ol class="stages" data-stage="{{ stage }}">
+  {% for row in rows %}
+  <li id="stage-{{ row.name }}" class="{{ row.state }}">
+    <span class="mark" aria-hidden="true">{% if row.state == 'done' %}&#10003;{% elif row.state == 'failed' %}&#10007;{% elif row.state == 'active' %}&#9679;{% else %}&#9675;{% endif %}</span>
+    <span>{{ row.label }}{% if note and row.state == 'active' %}<span class="note">{{ note }}</span>{% endif %}</span>
+  </li>
+  {% endfor %}
+</ol>
+{% if stage == 'done' %}
+  {% if titles %}
+  <ol class="titles" id="titles">
+    {% for title in titles %}<li>{{ title }}</li>
+    {% endfor %}
+  </ol>
+  {% else %}
+  <p class="empty" id="titles">No titles could be read from this photo. Try closer, with the spines facing the camera.</p>
+  {% endif %}
+{% elif stage == 'failed' %}
+  <div class="error" role="alert" id="scan-error"><strong>Reading the shelf failed</strong>{{ error }}</div>
+{% endif %}
+{% if live %}</div>{% endif %}
