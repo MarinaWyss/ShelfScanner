@@ -131,10 +131,13 @@ behaviour is true today and has a spec.
 
 *Book lookup*
 
-- [ ] L1. Every title the user sees resolves to a record in a real book
-  database. Given an extraction containing a title that matches no
-  record, when recommendations are produced, then that title is not among
-  them and the drop is logged with the extracted string.
+- [ ] L1. Every title the user sees resolves to a catalogue record whose
+  title matches what was read closely enough. Given an extraction
+  containing a string that no record matches at the threshold, when
+  recommendations are produced, then that string is not among the picks
+  and the drop is logged. (Refined by change 006: an invented title can
+  be a real book that is not on the shelf, so existence alone proves
+  nothing; the match to the read string is the check.)
 - [ ] L2. A matched record carries at least author and a canonical title;
   the pick is shown with those, not with the model's transcription.
 - [ ] Open: what happens when the lookup service is unavailable. Either
