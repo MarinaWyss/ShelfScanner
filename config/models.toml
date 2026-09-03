@@ -28,7 +28,9 @@ fallback = "sonnet"
 
 [stages.choosing]
 primary = "gpt-mini"
-fallback = "qwen-flash"
+# Fallback changed from qwen-flash on 2026-09-03: OpenRouter's shared Qwen pool returned 429s on
+# two of two scans. Haiku 4.5 direct passed change 001 weakly (median overlap 3), answers in 4 s.
+fallback = "haiku"
 
 [models.haiku]
 slug = "anthropic/claude-haiku-4.5"

@@ -284,3 +284,9 @@ Task 0 (rails), 2026-09-02, by the worker; not asked of Marina.
 dense sourced shelf truncated on Sonnet 5 direct with 3,428 reasoning tokens
 inside the old cap. Failover did not apply because the model was chosen
 explicitly for that run, which is the intended behaviour for matrix rows.
+
+**Lead, 2026-09-03, choosing fallback.** `qwen-flash` replaced by `haiku` as the
+choosing fallback. Two real scans through the app failed over from the keyless
+primary onto Qwen via OpenRouter and both got an upstream 429 from the shared
+pool, so the fallback did not fall back. Haiku 4.5 direct passed change 001's
+choosing test weakly and has a working key on this machine.
