@@ -295,7 +295,8 @@ def _days_of(start: datetime | None, end: datetime, photos: list[dict]) -> list[
 
 def summarize(rows: Rows, start: datetime | None, end: datetime) -> Summary:
     """The numbers for one population over `[start, end]`; `rows` is already that population."""
-    photo_day = {p["id"]: parse_ts(p["created_at"]).date() for p in rows.photos}
+    rows = rows.restrict(rows.photos)  # close the join, so an orphan row cannot break the counts
+    photo_day ={p["id"]: parse_ts(p["created_at"]).date() for p in rows.photos}
     rec_photo = {}
     ex_photo = {e["id"]: e["photo_id"] for e in rows.extractions}
     for r in rows.recommendations:
