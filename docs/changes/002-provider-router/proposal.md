@@ -119,3 +119,51 @@ can show which stage is running.
 - **Computed cost drifts from billed cost.** Mitigated by the price check
   date and by a monthly reconciliation against the provider invoices, noted
   as an operational task.
+
+## Decided during the work
+
+Task 3, the OpenAI adapter (2026-09-02):
+
+- **Responses API, not Chat Completions.** It is the surface OpenAI documents
+  for GPT-5.x (reasoning and structured-output guides), it reports truncation
+  explicitly (`incomplete_details.reason == "max_output_tokens"`), and from
+  GPT-5.4 Chat Completions no longer supports reasoning effort with tools.
+  Verified against the installed SDK (`openai` 3.7.0) and the API docs.
+- **Model id `gpt-5.4-mini`**, the unpinned alias, from the SDK's own model
+  list (`openai/types/shared/chat_model.py`, which also lists the dated
+  `gpt-5.4-mini-2026-03-17`) and the docs' model page. The alias is used so
+  the config tracks OpenAI's current snapshot; the response's `model` field
+  records the dated snapshot that actually served the call.
+- **Reasoning effort passes through unchanged.** Config values are the SDK's
+  own vocabulary (`none`, `minimal`, `low`, `medium`, `high`, `xhigh`,
+  `max`); GPT-5.4 mini accepts none/low/medium/high/xhigh. A value the model
+  rejects comes back as a 400 in the result's `error`. `None` in config
+  omits the parameter, so `[models.gpt-mini]` currently runs at OpenAI's
+  default (medium); setting it per stage is the experiment in D4, left for
+  the matrix run once the key exists.
+- **JSON mode by default, a strict schema on request.** The adapter asks for
+  `text.format = json_object` unless it is constructed with a `schema=`
+  dict, which switches to strict `json_schema`. The router instantiates
+  adapters with no arguments, so the pipeline runs in JSON mode today;
+  passing schemas per stage needs a small router change and is left for the
+  lead so the three adapter workers do not each invent one.
+- **A missing `OPENAI_API_KEY` is a result, not a crash.** The adapter returns
+  a `CallResult` whose error names the key rather than raising `SystemExit`
+  like `settings.py` does, so task 5's failover can treat it as a provider
+  outage. The key is read after `load_dotenv(.env)`; `settings.py` is not
+  edited.
+- **`store=False` on every request.** Shelf photos may show private rooms;
+  OpenAI keeps Responses by default, so the adapter opts out.
+- **Image detail `auto`, timeout 180 s, SDK's default two retries.** `auto`
+  matches what the OpenRouter path sent, so the direct-versus-OpenRouter
+  comparison is like for like. Retries mean a logged latency can include a
+  retried connection error; the SDK retries only on connection errors, 408,
+  409, 429 and 5xx.
+- **Cost.** The Responses API's `usage.output_tokens` already includes
+  reasoning tokens, so `cost_from_tokens(model, input, output)` prices
+  reasoning as output with no adjustment (D5); `reasoning_tokens` is logged
+  from `output_tokens_details`.
+- **`tests/test_config_and_adapter.py`** asserted every model was on
+  OpenRouter; that is false once any model goes direct, so the assertion now
+  checks each adapter is a key of `router.ADAPTERS`. The Google and
+  Anthropic branches will need the same line.
