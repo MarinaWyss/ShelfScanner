@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from shelfscanner import router, storage
+from shelfscanner import router, spend, storage
 from shelfscanner.config import Model, load_config
 from shelfscanner.db import get_client
 from shelfscanner.images import resize
@@ -56,6 +56,8 @@ def extract_photo(photo: dict, model: Model, max_edge: int, prompt_name: str, *,
     cfg = load_config()
     prompt_version, prompt = router.load_prompt(prompt_name)
     img = resize(storage.download_photo(photo["storage_path"]), max_edge)
+    if client is None:  # a fake client spends nothing
+        spend.check_spend()
     res = router.vision(model, prompt, img.jpeg, client=client, on_progress=on_progress)
 
     extracted = titles_from(res.parsed) if res.ok else []

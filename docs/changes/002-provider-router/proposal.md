@@ -119,3 +119,47 @@ can show which stage is running.
 - **Computed cost drifts from billed cost.** Mitigated by the price check
   date and by a monthly reconciliation against the provider invoices, noted
   as an operational task.
+
+## Decided during the work
+
+Task 0 (rails), 2026-09-02, by the worker; not asked of Marina.
+
+- **Baseline latency for reading is 11.6 s**, Gemini 3.8 Flash's own p50 in
+  change 001's table (10.0 s was Sonnet's). Choosing is 3.2 s. Both stored in
+  ms in `research/baseline.json`, keyed by set (`core`) and stage, with the
+  model slug that produced them so 006 can add sets and a swap stays visible.
+- **What `research.check` compares.** Per stage: median recall, invented per
+  photo, on-list share (`valid_vs_extraction` over all picks; the hard
+  constraint from 001 D5), median overlap with `marina_picks.json`, p50
+  latency and mean cost; plus cost per scan (the two means summed). Recall,
+  invented, on-list share and overlap may not drop at all; latency and cost
+  may rise by up to 10 %, per stage and per scan.
+- **A gap is a failure.** A labelled photo of the set with no error-free row
+  for a primary fails the check (`reading: 4 of 5 photos ...`), since a
+  missing photo would otherwise hide behind a better median.
+- **Which rows count.** Labelled photos only (non-empty `titles`); the `set`
+  key on the photo row when present, absent meaning `core` (006 contract);
+  extraction rows at the configured `default_max_edge`; the latest error-free
+  row per photo for each stage, a recommendation belonging to the photo of
+  its extraction whichever model made that extraction. Error rows are
+  counted and printed but do not score, as in `research.report`.
+- **A swapped primary is compared against the same numbers**, per D6, with a
+  note in the output rather than a failure. `--set` selects both the photos
+  and the baseline entry; `--json` prints measured, baseline and regressions.
+- **Spend guard.** `SHELFSCANNER_SPEND_CAP_USD` unset means no cap and no
+  database query. `spend_since` is read straight from `[settings]` in
+  `config/models.toml` by `shelfscanner.spend` (config.py is the lead's and
+  gains no field); a missing key means since the epoch. The guard refuses at
+  the cap, not only past it (`spent >= cap`), and runs only for real provider
+  calls: `extract_photo` and `recommend_from_extraction` skip it when a
+  `client` is injected, since a fake spends nothing and the web tests must not
+  need a database. That is an `if` of two lines rather than one.
+- **ruff config** lives in `ruff.toml` (not `pyproject.toml`): the defaults
+  plus `W`, `I` (import order), `UP` (pyupgrade) and `B` (bugbear). Line
+  length is not enforced; the report and the HTML page are wide on purpose.
+- **CI** uses `astral-sh/setup-uv@v6` with `.python-version` (3.12), then
+  `uv sync --frozen`, `uv run ruff check .`, `uv run pytest -q`. No Playwright
+  browser install yet; 003 adds it when a test first needs one.
+- **No spec change in this task.** The spend guard and the check are
+  behaviour, but task 6 owns `docs/specs/`; its `extraction.md`,
+  `recommendation.md` and `run-logging.md` updates should mention both.
