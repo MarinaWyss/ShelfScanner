@@ -26,7 +26,7 @@ def test_stages_name_known_models_with_fallbacks():
     for st in cfg.stages.values():
         assert cfg.model(st.primary).alias == st.primary
         assert st.fallback is not None and cfg.model(st.fallback).alias == st.fallback
-    assert all(m.adapter == "openrouter" for m in cfg.models.values())
+    assert all(m.adapter == "openrouter" or m.model_id for m in cfg.models.values())  # direct needs an id
     assert cfg.prices_checked is not None
 
 

@@ -54,6 +54,8 @@ price_output = 4.50
 # gemini-3.5-flash-lite ($0.30 / $2.50) is the current Lite if a cheaper
 # fallback is wanted later.
 slug = "google/gemini-3.8-flash"
+adapter = "google"
+model_id = "gemini-3.8-flash"
 provider = "Google"
 price_input = 0.75
 price_output = 3.75
