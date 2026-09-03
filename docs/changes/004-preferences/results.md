@@ -18,14 +18,19 @@ Same five best extractions as change 001. Overlap is how many of the
 run's five picks match Marina's own picks for that shelf; photo 5 is
 excluded from the summary because every book on it is approved.
 
-| Photo | v1, flat file, via OpenRouter (change 001) | v2, Goodreads object, direct |
-|---|---|---|
-| 1 | 2 | 4 |
-| 2 | 1 | 2 |
-| 3 | 2 | 3 |
-| 4 | 4 | 4 |
-| mean, photos 1 to 4 | 2.25 | 3.25 |
-| median, all five | 2 | 4 |
+| Photo | v1, flat file, via OpenRouter (change 001) | v2, flat file, direct | v2, Goodreads object, direct |
+|---|---|---|---|
+| 1 | 2 | 3 | 4 |
+| 2 | 1 | 2 | 2 |
+| 3 | 2 | 2 | 3 |
+| 4 | 4 | 3 | 4 |
+| mean, photos 1 to 4 | 2.25 | 2.50 | 3.25 |
+| median, all five | 2 | 3 | 4 |
+
+The middle column answers the "nothing lost" question: v2 with the old
+flat file is no worse than v1 (slightly better on the mean), so a user
+with no export gets at least what change 001 measured. The right column
+is the export's contribution on top of the prompt: most of the gain.
 
 Sonnet was the weakest chooser in change 001 (fail on overlap). With the
 richer input it passes the same line (median at least 3) without any
@@ -45,6 +50,4 @@ is what the proposal set out to measure.
 1. The full grid on the choosing primary and its fallback: v1 and v2,
    flat and export. Pass line: median overlap at least 4 on photos 1 to 4
    with v2 plus the export.
-2. v2 with the old flat file, to confirm nothing is lost for a user with
-   no export.
-3. Set the default prompt in config; update the baseline; archive.
+2. Set the default prompt in config; update the baseline; archive.
