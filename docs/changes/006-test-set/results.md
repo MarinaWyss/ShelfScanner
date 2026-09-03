@@ -39,6 +39,19 @@ Findings:
   puts the count above zero for the fallback reading model. The primary
   (Gemini 3.8 Flash) is still to be run once its key exists.
 
+## Labelling notes to honour when scoring
+
+- `wm_jp_japan_okinawa_naha` is labelled only in part (face-out covers and
+  two bays; about 200 more spines are readable). It is excluded from the
+  invented-title count for the lookup decision; a model's extra titles
+  there are not inventions.
+- `wm_bookstore_shelf` carries six titles that are cover images printed on
+  the section signs, not books on the shelf. Kept as labels: a model
+  reporting them is reading, not inventing.
+- Manga series with numbered volumes (`wm_009_anime_books`) are labelled
+  once by series title; the matcher accepts "One Piece 67" against "One
+  Piece".
+
 ## Still to do
 
 1. Sourced labels (four workers), then the sourced set on the reading
