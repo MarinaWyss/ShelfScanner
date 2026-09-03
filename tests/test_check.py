@@ -195,7 +195,7 @@ def test_render_flags_a_swapped_primary_and_the_verdict():
     assert "REGRESSION\n  reading.mean_invented: 0.6000 vs baseline 0.0000" in render(m, BASE, regressions)
 
 
-def test_committed_baseline_is_change_001s_pair():
+def test_committed_baseline_is_change_001s_pair_with_overlap_remeasured():
     b = load_baseline()
     core = b["sets"]["core"]
     assert core["photos"] == 5
@@ -205,7 +205,8 @@ def test_committed_baseline_is_change_001s_pair():
     assert set(core["reading"]) >= set(check.READING_METRICS)
     assert set(core["choosing"]) >= set(check.CHOOSING_METRICS)
     assert (core["reading"]["median_recall"], core["reading"]["mean_invented"]) == (1.0, 0.0)
-    assert (core["choosing"]["share_valid_vs_extraction"], core["choosing"]["median_overlap"]) == (1.0, 4)
+    # Overlap was re-baselined on 2026-09-03 to the three-run measurement of the default prompt (3.33).
+    assert (core["choosing"]["share_valid_vs_extraction"], core["choosing"]["median_overlap"]) == (1.0, 3.33)
     assert core["cost_per_scan_usd"] == pytest.approx(core["reading"]["mean_cost_usd"] + core["choosing"]["mean_cost_usd"])
 
 
