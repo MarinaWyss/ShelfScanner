@@ -151,3 +151,8 @@ new catalogue:
 **Author-only strings** (006's "Tom Clancy" bucket) were not resolved: the
 module has no author search, and none of the 329 strings here was
 author-only. Left as it is; the sourced set is where it would matter.
+
+## Archived 2026-09-03
+
+Wired and measured; follow-ups listed in `tasks.md` are quality refinements,
+not blockers. The web scan verifies inside its choosing step.

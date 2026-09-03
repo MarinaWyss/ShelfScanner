@@ -41,3 +41,9 @@ Work in order. ∥ marks tasks that can run in parallel worktrees.
   author was glued into the title field.
 - A second catalogue for recent and self-published books, if the miss
   rate on real scans says so.
+- Wrong record, wrong author, wrong reason: on a real scan the catalogue
+  matched the Avatar comic "Smoke and Shadow" to Tanya Huff's novel and
+  the chooser reasoned from her name. When the read string carried an
+  author that disagrees with the record's, keep the read author for the
+  chooser and mark the record uncertain; a record's author must never
+  overwrite one the model read off the spine.

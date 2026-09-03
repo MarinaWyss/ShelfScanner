@@ -131,7 +131,7 @@ behaviour is true today and has a spec.
 
 *Book lookup*
 
-- [ ] L1. Every title the user sees resolves to a catalogue record whose
+- [x] L1. Every title the user sees resolves to a catalogue record whose
   title matches what was read closely enough. Given an extraction
   containing a string that no record matches at the threshold, when
   recommendations are produced, then that string is not among the picks
@@ -550,7 +550,7 @@ can wait" decision; the order is revised after each change lands.
 | Preferences: Goodreads export, prompt v2, overlap eval | 004 | quality | 2026-09-16 | approved |
 | Recommendations in the app, saved list, feedback | 005 | app | 2026-09-23 | approved |
 | Test set: sourced shelf photos, nightly eval, the lookup decision | 006 | quality | 2026-09-16 | approved |
-| Book lookup or enrichment, whichever 006 decides | 007 | quality | 2026-09-23 | approved |
+| Book lookup as verification (006 decided) | 007 | quality | 2026-09-23 | done 2026-09-03 |
 | Hardening: limits, cost cap, retention, errors; caching if measured | 008 | app | 2026-09-23 | approved |
 | Monitoring: dashboard from the rows, weekly review | 009 | either | 2026-09-23 | approved |
 | Deployment: Vercel from GitHub | 010 | app | 2026-09-30 | approved |
