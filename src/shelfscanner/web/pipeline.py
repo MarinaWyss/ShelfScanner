@@ -73,6 +73,12 @@ class Reading:
 class Pick:
     title: str
     reason: str
+    author: str | None = None
+    cover_id: str | None = None
+
+    @property
+    def cover_url(self) -> str | None:
+        return f"https://covers.openlibrary.org/b/id/{self.cover_id}-M.jpg" if self.cover_id else None
 
 
 @dataclass(frozen=True)
@@ -153,6 +159,12 @@ class SavedPick:
     reason: str
     saved_at: str  # ISO timestamps as the database gives them
     scanned_at: str
+    author: str | None = None
+    cover_id: str | None = None
+
+    @property
+    def cover_url(self) -> str | None:
+        return f"https://covers.openlibrary.org/b/id/{self.cover_id}-M.jpg" if self.cover_id else None
 
 
 def prefs_for_scan(prefs: dict | None) -> dict:
@@ -331,7 +343,7 @@ class SupabasePipeline:
                      "failover_error": rec[0]["failover_error"]} if rec else {})
         if row.error:
             return Choosing(error=row.error, recommendation_id=row.id, **attempts)
-        return Choosing(picks=[Pick(r.title, r.reason) for r in row.recs], recommendation_id=row.id, **attempts)
+        return Choosing(picks=[Pick(r.title, r.reason, r.author, r.cover_id) for r in row.recs], recommendation_id=row.id, **attempts)
 
     def result(self, photo_id: int) -> Scan | None:
         res = (self._db().table("extractions").select("id, parsed_titles, error, model, failover_from, failover_error")
@@ -353,7 +365,7 @@ class SupabasePipeline:
         if rec["error"]:
             step, message = split_step(rec["error"])
             return Scan(reading, Choosing(error=message, step=step, recommendation_id=rec["id"], **attempts))
-        picks = [Pick(r.title, r.reason) for r in recommend.recs_from(rec["parsed_recommendations"])]
+        picks = [Pick(r.title, r.reason, r.author, r.cover_id) for r in recommend.recs_from(rec["parsed_recommendations"])]
         return Scan(reading, Choosing(picks=picks, recommendation_id=rec["id"], **attempts))
 
     # --- limits (008) ---------------------------------------------------------------------------
@@ -407,7 +419,7 @@ class SupabasePipeline:
                .eq("id", recommendation_id).eq("extractions.photos.session_id", session_id).execute())
         if not res.data or res.data[0]["error"]:
             return None
-        return [Pick(r.title, r.reason) for r in recommend.recs_from(res.data[0]["parsed_recommendations"])]
+        return [Pick(r.title, r.reason, r.author, r.cover_id) for r in recommend.recs_from(res.data[0]["parsed_recommendations"])]
 
     def pick_states(self, session_id: int, recommendation_id: int) -> dict[int, PickState]:
         db = self._db()
@@ -443,7 +455,7 @@ class SupabasePipeline:
                 continue
             pick = picks[r["pick_index"]]
             out.append(SavedPick(r["recommendation_id"], r["pick_index"], pick.title, pick.reason, r["created_at"],
-                                 rec["extractions"]["photos"]["created_at"]))
+                                 rec["extractions"]["photos"]["created_at"], pick.author, pick.cover_id))
         return out
 
 

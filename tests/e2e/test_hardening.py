@@ -20,6 +20,8 @@ def test_the_third_scan_in_an_hour_is_refused_with_the_number(limited_server: Se
     for _ in range(2):
         scan_once(page)
         expect(page.locator("#picks")).to_be_visible(timeout=15_000)
+        page.get_by_role("link", name="Scan More Books").click()  # 014: the result takes the form's place
+        expect(page.locator("#scan-form")).to_be_visible()
     scan_once(page)
     error = page.locator("#scan-error")
     expect(error).to_be_visible(timeout=10_000)

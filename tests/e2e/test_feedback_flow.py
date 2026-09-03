@@ -15,19 +15,22 @@ FIXTURE = Path("tests/fixtures/goodreads_sample.csv")
 
 def test_preferences_scan_save_unsave_mark_and_the_saved_list(server: Server, page: Page):
     # First visit: the preferences page. Two genres, a line, the export.
-    page.goto(f"{server.url}/scan")
-    expect(page).to_have_url(f"{server.url}/preferences")
-    page.check("input[name=genres][value='Science Fiction']")
-    page.check("input[name=genres][value='Horror']")
-    page.fill("input[name=authors]", "Ursula K. Le Guin, Shirley Jackson")
-    page.fill("textarea[name=free_text]", "Short and strange.")
+    page.goto(f"{server.url}/books/upload")
+    expect(page).to_have_url(f"{server.url}/books")
+    page.locator("label.genre", has_text="Science Fiction").click()
+    page.locator("label.genre", has_text="Horror").click()
+    page.fill("#author-input", "Ursula K. Le Guin")
+    page.keyboard.press("Enter")
+    expect(page.locator("#author-chips .chip")).to_have_count(1)
+    page.fill("#author-input", "Shirley Jackson")  # left in the box: goes with the form as authors_extra
     page.set_input_files("input[name=goodreads]", {"name": "goodreads_library_export.csv", "mimeType": "text/csv",
                                                    "buffer": FIXTURE.read_bytes()})
     page.click("#prefs-save")
-    expect(page).to_have_url(f"{server.url}/scan")
+    expect(page).to_have_url(f"{server.url}/books/upload")
+    expect(page.locator("#stepper")).to_have_attribute("data-step", "2")
 
     (prefs,) = server.pipeline.prefs.values()
-    assert prefs["genres"] == ["Science Fiction", "Horror"] and prefs["free_text"] == "Short and strange."
+    assert prefs["genres"] == ["Science Fiction", "Horror"] and prefs["free_text"] == ""
     assert prefs["authors"] == ["Ursula K. Le Guin", "Shirley Jackson"]
     assert len(prefs["rated_books"]) == 18 and len(prefs["to_read"]) == 7
 
@@ -35,6 +38,7 @@ def test_preferences_scan_save_unsave_mark_and_the_saved_list(server: Server, pa
     pick(page, small_jpeg())
     expect(page.locator("#scan-button")).to_be_enabled()
     page.click("#scan-button")
+    expect(page.locator("#stepper")).to_have_attribute("data-step", "3")
     expect(page.locator("#stage-choosing")).to_have_class("active", timeout=10_000)
     expect(page.locator("#stage-done")).to_have_class("done", timeout=10_000)
     expect(page.locator("#picks .pick")).to_have_count(5)
@@ -45,11 +49,11 @@ def test_preferences_scan_save_unsave_mark_and_the_saved_list(server: Server, pa
 
     # Save two, unsave one, mark one.
     actions = lambda i: page.locator(f"#pick-actions-{rid}-{i}")  # noqa: E731
-    actions(0).get_by_role("button", name="Save").click()
+    actions(0).get_by_role("button", name="Save for Later").click()
     expect(actions(0)).to_have_attribute("data-saved", "true")
-    actions(2).get_by_role("button", name="Save").click()
+    actions(2).get_by_role("button", name="Save for Later").click()
     expect(actions(2)).to_have_attribute("data-saved", "true")
-    actions(2).get_by_role("button", name="Saved").click()
+    actions(2).get_by_role("button", name="Saved to List").click()
     expect(actions(2)).to_have_attribute("data-saved", "false")
     actions(4).get_by_role("button", name="Not for me").click()
     expect(actions(4)).to_have_attribute("data-not-for-me", "true")
@@ -64,10 +68,10 @@ def test_preferences_scan_save_unsave_mark_and_the_saved_list(server: Server, pa
     # A reload shows the same state (F1: saved picks survive a reload).
     page.reload()
     expect(page.locator("#scan-form")).to_be_visible()
-    page.goto(f"{server.url}/saved")
+    page.goto(f"{server.url}/reading-list")
     expect(page.locator(".saved-pick")).to_have_count(1)
     expect(page.locator(".saved-pick .pick-title")).to_have_text(DEFAULT_PICKS[0]["title"])
-    expect(page.locator(".saved-pick .scanned")).to_contain_text("Scanned")
+    expect(page.locator(".saved-pick .date")).to_contain_text("Date added")
 
     # Unsave from the list removes it there and in the rows.
     page.locator(".saved-pick").get_by_role("button", name="Remove").click()
@@ -77,16 +81,17 @@ def test_preferences_scan_save_unsave_mark_and_the_saved_list(server: Server, pa
     expect(page.locator("#saved-empty")).to_be_visible()
 
 
-def test_a_skipped_first_visit_still_gets_five_picks(server: Server, page: Page):
-    page.goto(f"{server.url}/scan")
-    page.click("#prefs-skip button")
-    expect(page).to_have_url(f"{server.url}/scan")
+def test_continue_with_nothing_chosen_still_gets_five_picks(server: Server, page: Page):
+    page.goto(f"{server.url}/books")
+    page.click("#prefs-save")
+    expect(page).to_have_url(f"{server.url}/books/upload")
     pick(page, small_jpeg())
     expect(page.locator("#scan-button")).to_be_enabled()
     page.click("#scan-button")
     expect(page.locator("#picks .pick")).to_have_count(5, timeout=15_000)
     (text,) = server.pipeline.client.inputs
     assert "taste is unknown" in text
-    page.click("nav a[href='/preferences']")
+    page.click("#menu-toggle")
+    page.click("aside.drawer a[href='/books']")
     expect(page.locator("#prefs-form")).to_be_visible()
-    expect(page.locator("#prefs-skip")).to_have_count(0)
+    expect(page.locator("#stepper")).to_have_attribute("data-step", "1")

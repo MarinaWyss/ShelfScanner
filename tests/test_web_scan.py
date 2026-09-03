@@ -84,7 +84,7 @@ def test_events_stream_reading_then_choosing_then_five_picks():
     assert 'id="stage-reading" class="done"' in events[2][1] and 'id="stage-checking" class="active"' in events[2][1]
     assert 'id="stage-checking" class="done"' in events[3][1] and 'id="stage-choosing" class="active"' in events[3][1]
     done = events[4][1]
-    assert 'id="stage-done" class="done"' in done and "Five for you" in done
+    assert 'id="stage-done" class="done"' in done and "Recommended for You" in done
     assert done.count('class="pick"') == 5 and "Piranesi" in done and "Dune" in done
     assert 'hx-post="/picks/1/0/save"' in done and 'hx-post="/picks/1/0/not-for-me"' in done
 
@@ -172,7 +172,7 @@ def test_no_titles_read_means_done_without_choosing():
     scan_id = post_photo(client, small_jpeg()).json()["id"]
     events = events_of(client, scan_id)
     assert [name for name, _ in events] == ["uploaded", "reading", "done", "close"]
-    assert "No titles could be read" in events[2][1]
+    assert "Unable to detect any books" in events[2][1]
     assert [c[0] for c in pipeline.client.calls] == ["vision"]
     assert client.get(f"/scan/{scan_id}").json() == {"id": scan_id, "status": "done", "titles": [],
                                                      "recommendation_id": None, "picks": []}
@@ -227,15 +227,17 @@ def test_htmx_requests_get_fragments():
     assert "sse-connect" not in done.text and "Piranesi" in done.text and done.text.count('class="pick"') == 5
 
 
-def test_scan_page_has_the_picker_the_scripts_and_the_links():
+def test_upload_step_has_the_picker_the_scripts_and_the_links():
     client, _ = make_client()
-    assert client.get("/scan", follow_redirects=False).status_code == 302, "first visit goes to preferences"
+    assert client.get("/books/upload", follow_redirects=False).status_code == 302, "first visit goes to preferences"
     client.post("/preferences", data={"action": "skip"})
-    res = client.get("/scan")
+    res = client.get("/books/upload")
     assert res.status_code == 200
     assert 'name="photo"' in res.text and 'hx-post="/scan"' in res.text and "/static/app.js" in res.text
-    assert 'href="/saved"' in res.text and 'href="/preferences"' in res.text and 'href="/"' in res.text
+    assert 'href="/reading-list"' in res.text and 'href="/books"' in res.text and 'href="/"' in res.text
+    assert 'data-step="2"' in res.text and "Get Recommendations" in res.text
     assert "required" not in res.text and 'id="scan-hint"' in res.text  # 012: iOS enforces `required` silently
+    assert client.get("/scan", follow_redirects=False).headers["location"] == "/books/upload"  # the old address
 
 
 def test_a_submit_with_no_photo_is_refused_with_the_message_not_a_422():

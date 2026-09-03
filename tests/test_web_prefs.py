@@ -18,26 +18,27 @@ def make_client() -> tuple[TestClient, FakePipeline]:
     return TestClient(create_app(pipeline=pipeline, sessions=MemorySessions())), pipeline
 
 
-def test_first_visit_shows_the_page_with_a_skip_and_the_originals_eighteen_genres():
+def test_first_visit_lands_on_step_one_with_the_originals_eighteen_genres():
     client, _ = make_client()
-    res = client.get("/scan")
-    assert res.status_code == 200 and str(res.url).endswith("/preferences")
+    res = client.get("/books/upload")
+    assert res.status_code == 200 and str(res.url).endswith("/books"), "step 2 without preferences goes back to step 1"
     assert len(GENRES) == 18 and GENRES[0] == "Fiction" and "Comics" in GENRES  # 012 D4: the original's list
     assert all(f'value="{g}"' in res.text.replace("&amp;", "&") for g in GENRES)
-    assert 'id="prefs-skip"' in res.text and 'name="goodreads"' in res.text and 'name="authors"' in res.text
+    assert 'name="goodreads"' in res.text and 'name="authors"' in res.text and 'id="author-input"' in res.text
+    assert 'data-step="1"' in res.text and "Continue" in res.text
 
 
 def test_genres_and_free_text_are_stored_as_the_object_and_shown_again():
     client, pipeline = make_client()
     res = client.post("/preferences", data={"genres": ["Science Fiction", "Horror"], "free_text": " Voice matters. "},
                       follow_redirects=False)
-    assert res.status_code == 303 and res.headers["location"] == "/scan"
+    assert res.status_code == 303 and res.headers["location"] == "/books/upload"
     assert pipeline.prefs[1] == {**preferences.empty(), "genres": ["Science Fiction", "Horror"], "free_text": "Voice matters."}
 
     page = client.get("/preferences").text
     assert 'value="Horror" checked' in page and 'value="Fantasy">' in page
-    assert "Voice matters." in page and 'id="prefs-skip"' not in page, "not a first visit any more"
-    assert client.get("/scan").status_code == 200 and 'hx-post="/scan"' in client.get("/scan").text
+    assert "Voice matters." not in page, "014: the page has no free-text field (v1 had none); the object keeps the key"
+    assert client.get("/books/upload").status_code == 200 and 'hx-post="/scan"' in client.get("/books/upload").text
 
 
 def test_favorite_authors_round_trip_as_a_list():
@@ -45,6 +46,10 @@ def test_favorite_authors_round_trip_as_a_list():
     client, pipeline = make_client()
     client.post("/preferences", data={"authors": " Ursula K. Le Guin ,Hilary Mantel,, ursula k. le guin\nOctavia Butler "})
     assert pipeline.prefs[1]["authors"] == ["Ursula K. Le Guin", "Hilary Mantel", "Octavia Butler"]
+    # 014: what is still typed in the box when Continue is pressed counts too.
+    client.post("/preferences", data={"authors": "Ursula K. Le Guin", "authors_extra": " N. K. Jemisin "})
+    assert pipeline.prefs[1]["authors"] == ["Ursula K. Le Guin", "N. K. Jemisin"]
+    client.post("/preferences", data={"authors": " Ursula K. Le Guin ,Hilary Mantel,, ursula k. le guin\nOctavia Butler "})
     page = client.get("/preferences").text
     assert 'value="Ursula K. Le Guin, Hilary Mantel, Octavia Butler"' in page
     client.post("/preferences", data={"authors": ""})
@@ -54,7 +59,7 @@ def test_favorite_authors_round_trip_as_a_list():
 def test_a_stored_genre_off_the_list_stays_chosen_with_its_own_chip():
     # 012: an object saved with the older list, or by the CLI, loses nothing.
     client, pipeline = make_client()
-    client.get("/scan", follow_redirects=False)
+    client.get("/books", follow_redirects=False)
     pipeline.prefs[1] = {**preferences.empty(), "genres": ["Horror", "Essays & ideas"]}
     page = client.get("/preferences").text.replace("&amp;", "&")
     assert 'value="Horror" checked' in page and 'value="Essays & ideas" checked' in page
@@ -66,7 +71,7 @@ def test_skip_stores_an_empty_object_so_the_page_is_not_shown_again():
     res = client.post("/preferences", data={"action": "skip"}, follow_redirects=False)
     assert res.status_code == 303
     assert pipeline.prefs[1] == preferences.empty()
-    assert client.get("/scan", follow_redirects=False).status_code == 200
+    assert client.get("/books/upload", follow_redirects=False).status_code == 200
 
 
 def test_goodreads_export_goes_through_the_importer_and_is_not_kept():
@@ -127,5 +132,5 @@ def test_preferences_are_per_session():
     app = create_app(pipeline=pipeline, sessions=store)
     a, b = TestClient(app), TestClient(app)
     a.post("/preferences", data={"genres": ["Horror"]})
-    assert b.get("/scan", follow_redirects=False).status_code == 302
+    assert b.get("/books/upload", follow_redirects=False).status_code == 302
     assert list(pipeline.prefs) == [1]

@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% set page = 'books' %}
+{% block title %}Book Scanner - ShelfScanner{% endblock %}
+{% block content %}
+  <div class="section">
+    <h1 class="page-title">Book Scanner</h1>
+    <p class="page-lede">Scan books to get personalized recommendations</p>
+  </div>
+  {% include "_stepper.html" %}
+  <div class="card step-card"><div class="body">
+    <div id="upload-step">
+      <div class="step-head">
+        <h2>Upload a photo of books</h2>
+        <p>Take a photo of a bookshelf or book collection you want recommendations for.</p>
+      </div>
+      <form id="scan-form" hx-post="/scan" hx-encoding="multipart/form-data" hx-target="#scan" hx-swap="innerHTML">
+        <div class="dropzone" id="dropzone">
+          <div id="dz-idle">
+            <div class="round"><svg class="i" viewBox="0 0 24 24"><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7"/><line x1="16" x2="22" y1="5" y2="5"/><line x1="19" x2="19" y1="2" y2="8"/><circle cx="9" cy="9" r="2"/><path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/></svg></div>
+            <h3>Upload a photo</h3>
+            <p id="dz-text">Drag &amp; drop an image here, or click to browse</p>
+            <div class="choices"><button type="button" class="btn primary" id="choose-image">Choose Image</button></div>
+          </div>
+          <div id="dz-preview" hidden>
+            <img class="preview" id="preview" alt="Uploaded bookshelf">
+            <p class="hint" id="dz-preparing">Preparing photo…</p>
+          </div>
+          <input type="file" name="photo" accept="image/*" id="book-image">
+          <input type="hidden" name="resized" value="0">
+        </div>
+        <p class="tip"><strong>Tip:</strong> Try to capture clear, well-lit images of book covers and spines</p>
+        <div class="row-end">
+          <button type="submit" class="btn primary" id="scan-button">Get Recommendations</button>
+        </div>
+        <p class="hint" id="scan-hint" hidden>Choose a photo first.</p>
+      </form>
+    </div>
+    <section id="scan" aria-live="polite"></section>
+    <div class="row-start" id="upload-back">
+      <a class="btn outline" href="/books"><svg class="i s" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7"/></svg>Back to Preferences</a>
+    </div>
+  </div></div>
+{% endblock %}

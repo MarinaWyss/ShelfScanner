@@ -240,7 +240,7 @@ def test_a_404_creates_no_session_row_and_sets_no_cookie():
     assert r.status_code == 404 and "set-cookie" not in r.headers and len(store.rows) == 0
     r = client.get("/")
     assert r.status_code == 200 and len(store.rows) == 0, "the homepage is unsessioned (012)"
-    r = client.get("/scan", follow_redirects=False)
+    r = client.get("/books/upload", follow_redirects=False)
     assert r.status_code == 302 and len(store.rows) == 1
 
 

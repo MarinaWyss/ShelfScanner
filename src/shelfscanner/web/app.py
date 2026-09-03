@@ -55,6 +55,7 @@ def create_app(*, pipeline: Pipeline | None = None, sessions: SessionStore | Non
     app.state.pipeline = pipeline
     env = Environment(loader=FileSystemLoader(TEMPLATES_DIR), autoescape=select_autoescape(["html"]),
                       trim_blocks=True, lstrip_blocks=True)
+    env.globals["year"] = datetime.now(UTC).year  # the footer's copyright line (014)
     app.state.templates = Jinja2Templates(env=env)
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
     app.include_router(scan.router)
@@ -78,14 +79,24 @@ def create_app(*, pipeline: Pipeline | None = None, sessions: SessionStore | Non
         # 012: what the app does, for a visitor. Unsessioned (sessions.UNSESSIONED_PATHS): no row, no cookie.
         return app.state.templates.TemplateResponse(request, "home.html")
 
-    @app.get("/scan")
-    async def scan_page(request: Request):
-        # First visit: no preferences row yet, so the preferences page comes first (005). It can be
-        # skipped, which stores an empty object, and a scan with none still runs (D2).
+    # 014: the Book Scanner is the v1 flow, three steps on one page: /books is step 1 (preferences,
+    # prefilled from the row), /books/upload is step 2 (the photo), and the recommendations replace
+    # step 2 in place. Step 2 without a preferences row goes back to step 1 (005: the first visit
+    # sees the preferences first).
+    @app.get("/books")
+    async def books_page(request: Request):
+        return await prefs.preferences_page(request)
+
+    @app.get("/books/upload")
+    async def upload_page(request: Request):
         stored = await to_thread.run_sync(pipeline.preferences, request.state.session_id)
         if stored is None:
-            return RedirectResponse("/preferences", status_code=302)
-        return app.state.templates.TemplateResponse(request, "scan.html")
+            return RedirectResponse("/books", status_code=302)
+        return app.state.templates.TemplateResponse(request, "upload.html", {"step": 2})
+
+    @app.get("/scan")
+    async def scan_page():
+        return RedirectResponse("/books/upload", status_code=301)  # the 003 to 012 address
 
     return app
 

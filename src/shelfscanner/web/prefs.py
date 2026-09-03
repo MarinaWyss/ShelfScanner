@@ -74,8 +74,8 @@ def _page(request: Request, prefs: dict | None, *, error: str | None = None, sta
     chosen = set(obj["genres"])
     # A stored genre that is not on the list (an older list, the CLI) stays chosen and gets its own chip.
     genres = GENRES + [g for g in obj["genres"] if g not in GENRES]
-    return HTMLResponse(_render(request, "preferences.html", genres=genres, chosen=chosen,
-                                free_text=obj["free_text"], authors=", ".join(obj["authors"]),
+    return HTMLResponse(_render(request, "books.html", step=1, genres=genres, chosen=chosen,
+                                free_text=obj["free_text"], authors=obj["authors"],
                                 import_note=import_note(obj), first=prefs is None, error=error), status_code=status)
 
 
@@ -88,7 +88,7 @@ async def preferences_page(request: Request):
 @router.post("/preferences")
 async def save_preferences(request: Request, genres: Annotated[list[str], Form()] = [],  # noqa: B006 - FastAPI reads the default
                            free_text: Annotated[str, Form()] = "", action: Annotated[str, Form()] = "save",
-                           authors: Annotated[str, Form()] = "",
+                           authors: Annotated[str, Form()] = "", authors_extra: Annotated[str, Form()] = "",
                            goodreads: Annotated[UploadFile | None, File()] = None):
     session_id = request.state.session_id
     pipeline = _pipeline(request)
@@ -105,9 +105,11 @@ async def save_preferences(request: Request, genres: Annotated[list[str], Form()
             if data:
                 export = data.decode("utf-8-sig", errors="replace")
         try:
+            # `authors` is the chip list the script keeps; `authors_extra` is whatever is still typed in the
+            # box when Continue is pressed, or the whole field when the script did not run (014).
             prefs = build_object(existing, genres, free_text, export, name=goodreads.filename if goodreads else "",
-                                 authors=authors)
+                                 authors=f"{authors},{authors_extra}")
         except SystemExit:
             return _page(request, existing, error=NOT_AN_EXPORT, status=400)
     await to_thread.run_sync(pipeline.save_preferences, session_id, prefs)
-    return RedirectResponse("/scan", status_code=303)
+    return RedirectResponse("/books/upload", status_code=303)

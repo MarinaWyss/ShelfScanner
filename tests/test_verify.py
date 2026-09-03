@@ -212,11 +212,14 @@ def test_picks_carry_verified_and_the_record():
         {"title": "Dune", "reason": "off the list"}, "not a pick"]}
     out = annotate_picks(parsed, v, T)
     recs = out["recommendations"]
-    assert recs[0] == {"title": "american gods", "reason": "r1", "verified": True, "catalogue_id": "OL679360W", "cover_id": "8494659"}
-    assert recs[1] == {"title": "Im Westen nichts Neues", "reason": "r2", "verified": False, "catalogue_id": None, "cover_id": None}
-    assert recs[2] == {"title": "Dune", "reason": "off the list", "verified": False, "catalogue_id": None, "cover_id": None}
+    assert recs[0] == {"title": "american gods", "reason": "r1", "verified": True, "catalogue_id": "OL679360W", "cover_id": "8494659",
+                       "author": "Neil Gaiman"}
+    assert recs[1] == {"title": "Im Westen nichts Neues", "reason": "r2", "verified": False, "catalogue_id": None, "cover_id": None,
+                       "author": None}
+    assert recs[2] == {"title": "Dune", "reason": "off the list", "verified": False, "catalogue_id": None, "cover_id": None,
+                       "author": None}
     assert recs[3] == "not a pick"
     assert parsed["recommendations"][0] == {"title": "american gods", "reason": "r1"}  # the reply itself is not mutated
     assert annotate_picks([{"title": "American Gods"}], v, T) == [
-        {"title": "American Gods", "verified": True, "catalogue_id": "OL679360W", "cover_id": "8494659"}]
+        {"title": "American Gods", "verified": True, "catalogue_id": "OL679360W", "cover_id": "8494659", "author": "Neil Gaiman"}]
     assert annotate_picks("garbage", v, T) == "garbage"

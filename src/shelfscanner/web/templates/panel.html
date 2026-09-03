@@ -1,38 +1,67 @@
-{#- The progress list and the result for one scan. Rendered whole for every event. -#}
+{#- The scan in progress and its result (step 3 of books.tsx). Rendered whole for every event. -#}
 {% if live %}<div id="scan-live" hx-ext="sse" sse-connect="/scan/{{ scan_id }}/events"
      sse-swap="uploaded,reading,checking,choosing,done,failed" sse-close="close" data-scan-id="{{ scan_id }}">{% endif %}
-<ol class="stages" data-stage="{{ stage }}">
-  {% for row in rows %}
-  <li id="stage-{{ row.name }}" class="{{ row.state }}">
-    <span class="mark" aria-hidden="true">{% if row.state == 'done' %}&#10003;{% elif row.state == 'failed' %}&#10007;{% elif row.state == 'active' %}&#9679;{% else %}&#9675;{% endif %}</span>
-    <span>{{ row.label }}{% if note and row.state == 'active' %}<span class="note">{{ note }}</span>{% endif %}</span>
-  </li>
+{% if stage != 'done' and stage != 'failed' %}
+<div class="dropzone"><div class="working">
+  <div class="spin"></div>
+  <p class="t1">Analyzing your books</p>
+  <p class="t2">This may take a moment...</p>
+  <ol class="stages" data-stage="{{ stage }}">
+    {% for row in rows %}
+    <li id="stage-{{ row.name }}" class="{{ row.state }}">
+      <span class="mark" aria-hidden="true">{% if row.state == 'done' %}&#10003;{% elif row.state == 'failed' %}&#10007;{% elif row.state == 'active' %}&#9679;{% else %}&#9675;{% endif %}</span>
+      <span>{{ row.label }}{% if note and row.state == 'active' %}<span class="note">{{ note }}</span>{% endif %}</span>
+    </li>
+    {% endfor %}
+  </ol>
+</div></div>
+{% else %}
+<ol class="stages" data-stage="{{ stage }}" hidden>
+  {% for row in rows %}<li id="stage-{{ row.name }}" class="{{ row.state }}"><span class="mark" aria-hidden="true"></span><span>{{ row.label }}</span></li>
   {% endfor %}
 </ol>
+{% endif %}
 {% if stage == 'done' %}
   {% if picks %}
-  <h2>{% if picks|length == 5 %}Five for you{% else %}Picks for you{% endif %}</h2>
+  <div class="recs-head">
+    <h3>Book Matches Based on Your Preferences</h3>
+    <p>We've analyzed the books in your photo and matched them against your reading preferences. Here are the books that best match your taste.</p>
+  </div>
+  <h3 class="recs-title">Recommended for You</h3>
   <ol class="picks" id="picks" data-recommendation-id="{{ recommendation_id }}">
     {% for pick in picks %}
     {% set index = loop.index0 %}
     {% set state = states[index] %}
     <li class="pick" id="pick-{{ index }}">
-      <strong class="pick-title">{{ pick.title }}</strong>
-      <p class="reason">{{ pick.reason }}</p>
-      {% include "pick_actions.html" %}
+      <div class="cover-col">
+        {% if pick.cover_url %}<img class="cover" src="{{ pick.cover_url }}" alt="" loading="lazy">{% else %}
+        <div class="cover-ph"><svg class="i" viewBox="0 0 24 24"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg></div>{% endif %}
+      </div>
+      <div class="text-col">
+        <div class="text">
+          <h4 class="pick-title">{{ pick.title }}</h4>
+          {% if pick.author %}<p class="by">by {{ pick.author }}</p>{% endif %}
+          <div class="why"><p class="t1">Why This Matches You:</p><p class="t2 reason">{{ pick.reason }}</p></div>
+        </div>
+        <div class="actions">{% include "pick_actions.html" %}</div>
+      </div>
     </li>
     {% endfor %}
   </ol>
   <details class="all-titles">
-    <summary>All {{ titles|length }} titles read from the shelf</summary>
+    <summary>Detected Books ({{ titles|length }})</summary>
     <ol class="titles" id="titles">
       {% for title in titles %}<li>{{ title }}</li>
       {% endfor %}
     </ol>
   </details>
   {% else %}
-  <p class="empty" id="titles">No titles could be read from this photo. Try closer, with the spines facing the camera.</p>
+  <div class="empty-result" id="titles">
+    <svg class="i" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+    <p>Unable to detect any books in the image. Please try another photo with clearer book spines.</p>
+  </div>
   {% endif %}
+  <div class="row-start"><a class="btn outline" href="/books/upload"><svg class="i s" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7"/></svg>Scan More Books</a></div>
 {% elif stage == 'failed' %}
   <div class="error" role="alert" id="scan-error" data-stage="{{ failed_stage }}"><strong>{{ error_title }}</strong>{{ error }}</div>
   {% include "retry.html" %}

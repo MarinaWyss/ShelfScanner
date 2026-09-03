@@ -2,26 +2,42 @@
 {% set page = 'home' %}
 {% block content %}
   <section class="hero">
-    <h1>Find your next book on a shelf that is already in front of you.</h1>
-    <p class="lede">Photograph a bookshelf at a shop, a library or a friend's place. ShelfScanner reads the spines, checks the titles, and picks five books from that shelf for you, with a reason for each.</p>
-    <a class="button cta" href="/scan">Scan a shelf</a>
+    <h1>AI bookshelf scanner and book recommender</h1>
+    <p>Find the perfect book for you.</p>
+    <a class="btn primary" href="/books">
+      <svg class="i s" viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      Start Scanning
+    </a>
   </section>
 
-  <h2>How It Works</h2>
-  <ol class="steps">
-    <li>
-      <strong>Upload Photo</strong>
-      <span>Take a photo of an entire bookshelf and our AI will identify each book.</span>
-    </li>
-    <li>
-      <strong>Set Preferences</strong>
-      <span>Tell us about your reading interests and preferences to improve recommendations.</span>
-    </li>
-    <li>
-      <strong>Find Matching Books</strong>
-      <span>Discover which books best match your taste with our AI-powered recommendations.</span>
-    </li>
-  </ol>
+  <section class="discovery card">
+    <div class="body">
+      <div class="round violet"><svg class="i" viewBox="0 0 24 24"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg></div>
+      <div>
+        <h2>AI Book Discovery</h2>
+        <p>Take a photo of an entire bookshelf at stores, the library, or a friend's house, and we'll help you figure out which ones you'll like!</p>
+        <a class="more" href="/books">Start scanning <svg class="i s" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg></a>
+      </div>
+    </div>
+  </section>
 
-  <p class="hero-foot"><a class="button cta" href="/scan">Scan a shelf</a></p>
+  <section class="how">
+    <h2>How It Works</h2>
+    <ol class="steps">
+      <li><div class="head"><div class="round amber">1</div><h3>Upload Photo</h3></div><p>Take a photo of an entire bookshelf and our AI will identify each book.</p></li>
+      <li><div class="head"><div class="round amber">2</div><h3>Set Preferences</h3></div><p>Tell us about your reading interests and preferences to improve recommendations.</p></li>
+      <li><div class="head"><div class="round amber">3</div><h3>Find Matching Books</h3></div><p>Discover which books best match your taste with our AI-powered recommendations.</p></li>
+    </ol>
+  </section>
+
+  <section class="cta">
+    <div class="round violet"><svg class="i" viewBox="0 0 24 24"><path d="M12 3v12"/><path d="m8 11 4 4 4-4"/><path d="M8 5H4a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-4"/></svg></div>
+    <h2>Start Using ShelfScanner Today</h2>
+    <p>Never miss a great book again. Our app helps you quickly find books that match your unique reading preferences even in a crowded bookshelf.</p>
+    <a class="btn primary" href="/books">Get Started Now</a>
+  </section>
+
+  <footer>
+    <span>© {{ year }} ShelfScanner. All rights reserved.</span>
+  </footer>
 {% endblock %}

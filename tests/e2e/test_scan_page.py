@@ -4,7 +4,6 @@ The server fixture and the helpers live in `conftest.py`.
 """
 
 import io
-import re
 
 from PIL import Image
 from playwright.sync_api import Browser, Page, expect
@@ -18,12 +17,15 @@ from tests.web_images import GPS_IFD, phone_jpeg_with_gps, small_jpeg
 
 def test_homepage_explains_and_leads_to_the_scan_page(server: Server, page: Page):
     page.goto(server.url)
-    expect(page.locator("h1")).to_contain_text("Find your next book")
+    expect(page.locator("h1")).to_have_text("AI bookshelf scanner and book recommender")
     expect(page.locator(".steps li")).to_have_count(3)
+    expect(page.locator(".steps h3")).to_have_text(["Upload Photo", "Set Preferences", "Find Matching Books"])
+    expect(page.locator(".cta h2")).to_have_text("Start Using ShelfScanner Today")
     assert page.locator('link[rel="icon"]').get_attribute("href") == "/static/favicon.svg"
     assert page.request.get(f"{server.url}/static/favicon.svg").ok and page.request.get(f"{server.url}/static/apple-touch-icon.png").ok
-    page.get_by_role("link", name="Scan a shelf").first.click()
-    expect(page).to_have_url(f"{server.url}/preferences")  # first visit: preferences, then the scan page
+    page.get_by_role("link", name="Start Scanning").first.click()
+    expect(page).to_have_url(f"{server.url}/books")  # step 1: preferences
+    expect(page.locator("#stepper")).to_have_attribute("data-step", "1")
 
 
 def test_photo_to_picks_with_progress(server: Server, page: Page):
@@ -116,15 +118,15 @@ def test_two_browsers_two_sessions_and_a_reload_keeps_one(server: Server, browse
     first, second = browser.new_context(), browser.new_context()
     try:
         a, b = first.new_page(), second.new_page()
-        a.goto(f"{server.url}/scan")
-        b.goto(f"{server.url}/scan")
+        a.goto(f"{server.url}/books")
+        b.goto(f"{server.url}/books")
         token_a = next(c["value"] for c in first.cookies() if c["name"] == COOKIE)
         token_b = next(c["value"] for c in second.cookies() if c["name"] == COOKIE)
         assert token_a != token_b
         assert len(server.sessions.rows) == 2
 
         a.reload()
-        expect(a.locator("h1")).to_have_text(re.compile("What do you like to read"))
+        expect(a.locator("h1")).to_have_text("Book Scanner")
         assert next(c["value"] for c in first.cookies() if c["name"] == COOKIE) == token_a
         assert len(server.sessions.rows) == 2
     finally:

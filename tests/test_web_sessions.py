@@ -21,8 +21,8 @@ def make_client(store: MemorySessions | None = None) -> tuple[TestClient, Memory
 
 def test_first_visit_sets_a_cookie_and_creates_a_row():
     client, store = make_client()
-    res = client.get("/scan", follow_redirects=False)
-    assert res.status_code == 302 and res.headers["location"] == "/preferences"
+    res = client.get("/books/upload", follow_redirects=False)
+    assert res.status_code == 302 and res.headers["location"] == "/books"
     token = res.cookies[COOKIE]
     assert len(store.rows) == 1
     assert token not in store.rows, "the raw token must not be stored"
@@ -34,14 +34,14 @@ def test_first_visit_sets_a_cookie_and_creates_a_row():
 def test_cookie_is_secure_only_over_https():
     # 010: Vercel terminates TLS and forwards plain http with x-forwarded-proto; the local network is http.
     client, _ = make_client()
-    plain = client.get("/scan", follow_redirects=False).headers["set-cookie"]
+    plain = client.get("/books", follow_redirects=False).headers["set-cookie"]
     assert "Secure" not in plain
     client, _ = make_client()
-    forwarded = client.get("/scan", follow_redirects=False, headers={"x-forwarded-proto": "https"}).headers["set-cookie"]
+    forwarded = client.get("/books", follow_redirects=False, headers={"x-forwarded-proto": "https"}).headers["set-cookie"]
     assert "; Secure" in forwarded and "HttpOnly" in forwarded
     client, _ = make_client()
     client.base_url = "https://testserver"
-    direct = client.get("/scan", follow_redirects=False).headers["set-cookie"]
+    direct = client.get("/books", follow_redirects=False).headers["set-cookie"]
     assert "; Secure" in direct
 
 
@@ -49,14 +49,14 @@ def test_the_homepage_makes_no_session_and_sets_no_cookie():
     # 012 D1: a visitor who only reads the homepage is not a row.
     client, store = make_client()
     res = client.get("/")
-    assert res.status_code == 200 and "Scan a shelf" in res.text and 'href="/scan"' in res.text
+    assert res.status_code == 200 and "Start Scanning" in res.text and 'href="/books"' in res.text
     assert "set-cookie" not in res.headers and store.rows == {}
 
 
 def test_second_request_reuses_the_session():
     client, store = make_client()
-    first = client.get("/scan", follow_redirects=False)
-    second = client.get("/scan", follow_redirects=False)
+    first = client.get("/books", follow_redirects=False)
+    second = client.get("/books", follow_redirects=False)
     assert "set-cookie" not in second.headers
     assert client.cookies[COOKIE] == first.cookies[COOKIE]
     assert len(store.rows) == 1
@@ -65,17 +65,17 @@ def test_second_request_reuses_the_session():
 def test_last_seen_is_written_at_most_once_per_ten_minutes():
     now = [datetime(2026, 9, 3, 12, 0, tzinfo=UTC)]
     client, store = make_client(MemorySessions(clock=lambda: now[0]))
-    client.get("/scan", follow_redirects=False)
+    client.get("/books", follow_redirects=False)
     assert store.last_seen[1] == now[0] and store.writes == {}, "created, not yet touched"
     for minutes in (1, 5, 9):
         now[0] = datetime(2026, 9, 3, 12, minutes, tzinfo=UTC)
-        client.get("/scan", follow_redirects=False)
+        client.get("/books", follow_redirects=False)
     assert store.writes == {}, "three visits inside the window write nothing"
     now[0] = datetime(2026, 9, 3, 12, 10, tzinfo=UTC)
-    client.get("/scan", follow_redirects=False)
+    client.get("/books", follow_redirects=False)
     assert store.writes == {1: 1} and store.last_seen[1] == now[0]
     now[0] = datetime(2026, 9, 3, 12, 15, tzinfo=UTC)
-    client.get("/scan", follow_redirects=False)
+    client.get("/books", follow_redirects=False)
     assert store.writes == {1: 1}, "the window restarts from the write"
 
 
@@ -93,8 +93,8 @@ def test_two_devices_get_two_sessions():
     store = MemorySessions()
     a, _ = make_client(store)
     b, _ = make_client(store)
-    a.get("/scan")
-    b.get("/scan")
+    a.get("/books")
+    b.get("/books")
     assert a.cookies[COOKIE] != b.cookies[COOKIE]
     assert len(store.rows) == 2
 
@@ -102,7 +102,7 @@ def test_two_devices_get_two_sessions():
 def test_unknown_token_gets_a_fresh_session():
     client, store = make_client()
     client.cookies.set(COOKIE, "stale-token-from-a-wiped-table")
-    res = client.get("/scan", follow_redirects=False)
+    res = client.get("/books", follow_redirects=False)
     assert COOKIE in res.cookies
     assert res.cookies[COOKIE] != "stale-token-from-a-wiped-table"
     assert len(store.rows) == 1

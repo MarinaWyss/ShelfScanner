@@ -25,6 +25,8 @@ EXPECTED = 5
 class Recommendation:
     title: str
     reason: str
+    author: str | None = None  # from the catalogue check's annotation (007), for the cards (014)
+    cover_id: str | None = None
 
 
 @dataclass(frozen=True)
@@ -70,7 +72,9 @@ def recs_from(parsed: object) -> list[Recommendation]:
     out = []
     for it in items:
         if isinstance(it, dict) and isinstance(it.get("title"), str):
-            out.append(Recommendation(it["title"], str(it.get("reason", ""))))
+            author, cover = it.get("author"), it.get("cover_id")
+            out.append(Recommendation(it["title"], str(it.get("reason", "")), str(author) if author else None,
+                                      str(cover) if cover else None))
     return out
 
 
@@ -244,7 +248,8 @@ def annotate_picks(parsed: object, verified: Verified, threshold: float) -> obje
                 best, best_s = k, s
         return {**item, "verified": bool(best and best.verified),
                 "catalogue_id": best.catalogue_id if best else None,
-                "cover_id": best.record.cover_id if best and best.record else None}
+                "cover_id": best.record.cover_id if best and best.record else None,
+                "author": best.author if best else None}
 
     if isinstance(parsed, dict) and isinstance(parsed.get("recommendations"), list):
         return {**parsed, "recommendations": [annotate(it) for it in parsed["recommendations"]]}

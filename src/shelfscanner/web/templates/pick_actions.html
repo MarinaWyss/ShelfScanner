@@ -2,13 +2,15 @@
 <div class="pick-actions" id="pick-actions-{{ recommendation_id }}-{{ index }}" hx-target="this" hx-swap="outerHTML"
      data-saved="{{ 'true' if state.saved else 'false' }}" data-not-for-me="{{ 'true' if state.not_for_me else 'false' }}">
   {% if state.saved %}
-  <button type="button" class="saved" hx-post="/picks/{{ recommendation_id }}/{{ index }}/unsave">Saved &#10003;</button>
+  <button type="button" class="btn save saved" hx-post="/picks/{{ recommendation_id }}/{{ index }}/unsave">
+    <svg class="i s" viewBox="0 0 24 24" style="fill:currentColor"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>Saved to List</button>
   {% else %}
-  <button type="button" hx-post="/picks/{{ recommendation_id }}/{{ index }}/save">Save</button>
+  <button type="button" class="btn save" hx-post="/picks/{{ recommendation_id }}/{{ index }}/save">
+    <svg class="i s" viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>Save for Later</button>
   {% endif %}
   {% if state.not_for_me %}
   <span class="marked">Marked not for me</span>
   {% else %}
-  <button type="button" class="secondary" hx-post="/picks/{{ recommendation_id }}/{{ index }}/not-for-me">Not for me</button>
+  <button type="button" class="btn notme" hx-post="/picks/{{ recommendation_id }}/{{ index }}/not-for-me">Not for me</button>
   {% endif %}
 </div>

@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% set page = 'reading-list' %}
+{% block title %}Reading List - ShelfScanner{% endblock %}
+{% block content %}
+  <div class="list-head">
+    <h1 class="page-title">Reading List</h1>
+    <a class="btn outline" href="/books">Scan More Books</a>
+  </div>
+  {% if items %}
+  <ul class="saved-list" id="saved-list">
+    {% for item in items %}
+    <li class="saved-pick" id="saved-{{ item.pick.recommendation_id }}-{{ item.pick.pick_index }}">
+      <div class="top">
+        {% if item.pick.cover_url %}<img class="cover" src="{{ item.pick.cover_url }}" alt="" loading="lazy">{% else %}
+        <div class="cover-ph"><svg class="i" viewBox="0 0 24 24"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg></div>{% endif %}
+        <div class="meta">
+          <h3 class="pick-title">{{ item.pick.title }}</h3>
+          {% if item.pick.author %}<p class="by">{{ item.pick.author }}</p>{% endif %}
+          <p class="date"><span>Date added:</span> {{ item.scanned }}</p>
+        </div>
+      </div>
+      <div class="bottom">
+        <p class="reason clamp">{{ item.pick.reason }}</p>
+        <div class="row-end">
+          <button type="button" class="btn danger" hx-post="/picks/{{ item.pick.recommendation_id }}/{{ item.pick.pick_index }}/unsave"
+                  hx-target="closest li" hx-swap="delete"><svg class="i s" viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>Remove</button>
+        </div>
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <div class="empty-state" id="saved-empty">
+    <svg class="i" viewBox="0 0 24 24"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+    <h2>Your reading list is empty</h2>
+    <p>Save books to read later by clicking "Save for Later" on any book recommendation.</p>
+    <a class="btn primary" href="/books">Scan Books Now</a>
+  </div>
+  {% endif %}
+{% endblock %}

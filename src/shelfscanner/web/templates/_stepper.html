@@ -1,0 +1,12 @@
+{#- books.tsx: the three-step progress bar. `step` is 1, 2 or 3; the script moves it to 3 when a scan starts. -#}
+<div class="card stepper" id="stepper" data-step="{{ step }}">
+  <div class="body"><div class="track">
+    <div class="dots">
+      <div class="line"></div><div class="fill"></div>
+      <a class="dot" href="/books">1</a>
+      <a class="dot" href="/books/upload">2</a>
+      <div class="dot">3</div>
+    </div>
+    <div class="labels"><div>Preferences</div><div>Book Upload</div><div>Recommendations</div></div>
+  </div></div>
+</div>

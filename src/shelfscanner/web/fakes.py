@@ -208,7 +208,7 @@ class FakePipeline:
                                         "failover_from": sr.failover_from, "failover_error": sr.failover_error}
         attempts = {"model": sr.model.slug, "failover_from": sr.failover_from, "failover_error": sr.failover_error}
         if res.ok:
-            choosing = Choosing(picks=[Pick(r.title, r.reason) for r in recs_from(res.parsed)], recommendation_id=rec_id,
+            choosing = Choosing(picks=[Pick(r.title, r.reason, r.author, r.cover_id) for r in recs_from(res.parsed)], recommendation_id=rec_id,
                                 **attempts)
         else:
             choosing = Choosing(error=res.error, recommendation_id=rec_id, **attempts)
@@ -243,7 +243,7 @@ class FakePipeline:
         rec = self.recommendations.get(recommendation_id)
         if not rec or rec["session_id"] != session_id or rec["error"]:
             return None
-        return [Pick(r.title, r.reason) for r in recs_from(rec["parsed_recommendations"])]
+        return [Pick(r.title, r.reason, r.author, r.cover_id) for r in recs_from(rec["parsed_recommendations"])]
 
     def _rows(self, rows: list[dict], session_id: int, recommendation_id: int) -> list[dict]:
         return [r for r in rows if r["session_id"] == session_id and r["recommendation_id"] == recommendation_id]
@@ -274,5 +274,5 @@ class FakePipeline:
             rec = self.recommendations[r["recommendation_id"]]
             pick = recs_from(rec["parsed_recommendations"])[r["pick_index"]]
             out.append(SavedPick(r["recommendation_id"], r["pick_index"], pick.title, pick.reason, r["created_at"],
-                                 self.photos[rec["photo_id"]]["created_at"]))
+                                 self.photos[rec["photo_id"]]["created_at"], pick.author, pick.cover_id))
         return out

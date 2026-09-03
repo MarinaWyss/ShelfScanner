@@ -95,16 +95,16 @@ def test_saved_list_shows_live_saves_newest_first_with_the_scan_date():
     client.post(f"/picks/{first}/0/save")
     client.post(f"/picks/{second}/3/unsave")
 
-    body = client.get("/saved", headers={"Accept": "application/json"}).json()["saved"]
+    body = client.get("/reading-list", headers={"Accept": "application/json"}).json()["saved"]
     assert [(s["recommendation_id"], s["pick_index"]) for s in body] == [(first, 0), (first, 1)]
     assert body[0]["title"] == DEFAULT_PICKS[0]["title"] and body[0]["reason"] == DEFAULT_PICKS[0]["reason"]
     assert body[0]["scanned_at"] == pipeline.photos[1]["created_at"]
 
-    page = client.get("/saved")
+    page = client.get("/reading-list")
     assert page.status_code == 200 and page.headers["content-type"].startswith("text/html")
     assert page.text.count('class="saved-pick"') == 2
     assert f'id="saved-{first}-0"' in page.text and f'id="saved-{second}-3"' not in page.text
-    assert f"Scanned {scan_date(pipeline.photos[1]['created_at'])}" in page.text
+    assert f"Date added:</span> {scan_date(pipeline.photos[1]['created_at'])}" in page.text
     assert f'hx-post="/picks/{first}/0/unsave"' in page.text and 'hx-swap="delete"' in page.text
 
 
@@ -114,9 +114,9 @@ def test_saved_list_is_per_session_and_empty_at_first():
     a, b = TestClient(app), TestClient(app)
     rid = scan(a)
     a.post(f"/picks/{rid}/0/save")
-    assert 'id="saved-empty"' in b.get("/saved").text
-    assert b.get("/saved", headers={"Accept": "application/json"}).json() == {"saved": []}
-    assert len(a.get("/saved", headers={"Accept": "application/json"}).json()["saved"]) == 1
+    assert 'id="saved-empty"' in b.get("/reading-list").text
+    assert b.get("/reading-list", headers={"Accept": "application/json"}).json() == {"saved": []}
+    assert len(a.get("/reading-list", headers={"Accept": "application/json"}).json()["saved"]) == 1
 
 
 def test_scan_date_is_readable():

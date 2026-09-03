@@ -11,7 +11,7 @@ from datetime import datetime
 
 from anyio import to_thread
 from fastapi import APIRouter, HTTPException, Request
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 
 from shelfscanner.web.pipeline import NOT_FOR_ME, Pick, PickState, Pipeline, SavedPick
 
@@ -72,7 +72,7 @@ def scan_date(iso: str) -> str:
         return iso
 
 
-@router.get("/saved")
+@router.get("/reading-list")
 async def saved_list(request: Request):
     saves: list[SavedPick] = await to_thread.run_sync(_pipeline(request).saved, request.state.session_id)
     if "application/json" in request.headers.get("accept", ""):
@@ -80,4 +80,9 @@ async def saved_list(request: Request):
                                         "title": s.title, "reason": s.reason, "saved_at": s.saved_at,
                                         "scanned_at": s.scanned_at} for s in saves]})
     items = [{"pick": s, "scanned": scan_date(s.scanned_at)} for s in saves]
-    return HTMLResponse(_render(request, "saved.html", items=items))
+    return HTMLResponse(_render(request, "reading_list.html", items=items))
+
+
+@router.get("/saved")
+async def saved_redirect():
+    return RedirectResponse("/reading-list", status_code=301)  # the 005 to 012 address

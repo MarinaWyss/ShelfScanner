@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% set page = 'books' %}
+{% block title %}Book Scanner - ShelfScanner{% endblock %}
+{% block content %}
+  <div class="section">
+    <h1 class="page-title">Book Scanner</h1>
+    <p class="page-lede">Scan books to get personalized recommendations</p>
+  </div>
+  {% include "_stepper.html" %}
+  <div class="card step-card"><div class="body">
+    <div class="step-head">
+      <h2>Tell us about your reading preferences</h2>
+      <p>Select genres that interest you to help us provide better recommendations.</p>
+    </div>
+    {% if error %}<div class="alert" role="alert" id="prefs-error">{{ error }}</div>{% endif %}
+    <form method="post" action="/preferences" enctype="multipart/form-data" id="prefs-form">
+      <div class="section">
+        <span class="field-label" id="genres-label">Select your favorite genres</span>
+        <div class="genres" role="group" aria-labelledby="genres-label">
+          {% for genre in genres %}
+          <label class="genre"><input type="checkbox" name="genres" value="{{ genre }}"{% if genre in chosen %} checked{% endif %}>{{ genre }}</label>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="section">
+        <label class="field-label" for="author-input">Add favorite authors (optional)</label>
+        <div class="authors-row">
+          <input class="text-input" id="author-input" type="text" name="authors_extra" placeholder="Type an author's name" autocomplete="off">
+          <button type="button" class="btn outline" id="author-add">Add</button>
+        </div>
+        <input type="hidden" name="authors" id="authors-hidden" value="{{ authors|join(', ') }}">
+        <div class="chips" id="author-chips">
+          {% for author in authors %}
+          <span class="chip">{{ author }}<button type="button" aria-label="Remove {{ author }}"><svg class="i s" viewBox="0 0 24 24" style="width:.75rem;height:.75rem"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button></span>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="section">
+        <div class="card goodreads">
+          <h3>Import your Goodreads library (Optional)</h3>
+          <p>Upload your Goodreads export to quickly set your preferences based on your reading history.</p>
+          <div class="gr-note">
+            <svg class="i" viewBox="0 0 24 24"><path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <div>
+              <p class="t1">Need your Goodreads data?</p>
+              <p class="t2"><a href="https://www.goodreads.com/review/import" target="_blank" rel="noopener noreferrer">Download your library here →</a></p>
+              <p class="t3">📱 Goodreads data can only be downloaded from desktop, sorry for the inconvenience &lt;3</p>
+            </div>
+          </div>
+          <label><span class="sr-only" hidden>Choose file</span><input class="file-input" type="file" name="goodreads" accept=".csv,text/csv"></label>
+          {% if import_note %}<p class="note-ok" id="import-note">✓ {{ import_note }}</p>{% else %}<p class="hint" id="import-note">The file is read once and not kept.</p>{% endif %}
+        </div>
+      </div>
+      <div class="row-end">
+        <button type="submit" class="btn primary" id="prefs-save">Continue</button>
+      </div>
+    </form>
+  </div></div>
+{% endblock %}
