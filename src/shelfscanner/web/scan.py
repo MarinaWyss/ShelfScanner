@@ -32,7 +32,10 @@ from shelfscanner.web.pipeline import Choosing, PickState, Pipeline, Reading, Sc
 
 MAX_BODY_BYTES = 4 * 1024 * 1024
 MIN_LONG_EDGE = 400  # px; anything smaller has no legible spines
-ALLOWED_TYPES = {"image/jpeg": "JPEG", "image/png": "PNG"}  # declared content type -> the format Pillow must see
+ALLOWED_TYPES = {"image/jpeg", "image/png"}  # declared content types
+# Pillow's format name -> what it is to us. A phone JPEG with an embedded second picture (depth map,
+# burst) opens as MPO, and the browser-resize fallback sends exactly those originals.
+ALLOWED_FORMATS = {"JPEG": "JPEG", "MPO": "JPEG", "PNG": "PNG"}
 KEEPALIVE_S = 15.0
 POLL_S = 1.0  # how often a connection that did not get the stage lock looks again
 CLOSE_EVENT = "close"  # sent after done or failed so the browser stops reconnecting
@@ -149,7 +152,7 @@ def inspect_upload(content_type: str | None, data: bytes) -> str | None:
             fmt, width, height = im.format, im.width, im.height
     except (UnidentifiedImageError, OSError, ValueError):
         return NOT_AN_IMAGE
-    if fmt not in ALLOWED_TYPES.values():
+    if fmt not in ALLOWED_FORMATS:
         return WRONG_TYPE.format(type=f"a {fmt}" if fmt else "of an unknown type")
     if max(width, height) < MIN_LONG_EDGE:  # the long edge is the same whichever way the orientation tag turns it
         return TOO_SMALL.format(width=width, height=height)

@@ -362,6 +362,14 @@ def test_uploads_must_be_jpeg_or_png_by_type_and_by_content():
     assert res.status_code == 400 and "text/plain" in res.json()["error"]
     assert len(pipeline.photos) == 1, "only the PNG was stored"
 
+    # A phone JPEG with an embedded second picture (depth map, burst) opens in Pillow as MPO; it is a JPEG
+    # to us, and the browser-resize fallback sends exactly those originals.
+    mpo = io.BytesIO()
+    shelf_image(640, 480).save(mpo, format="MPO", save_all=True, append_images=[shelf_image(64, 48)])
+    assert Image.open(io.BytesIO(mpo.getvalue())).format == "MPO"
+    assert post_photo(client, mpo.getvalue()).status_code == 201
+    assert len(pipeline.photos) == 2
+
 
 def test_a_photo_under_the_minimum_long_edge_is_refused():
     client, pipeline = make_client()

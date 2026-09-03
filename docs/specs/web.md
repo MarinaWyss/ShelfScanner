@@ -114,7 +114,8 @@ the page shrank the photo in the browser, otherwise `0`). In order:
 2. The limits above are checked; a refusal is 429 or 503.
 3. The file is refused with 400 unless its declared content type is
    `image/jpeg` or `image/png`, its bytes decode as a JPEG or PNG (the
-   bytes decide: a GIF named `.jpg` is refused as a GIF), and its long edge
+   bytes decide: a GIF named `.jpg` is refused as a GIF; a phone JPEG with
+   an embedded second picture, which Pillow calls MPO, is a JPEG), and its long edge
    is at least 400 px (`web/scan.py:MIN_LONG_EDGE`; the message gives the
    dimensions). Only the header is read for this.
 4. The image is re-encoded with `images.resize`: EXIF orientation applied
