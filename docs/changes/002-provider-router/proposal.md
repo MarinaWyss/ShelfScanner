@@ -119,3 +119,37 @@ can show which stage is running.
 - **Computed cost drifts from billed cost.** Mitigated by the price check
   date and by a monthly reconciliation against the provider invoices, noted
   as an operational task.
+
+## Decided during the work
+
+**Task 2, Google adapter (2026-09-02).**
+
+- **Model id `gemini-3.8-flash`**, verified against the installed SDK's own
+  model list (`google-genai` 2.22.0, `google/genai/_gaos/types/interactions/model.py`,
+  "Gemini 3.8 Flash - Our most intelligent Flash model"). No live key was
+  available to call `models.list`.
+- **Reasoning effort maps to `thinking_level`, not `thinking_budget`.** The
+  SDK states that Gemini 3.5 and later reject a budget. `none`/`minimal` →
+  MINIMAL, `low` → LOW, `medium` → MEDIUM, `high` → HIGH; unset means no
+  thinking config (the model's default). A Gemini 3 Flash cannot switch
+  thinking off, so `none` is the floor, not zero.
+- **A missing `GEMINI_API_KEY` is a failed `CallResult`, not an exit**, so
+  task 5's failover ("pulling the Google key makes `run` complete on
+  Sonnet 5") can act on it. The error names the key and `.env.example`.
+- **Schema is a constructor argument.** `GoogleClient(schema=...)` attaches
+  a JSON schema via `response_json_schema`; with none, the call asks for
+  `application/json` only. `BOOKS_SCHEMA` and `RECOMMENDATIONS_SCHEMA` are
+  exported from the adapter for whoever wires them. Because
+  `router.client_for` constructs adapters with no arguments, pipeline calls
+  are mime-type-only until the router or the stage passes a schema. Open.
+- **`output_tokens` includes thinking tokens**; `reasoning_tokens` carries
+  them separately. Gemini reports `candidates_token_count` without thoughts,
+  so the adapter adds `thoughts_token_count` before pricing (D5).
+- **SDK retries capped at one** (`HttpRetryOptions(attempts=2)`) and a 180 s
+  timeout. The SDK default of five attempts with backoff to 60 s would hide
+  an outage behind the latency target; outages are the router's job (D8).
+- **`CallResult.model` is the provider id** (`gemini-3.8-flash`); `slug`
+  stays what the `model` columns log, per the config contract.
+- **`tests/test_config_and_adapter.py`** asserted every model uses the
+  OpenRouter adapter; relaxed to "OpenRouter, or a direct adapter with a
+  `model_id`" since the config contract makes that the invariant.
