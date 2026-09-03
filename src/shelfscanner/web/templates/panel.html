@@ -1,6 +1,6 @@
 {#- The progress list and the result for one scan. Rendered whole for every event. -#}
 {% if live %}<div id="scan-live" hx-ext="sse" sse-connect="/scan/{{ scan_id }}/events"
-     sse-swap="uploaded,reading,choosing,done,failed" sse-close="close" data-scan-id="{{ scan_id }}">{% endif %}
+     sse-swap="uploaded,reading,checking,choosing,done,failed" sse-close="close" data-scan-id="{{ scan_id }}">{% endif %}
 <ol class="stages" data-stage="{{ stage }}">
   {% for row in rows %}
   <li id="stage-{{ row.name }}" class="{{ row.state }}">
@@ -34,6 +34,7 @@
   <p class="empty" id="titles">No titles could be read from this photo. Try closer, with the spines facing the camera.</p>
   {% endif %}
 {% elif stage == 'failed' %}
-  <div class="error" role="alert" id="scan-error"><strong>{{ error_title }}</strong>{{ error }}</div>
+  <div class="error" role="alert" id="scan-error" data-stage="{{ failed_stage }}"><strong>{{ error_title }}</strong>{{ error }}</div>
+  {% include "retry.html" %}
 {% endif %}
 {% if live %}</div>{% endif %}

@@ -129,21 +129,22 @@ def sync_photos() -> list[str]:
 # Photos a device scans from the web app: stored under sessions/<id>/ in the
 # same bucket, with a `photos` row that carries the session and no labels.
 
-SESSION_PHOTO_COLUMNS = PHOTO_COLUMNS + ", session_id"
+SESSION_PHOTO_COLUMNS = PHOTO_COLUMNS + ", session_id, status, status_at, resized_by_client"  # 008 columns
 
 
-def store_session_photo(session_id: int, jpeg: bytes) -> dict:
+def store_session_photo(session_id: int, jpeg: bytes, **columns) -> dict:
     """Upload stripped JPEG bytes for a session and insert the unlabelled `photos` row.
 
     The caller has already resized and re-encoded (see `images.resize`); this
     refuses if any metadata survived, uploads to a fresh key so nothing is ever
-    overwritten, and returns the inserted row.
+    overwritten, and returns the inserted row. Extra keyword arguments are
+    written as columns of the row (change 008: `status`, `resized_by_client`).
     """
     if has_metadata(jpeg):
         raise RuntimeError("metadata survived stripping; refusing to upload")
     storage_path = f"sessions/{session_id}/{uuid.uuid4().hex}.jpg"
     get_client().storage.from_(PHOTO_BUCKET).upload(storage_path, jpeg, {"content-type": "image/jpeg"})
-    row = {"storage_path": storage_path, "session_id": session_id}
+    row = {"storage_path": storage_path, "session_id": session_id, **columns}
     return get_client().table("photos").insert(row).execute().data[0]
 
 

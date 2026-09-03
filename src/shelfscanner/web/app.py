@@ -9,6 +9,8 @@ project, no provider key, fixed titles and picks. That is what the Playwright su
 from __future__ import annotations
 
 import os
+from collections.abc import Callable
+from datetime import UTC, datetime
 from pathlib import Path
 
 from anyio import to_thread
@@ -19,6 +21,8 @@ from fastapi.templating import Jinja2Templates
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from shelfscanner.web import picks, prefs, scan
+from shelfscanner.web.limits import Limits
+from shelfscanner.web.limits import from_env as limits_from_env
 from shelfscanner.web.pipeline import Pipeline
 from shelfscanner.web.sessions import SessionMiddleware, SessionStore
 
@@ -32,7 +36,8 @@ def use_fakes() -> bool:
     return os.environ.get(FAKE_ENV) == "1"
 
 
-def create_app(*, pipeline: Pipeline | None = None, sessions: SessionStore | None = None) -> FastAPI:
+def create_app(*, pipeline: Pipeline | None = None, sessions: SessionStore | None = None,
+               limits: Limits | None = None, clock: Callable[[], datetime] | None = None) -> FastAPI:
     if pipeline is None or sessions is None:
         if use_fakes():
             from shelfscanner.web.fakes import FakePipeline, MemorySessions
@@ -55,6 +60,11 @@ def create_app(*, pipeline: Pipeline | None = None, sessions: SessionStore | Non
     app.include_router(scan.router)
     app.include_router(prefs.router)
     app.include_router(picks.router)
+    # --- change 008 ---
+    # The scan limits and the clock the scan routes read them by (tests pass a fixed clock).
+    app.state.limits = limits or limits_from_env()
+    app.state.clock = clock or (lambda: datetime.now(UTC))
+    # --- end change 008 ---
     # --- change 009 ---
     from shelfscanner.web import admin, metrics
 

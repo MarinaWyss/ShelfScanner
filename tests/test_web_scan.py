@@ -6,15 +6,19 @@ Nothing here reaches Supabase or a provider.
 """
 
 import io
+import threading
+import time
+from datetime import UTC, datetime, timedelta
 
 from fastapi.testclient import TestClient
 from PIL import Image
 
 from shelfscanner.images import has_metadata
+from shelfscanner.web import scan
 from shelfscanner.web.app import create_app
 from shelfscanner.web.fakes import DEFAULT_PICKS, DEFAULT_TITLES, FakeClient, FakePipeline, MemorySessions
-from shelfscanner.web.pipeline import UNKNOWN_TASTE
-from shelfscanner.web.scan import MAX_BODY_BYTES
+from shelfscanner.web.pipeline import UNKNOWN_TASTE, Reading
+from shelfscanner.web.scan import MAX_BODY_BYTES, MIN_LONG_EDGE
 from tests.web_images import GPS_IFD, ROTATE_90_CW, jpeg_bytes, shelf_image, small_jpeg
 
 
@@ -75,10 +79,11 @@ def test_events_stream_reading_then_choosing_then_five_picks():
     assert client.get(f"/scan/{scan_id}").json() == {"id": scan_id, "status": "pending"}
 
     events = events_of(client, scan_id)
-    assert [name for name, _ in events] == ["uploaded", "reading", "choosing", "done", "close"]
+    assert [name for name, _ in events] == ["uploaded", "reading", "checking", "choosing", "done", "close"]
     assert 'data-stage="reading"' in events[1][1] and 'id="stage-reading" class="active"' in events[1][1]
-    assert 'id="stage-reading" class="done"' in events[2][1] and 'id="stage-choosing" class="active"' in events[2][1]
-    done = events[3][1]
+    assert 'id="stage-reading" class="done"' in events[2][1] and 'id="stage-checking" class="active"' in events[2][1]
+    assert 'id="stage-checking" class="done"' in events[3][1] and 'id="stage-choosing" class="active"' in events[3][1]
+    done = events[4][1]
     assert 'id="stage-done" class="done"' in done and "Five for you" in done
     assert done.count('class="pick"') == 5 and "Piranesi" in done and "Dune" in done
     assert 'hx-post="/picks/1/0/save"' in done and 'hx-post="/picks/1/0/not-for-me"' in done
@@ -104,7 +109,7 @@ def test_a_scan_with_no_preferences_still_runs_and_says_taste_is_unknown():
     client, pipeline = make_client()
     scan_id = post_photo(client, small_jpeg()).json()["id"]
     events = events_of(client, scan_id)
-    assert [name for name, _ in events] == ["uploaded", "reading", "choosing", "done", "close"]
+    assert [name for name, _ in events] == ["uploaded", "reading", "checking", "choosing", "done", "close"]
     (text,) = pipeline.client.inputs
     assert UNKNOWN_TASTE in text
     assert pipeline.recommendations[1]["preferences"]["free_text"] == UNKNOWN_TASTE, "logged as sent"
@@ -125,7 +130,7 @@ def test_reconnecting_after_reading_only_runs_choosing():
     scan_id = post_photo(client, small_jpeg()).json()["id"]
     pipeline.read(pipeline.photos[scan_id], lambda note: None)  # as if the stream broke after reading
     events = events_of(client, scan_id)
-    assert [name for name, _ in events] == ["choosing", "done", "close"]
+    assert [name for name, _ in events] == ["checking", "choosing", "done", "close"]
     assert [c[0] for c in pipeline.client.calls] == ["vision", "text"]
 
 
@@ -144,13 +149,22 @@ def test_model_failure_names_the_choosing_stage():
     client, pipeline = make_client(FakePipeline(FakeClient(text_error="http 429: rate limited")))
     scan_id = post_photo(client, small_jpeg()).json()["id"]
     events = events_of(client, scan_id)
-    assert [name for name, _ in events] == ["uploaded", "reading", "choosing", "failed", "close"]
-    assert "Choosing failed" in events[3][1] and "429" in events[3][1]
-    assert 'id="stage-reading" class="done"' in events[3][1] and 'id="stage-choosing" class="failed"' in events[3][1]
+    # An `http` error is a provider failure, so the stage fails over (002 D8); the fake fails there too. The
+    # choosing frames are the primary's call, the failover note and the fallback's call.
+    names = [name for name, _ in events]
+    assert names[:3] == ["uploaded", "reading", "checking"] and names[-2:] == ["failed", "close"]
+    assert set(names[3:-2]) == {"choosing"} and len(names) == 8
+    assert any("gpt-mini failed" in data and "trying haiku" in data for name, data in events if name == "choosing")
+    failed = events[-2][1]
+    assert "Choosing failed" in failed and "429" in failed and "Both models failed" in failed
+    assert 'id="stage-reading" class="done"' in failed and 'id="stage-choosing" class="failed"' in failed
+    assert 'id="scan-retry"' in failed, "a retry is offered"
     body = client.get(f"/scan/{scan_id}").json()
     assert body["status"] == "failed" and body["stage"] == "choosing" and "429" in body["error"]
     assert pipeline.recommendations[1]["error"] == "http 429: rate limited", "the failed run is still logged"
+    assert pipeline.recommendations[1]["failover_from"] == "openai/gpt-5.4-mini"
     assert [name for name, _ in events_of(client, scan_id)] == ["failed", "close"], "a failed choosing is not retried"
+    assert pipeline.photos[scan_id]["status"] == "failed"
 
 
 def test_no_titles_read_means_done_without_choosing():
@@ -171,6 +185,7 @@ def test_store_failure_names_the_upload_stage():
     assert res.json()["stage"] == "uploading" and "Uploading the photo failed" in res.json()["error"]
     html = post_photo(client, small_jpeg(), headers={"HX-Request": "true"})
     assert html.status_code == 500 and "Uploading the photo failed" in html.text and 'data-stage="uploading"' in html.text
+    assert 'id="scan-retry"' in html.text, "a store failure offers a retry"
 
 
 def test_body_over_four_megabytes_is_refused_with_a_message():
@@ -220,3 +235,154 @@ def test_index_page_has_the_picker_the_scripts_and_the_links():
     assert res.status_code == 200
     assert 'name="photo"' in res.text and 'hx-post="/scan"' in res.text and "/static/app.js" in res.text
     assert 'href="/saved"' in res.text and 'href="/preferences"' in res.text
+
+
+# --- change 008: the stage lock, the failover message, the checking step, validation ------------------
+
+
+def test_status_follows_the_stages_and_resized_by_client_is_stored():
+    client, pipeline = make_client()
+    scan_id = client.post("/scan", files={"photo": ("shelf.jpg", small_jpeg(), "image/jpeg")},
+                          data={"resized": "1"}).json()["id"]
+    assert pipeline.photos[scan_id]["status"] == "pending" and pipeline.photos[scan_id]["resized_by_client"] is True
+    events_of(client, scan_id)
+    assert pipeline.photos[scan_id]["status"] == "done"
+    other = post_photo(client, small_jpeg()).json()["id"]
+    assert pipeline.photos[other]["resized_by_client"] is False, "the default is the server-resize fallback"
+
+    client, pipeline = make_client(FakePipeline(FakeClient(error="provider 503: overloaded")))
+    scan_id = post_photo(client, small_jpeg()).json()["id"]
+    events_of(client, scan_id)
+    assert pipeline.photos[scan_id]["status"] == "failed"
+
+
+def test_a_second_connection_while_reading_is_in_flight_waits_instead_of_reading_again(monkeypatch):
+    monkeypatch.setattr(scan, "POLL_S", 0.01)
+    client, pipeline = make_client()
+    scan_id = post_photo(client, small_jpeg()).json()["id"]
+    photo = pipeline.photos[scan_id]
+    # Another connection holds the reading: a fresh claim and no extraction yet.
+    photo["status"], photo["status_at"] = "reading", datetime.now(UTC)
+
+    def other_connection_finishes_reading():
+        time.sleep(0.15)
+        pipeline.readings[scan_id] = Reading(titles=list(DEFAULT_TITLES), extraction_id=scan_id, model="fake")
+
+    threading.Thread(target=other_connection_finishes_reading).start()
+    events = events_of(client, scan_id)
+    # Waited (the reading panel with the note), then claimed the choosing itself once the reading was there.
+    assert [name for name, _ in events] == ["reading", "checking", "choosing", "done", "close"]
+    assert scan.IN_FLIGHT_NOTE in events[0][1]
+    assert [c[0] for c in pipeline.client.calls] == ["text"], "the vision model was not called a second time"
+    assert pipeline.photos[scan_id]["status"] == "done"
+
+
+def test_a_stale_reading_claim_is_taken_over():
+    client, pipeline = make_client()
+    scan_id = post_photo(client, small_jpeg()).json()["id"]
+    photo = pipeline.photos[scan_id]
+    photo["status"], photo["status_at"] = "reading", datetime.now(UTC) - timedelta(minutes=4)
+    events = events_of(client, scan_id)
+    assert [name for name, _ in events] == ["uploaded", "reading", "checking", "choosing", "done", "close"]
+    assert [c[0] for c in pipeline.client.calls] == ["vision", "text"]
+
+
+def test_a_stale_choosing_claim_is_taken_over_but_a_fresh_one_is_waited_for(monkeypatch):
+    monkeypatch.setattr(scan, "POLL_S", 0.01)
+    client, pipeline = make_client()
+    scan_id = post_photo(client, small_jpeg()).json()["id"]
+    pipeline.read(pipeline.photos[scan_id], lambda note: None)
+    photo = pipeline.photos[scan_id]
+    photo["status"], photo["status_at"] = "choosing", datetime.now(UTC)
+
+    def other_connection_finishes_choosing():
+        time.sleep(0.15)
+        pipeline.choose(photo, pipeline.readings[scan_id], {}, lambda note: None)
+        pipeline.set_status(scan_id, "done", datetime.now(UTC))
+
+    threading.Thread(target=other_connection_finishes_choosing).start()
+    events = events_of(client, scan_id)
+    assert [name for name, _ in events] == ["choosing", "done", "close"]
+    assert [c[0] for c in pipeline.client.calls] == ["vision", "text"], "one choosing, run by the other connection"
+
+    photo["status"], photo["status_at"] = "choosing", datetime.now(UTC) - timedelta(minutes=4)
+    del pipeline.choosings[scan_id]
+    events = events_of(client, scan_id)
+    assert [name for name, _ in events] == ["checking", "choosing", "done", "close"]
+    assert [c[0] for c in pipeline.client.calls] == ["vision", "text", "text"], "the stale claim was taken over"
+
+
+def test_provider_failure_after_failover_names_both_attempts_and_offers_a_retry():
+    client, pipeline = make_client(FakePipeline(FakeClient(error="http 503: overloaded")))
+    scan_id = post_photo(client, small_jpeg()).json()["id"]
+    events = events_of(client, scan_id)
+    assert [name for name, _ in events] == ["uploaded", "reading", "reading", "failed", "close"]
+    assert "gemini-flash failed" in events[2][1] and "trying sonnet" in events[2][1]
+    failed = events[3][1]
+    assert "Reading the shelf failed" in failed and 'id="scan-retry"' in failed
+    assert "Both models failed" in failed and "google/gemini-3.8-flash: http 503" in failed
+    assert "Then anthropic/claude-sonnet-5: http 503" in failed
+    assert [c[:2] for c in pipeline.client.calls] == [("vision", "gemini-flash"), ("vision", "sonnet")]
+    body = client.get(f"/scan/{scan_id}").json()
+    assert body["stage"] == "reading" and "Both models failed" in body["error"]
+    assert pipeline.readings[scan_id].failover_from == "google/gemini-3.8-flash"
+
+
+def test_checking_failure_is_named_as_its_own_stage():
+    client, pipeline = make_client()
+    pipeline.drop_all_titles = True
+    scan_id = post_photo(client, small_jpeg()).json()["id"]
+    events = events_of(client, scan_id)
+    assert [name for name, _ in events] == ["uploaded", "reading", "checking", "failed", "close"]
+    failed = events[3][1]
+    assert "Checking the titles failed" in failed and "none of the 7 titles read matched" in failed
+    assert 'id="stage-checking" class="failed"' in failed and 'id="stage-choosing" class="todo"' in failed
+    assert 'data-stage="checking"' in failed and 'id="scan-retry"' in failed
+    body = client.get(f"/scan/{scan_id}").json()
+    assert body["status"] == "failed" and body["stage"] == "checking"
+    assert [c[0] for c in pipeline.client.calls] == ["vision"]
+    assert pipeline.photos[scan_id]["status"] == "failed"
+
+
+def test_uploads_must_be_jpeg_or_png_by_type_and_by_content():
+    client, pipeline = make_client()
+    png = io.BytesIO()
+    shelf_image(640, 480).save(png, format="PNG")
+    assert client.post("/scan", files={"photo": ("shelf.png", png.getvalue(), "image/png")}).status_code == 201
+
+    gif = io.BytesIO()
+    shelf_image(640, 480).save(gif, format="GIF")
+    res = client.post("/scan", files={"photo": ("shelf.gif", gif.getvalue(), "image/gif")})
+    assert res.status_code == 400 and "image/gif" in res.json()["error"] and "JPEG or PNG" in res.json()["error"]
+
+    res = client.post("/scan", files={"photo": ("shelf.jpg", gif.getvalue(), "image/jpeg")})
+    assert res.status_code == 400 and "a GIF" in res.json()["error"], "the bytes, not the declared type, decide"
+
+    res = client.post("/scan", files={"photo": ("notes.txt", b"hello", "text/plain")})
+    assert res.status_code == 400 and "text/plain" in res.json()["error"]
+    assert len(pipeline.photos) == 1, "only the PNG was stored"
+
+    # A phone JPEG with an embedded second picture (depth map, burst) opens in Pillow as MPO; it is a JPEG
+    # to us, and the browser-resize fallback sends exactly those originals.
+    mpo = io.BytesIO()
+    shelf_image(640, 480).save(mpo, format="MPO", save_all=True, append_images=[shelf_image(64, 48)])
+    assert Image.open(io.BytesIO(mpo.getvalue())).format == "MPO"
+    assert post_photo(client, mpo.getvalue()).status_code == 201
+    assert len(pipeline.photos) == 2
+
+
+def test_a_photo_under_the_minimum_long_edge_is_refused():
+    client, pipeline = make_client()
+    res = post_photo(client, small_jpeg(300, 200))
+    assert res.status_code == 400
+    assert "300×200" in res.json()["error"] and f"{MIN_LONG_EDGE} px" in res.json()["error"]
+    assert res.json()["stage"] == "uploading"
+    assert post_photo(client, small_jpeg(200, MIN_LONG_EDGE)).status_code == 201, "the long edge counts, whichever way"
+    assert len(pipeline.photos) == 1
+
+
+def test_refusals_as_fragments_carry_the_title_and_the_stage():
+    client, _ = make_client()
+    res = post_photo(client, small_jpeg(300, 200), headers={"HX-Request": "true"})
+    assert res.status_code == 400 and "Upload refused" in res.text and 'data-stage="uploading"' in res.text
+    assert 'id="scan-retry"' not in res.text, "a bad photo wants a different photo, not the same one again"

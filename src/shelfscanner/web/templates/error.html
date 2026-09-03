@@ -1,1 +1,3 @@
-<div class="error" role="alert" id="scan-error" data-stage="{{ stage }}"><strong>Stage: {{ stage }}</strong>{{ message }}</div>
+{#- A refusal or failure before any stage ran: the upload, or a limit (008). `retry` offers a new scan. -#}
+<div class="error" role="alert" id="scan-error" data-stage="{{ stage }}"><strong>{{ title }}</strong>{{ message }}</div>
+{% if retry %}{% include "retry.html" %}{% endif %}
