@@ -34,6 +34,12 @@ READING_METRICS = {"median_recall": "higher", "mean_invented": "lower", "p50_lat
 CHOOSING_METRICS = {"share_valid_vs_extraction": "higher", "median_overlap": "higher",
                     "p50_latency_ms": "lower", "mean_cost_usd": "lower"}
 TOLERATED = {"p50_latency_ms", "mean_cost_usd", "cost_per_scan_usd"}
+# Overlap is a small-sample number from a non-deterministic model: five shelves, five picks each, and a
+# rerun moves one pick on one shelf. It is scored over the latest OVERLAP_RUNS runs per photo of the
+# default prompt (mean per photo, then the median across photos) and allowed to sit this far under the
+# baseline. Recall and invented titles keep no tolerance: those must not move.
+OVERLAP_RUNS = 3
+ABSOLUTE_TOLERANCE = {"median_overlap": 0.5}
 _EPS = 1e-9
 
 
@@ -94,9 +100,8 @@ def measure(rows: dict[str, list[dict]], cfg: Config, set_name: str, picks: dict
     rec_stats = recommendation_stats(ok + [r for r in rec if r.get("error")])
     choosing = asdict(pick_adapter(rec_stats, choosing_cfg.adapter)) if rec_stats else {
         "model": choosing_model, "runs": 0, "errors": 0}
-    overlaps = [overlap([x.title for x in recs_from(r["parsed_recommendations"])], picks[r["photo_id"]], cfg.match_threshold)
-                for r in ok if picks.get(r["photo_id"])]
-    choosing["median_overlap"] = median(overlaps) if overlaps else None
+    overlaps = photo_overlaps(rec, picks, cfg.match_threshold)
+    choosing["median_overlap"] = median(overlaps.values()) if overlaps else None
     choosing["overlap_runs"] = len(overlaps)
 
     costs = [reading.get("mean_cost_usd"), choosing.get("mean_cost_usd")]
@@ -109,7 +114,36 @@ def measure(rows: dict[str, list[dict]], cfg: Config, set_name: str, picks: dict
     }
 
 
-def _regressed(got: float, want: float, better: str, tolerance: float) -> bool:
+def latest_runs_per_photo(rows: list[dict], n: int) -> dict[int, list[dict]]:
+    """The last `n` rows without error per photo, newest first, for the default prompt when the rows say
+    which prompt they used (rows without the column count)."""
+    from shelfscanner.recommend import DEFAULT_PROMPT
+
+    wanted = f"{DEFAULT_PROMPT}.md"
+    out: dict[int, list[dict]] = {}
+    for r in sorted(rows, key=lambda r: r.get("id", 0), reverse=True):
+        if r.get("error") or r.get("prompt_version", wanted) != wanted:
+            continue
+        out.setdefault(r["photo_id"], [])
+        if len(out[r["photo_id"]]) < n:
+            out[r["photo_id"]].append(r)
+    return out
+
+
+def photo_overlaps(rec: list[dict], picks: dict[int, list], threshold: float, n: int = OVERLAP_RUNS) -> dict[int, float]:
+    """Photo id -> mean overlap over its latest `n` runs, for photos that have picks."""
+    out: dict[int, float] = {}
+    for photo_id, runs in latest_runs_per_photo(rec, n).items():
+        if not picks.get(photo_id):
+            continue
+        scores = [overlap([x.title for x in recs_from(r["parsed_recommendations"])], picks[photo_id], threshold) for r in runs]
+        out[photo_id] = sum(scores) / len(scores)
+    return out
+
+
+def _regressed(got: float, want: float, better: str, tolerance: float, absolute: float = 0.0) -> bool:
+    if absolute:
+        return got < want - absolute - _EPS if better == "higher" else got > want + absolute + _EPS
     if better == "higher":
         return got < want * (1 - tolerance) - _EPS
     return got > want * (1 + tolerance) + _EPS
@@ -143,8 +177,9 @@ def compare(measured: dict, baseline: dict, tolerance: float = TOLERANCE) -> lis
             out.append(f"{name}: no value (baseline {_fmt(want)})")
             continue
         tol = tolerance if metric in TOLERATED else 0.0
-        if _regressed(got, want, better, tol):
-            allowed = f", {tol:.0%} allowed" if tol else ""
+        absolute = ABSOLUTE_TOLERANCE.get(metric, 0.0)
+        if _regressed(got, want, better, tol, absolute):
+            allowed = f", {tol:.0%} allowed" if tol else (f", {absolute:g} under allowed" if absolute else "")
             out.append(f"{name}: {_fmt(got)} vs baseline {_fmt(want)}{allowed}")
     return out
 
@@ -196,7 +231,7 @@ def fetch() -> dict[str, list[dict]]:
         ).order("id").execute().data,
         "recommendations": c.table("recommendations").select(
             "id, extraction_id, model, error, parsed_recommendations, valid_vs_extraction, valid_vs_ground_truth, "
-            "specificity_scores, latency_ms, cost_usd, adapter"
+            "specificity_scores, latency_ms, cost_usd, adapter, prompt_version"
         ).order("id").execute().data,
     }
 

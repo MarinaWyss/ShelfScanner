@@ -1,5 +1,5 @@
 {
-  "_note": "Change 001's numbers for the chosen pair, via OpenRouter, from docs/changes/archive/001-mvp/results.md. research.check measures the models named as primary in config/models.toml on the same set and fails on any regression; latency (ms) and cost (USD) get a 10 % tolerance, the rest none. Keyed by set name so 006 can add sets; the model slug says what produced the numbers.",
+  "_note": "Change 001's numbers for the chosen pair, via OpenRouter, from docs/changes/archive/001-mvp/results.md. research.check measures the models named as primary in config/models.toml on the same set and fails on any regression; latency (ms) and cost (USD) get a 10 % tolerance; median_overlap is the median across photos of the mean over the latest three runs per photo of the default prompt and may sit 0.5 under the baseline (decided 2026-09-03: a five-shelf median flipped on one pick moving between runs); recall and invented titles get none. Keyed by set name so 006 can add sets; the model slug says what produced the numbers.",
   "recorded": "2026-09-02",
   "sets": {
     "core": {

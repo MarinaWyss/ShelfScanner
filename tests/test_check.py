@@ -92,8 +92,11 @@ def test_latest_row_per_photo_supersedes_earlier_ones():
     rows["extractions"].insert(0, old)
     rows["recommendations"].insert(0, old_rec)
     m, regressions = run(rows)
-    assert regressions == []
-    assert m["reading"]["median_recall"] == 1.0 and m["choosing"]["median_overlap"] == 2
+    # Reading: the latest row per photo is the measurement. Choosing: overlap averages the latest three
+    # runs per photo (decided 2026-09-03), so the old run on photo 1 still counts, (2 + 0) / 2 = 1, and
+    # the median across photos drops to 1 against a baseline of 2: past the half point, a regression.
+    assert m["reading"]["median_recall"] == 1.0 and m["choosing"]["median_overlap"] == 1
+    assert regressions == ["choosing.median_overlap: 1.0000 vs baseline 2, 0.5 under allowed"]
 
 
 def test_error_rows_are_counted_but_do_not_score():
@@ -224,3 +227,33 @@ def test_main_prints_json_and_exits_nonzero_on_regression(monkeypatch, capsys):
 def test_unknown_set_has_no_baseline():
     with pytest.raises(SystemExit, match="No baseline for set 'nope'"):
         check.baseline_for("nope")
+
+
+def test_overlap_is_the_mean_over_the_latest_three_runs_per_photo():
+    """A rerun moves one pick on one shelf; one run's median is not the metric (decided 2026-09-03)."""
+    from research.check import photo_overlaps
+
+    rows = good_rows()
+    e1 = rows["extractions"][0]["id"]
+    older = [rec(e1, titles=("A", "B", "C", "D", "E")), rec(e1, titles=("Dune", "B", "C", "D", "E")),
+             rec(e1, titles=("A", "B", "C", "D", "E"))]  # four runs for photo 1: only the newest three count
+    latest = rec(e1, titles=("Dune", "Emma", "C", "D", "E"))
+    rec_rows = older + [r for r in rows["recommendations"] if r["extraction_id"] != e1] + [latest]
+    photo_of = {e["id"]: e["photo_id"] for e in rows["extractions"]}
+    rec_rows = [dict(r, photo_id=photo_of[r["extraction_id"]]) for r in rec_rows]
+    ov = photo_overlaps(rec_rows, PICKS, 0.85)
+    assert ov[1] == (2 + 0 + 1) / 3 and ov[2] == 2
+
+
+def test_a_different_prompt_version_is_not_scored_and_overlap_has_half_a_point_of_room():
+    rows = good_rows()
+    for r in rows["recommendations"]:
+        r["prompt_version"] = "recommend_v1.md"  # not the default prompt: nothing to score
+    m = measure(rows, CFG, "core", PICKS)
+    assert m["choosing"]["median_overlap"] is None
+    base = dict(BASE, choosing=dict(BASE["choosing"], median_overlap=2.5))
+    m2, regressions = run(good_rows(), base)
+    assert m2["choosing"]["median_overlap"] == 2 and regressions == []  # 2 against 2.5: within the half point
+    base = dict(BASE, choosing=dict(BASE["choosing"], median_overlap=2.6))
+    _, regressions = run(good_rows(), base)
+    assert regressions == ["choosing.median_overlap: 2.0000 vs baseline 2.6000, 0.5 under allowed"]
