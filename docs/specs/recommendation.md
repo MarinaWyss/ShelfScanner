@@ -18,7 +18,11 @@ the extraction failed the recommendation is skipped.
 
 ## Input to the model
 
-- The prompt file `prompts/<name>.md` (default `recommend_v3`), which asks
+- The prompt file `prompts/<name>.md` (default `recommend_v5`: v3 plus one
+  line saying a shelf book by a favourite author is a strong pick; v4, the
+  same line with "and so is a book that resembles their work", put a book
+  that was not on the shelf into two of fifteen core runs and is kept only
+  as a comparison row, 012), which asks
   for exactly five ranked picks from the list, exact title strings, and a
   one-to-three-sentence reason tying a stated preference to something
   specific about the book. v1 and v2 put the shelf list first and the

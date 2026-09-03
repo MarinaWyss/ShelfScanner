@@ -10,7 +10,7 @@ import pytest
 
 from research import check, report
 from research import eval as research_eval
-from shelfscanner import storage
+from shelfscanner import recommend, storage
 
 # --- report --by-prompt --------------------------------------------------------------------------
 
@@ -63,7 +63,7 @@ def test_eval_runs_both_stages_then_the_check_and_returns_its_verdict(monkeypatc
     monkeypatch.setattr(research_eval.check, "main", lambda argv: calls.append(("check", argv)) or 1)
     rc = research_eval.main(["--set", "core", "--reading-set", "all", "--reading", "sonnet", "--choosing", "haiku"])
     assert rc == 1
-    assert calls == [("vision", ["sonnet"], "all"), ("llm", ["haiku"], "recommend_v3", "core"), ("check", ["--set", "core"])]
+    assert calls == [("vision", ["sonnet"], "all"), ("llm", ["haiku"], recommend.DEFAULT_PROMPT, "core"), ("check", ["--set", "core"])]
 
 
 def test_eval_defaults_to_the_configured_primaries(monkeypatch):

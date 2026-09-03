@@ -396,7 +396,7 @@ still open. The tables below record what was decided; the specs in
 | Aspect | Approach |
 | :---- | :---- |
 | UI framework | Server-rendered pages with htmx; the photo is resized on the phone before upload. Phone-first: the user is standing at a shelf. |
-| Key interactions | Pick genres, optionally upload a Goodreads export (R4). Take or choose a photo. Watch the stages complete. See five picks with reasons. Save any of them; mark any as bad. Open the saved list later on the same device. |
+| Key interactions | A homepage that says what it does (012). Pick genres (the original's eighteen), name favourite authors, optionally upload a Goodreads export (R4). Take or choose a photo. Watch the stages complete. See five picks with reasons. Save any of them; mark any as bad. Open the saved list later on the same device. |
 | Feedback mechanism | Save (the primary metric) and a per-pick "not for me" (F1, F2). Both are rows tied to the recommendation row that produced the pick, so feedback can be joined to the model, prompt version and preferences behind it. |
 
 **Data**
@@ -561,7 +561,7 @@ can wait" decision; the order is revised after each change lands.
 | Monitoring: dashboard from the rows, weekly review | 009 | either | 2026-09-23 | built 2026-09-03; closes after the second weekly review |
 | Deployment: Vercel from GitHub | 010 | app | 2026-09-30 | approved |
 | Eval tooling: compare prompts, one eval command, promote a real scan | 011 | quality | 2026-09-03 | done 2026-09-03 |
-| Homepage, the original's genres and favourite authors, the iOS scan button, a favicon | 012 | app | before the design segment | approved 2026-09-03 |
+| Homepage, the original's genres and favourite authors, the iOS scan button, a favicon | 012 | app | before the design segment | done 2026-09-03 |
 | Donations, legal pages, contact | 013 | app | after 012 | proposed |
 
 Fine-tuning and agents: not on the list (sections 5 and 8). Deployment is

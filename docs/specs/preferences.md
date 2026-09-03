@@ -6,10 +6,11 @@ session.
 
 ## The object
 
-JSON with five keys.
+JSON with six keys.
 
 - `genres`: list of strings.
 - `free_text`: what the reader likes, in their words.
+- `authors`: list of strings, favourite authors (012).
 - `rated_books`: list of `{title, author, rating}`, rating 1 to 5, highest
   rating first and most recently read first within a rating. `author` is
   null when unknown.
@@ -17,7 +18,7 @@ JSON with five keys.
 - `avoid`: list of strings: topics, styles, or specific books.
 
 The older flat shape (`genres`, `likes`, `loved_books`, `avoid`, optional
-`_note`) is still accepted everywhere a preferences file is. `upgrade()`
+`authors`, optional `_note`) is still accepted everywhere a preferences file is. `upgrade()`
 converts it: `likes` becomes `free_text`, each `loved_books` title becomes a
 rated book at 5 with no author, `to_read` is empty, `_note` is dropped. An
 object that already has any of `rated_books`, `to_read` or `free_text` is
@@ -28,7 +29,7 @@ treated as the new shape and missing keys are filled with empty values.
 On the web page the export file is refused with 413 when it is over 4 MB
 (the scan route's limit; an export is usually well under 1 MB).
 
-`uv run shelfscanner prefs import --csv <export.csv> [--base <prefs.json>] [--genres g ...] [--free-text "..."] [--avoid a ...] [--max-rated N] [--max-to-read N] [--name n | --out path | --session id]`
+`uv run shelfscanner prefs import --csv <export.csv> [--base <prefs.json>] [--genres g ...] [--free-text "..."] [--avoid a ...] [--authors a ...] [--max-rated N] [--max-to-read N] [--name n | --out path | --session id]`
 
 Reads the CSV Goodreads produces under "Export library". Only `Title`,
 `Author`, `My Rating`, `Exclusive Shelf`, `Date Read` and `Date Added` are
@@ -54,7 +55,7 @@ read date is blank). To-read titles are kept most recently added first.
 The surviving rated books are then ordered for presentation as above.
 
 `--base` takes an existing preferences file of either shape and carries
-over its `genres`, `free_text` and `avoid`; `--genres` and `--avoid` add
+over its `genres`, `free_text`, `avoid` and `authors`; `--genres`, `--avoid` and `--authors` add
 to those, `--free-text` replaces it. The base's `loved_books` or
 `rated_books` do not carry over: the export is the history.
 
@@ -76,9 +77,10 @@ table; anything else is a file path.
 The "Reading preferences" section of the recommendation input:
 
 - A structured object is laid out as labelled lists, whatever the prompt:
-  `Genres: a, b`, `About the reader: ...`, `Rated books, 1 (disliked) to 5
-  (loved):` with one line per book as `Title — Author (5/5)`, `Wants to
-  read:` and `Avoid:` as lists. Empty sections are omitted.
+  `Genres: a, b`, `About the reader: ...`, `Favourite authors: a, b`,
+  `Rated books, 1 (disliked) to 5 (loved):` with one line per book as
+  `Title — Author (5/5)`, `Wants to read:` and `Avoid:` as lists. Empty
+  sections are omitted.
 - The flat shape is sent as JSON, exactly as before, when the prompt is
   `recommend_v1`. For any other prompt it is upgraded first and laid out as
   above.
@@ -86,8 +88,9 @@ The "Reading preferences" section of the recommendation input:
 `prompts/recommend_v2.md` explains those sections to the model: high
 ratings are what to match, low ratings what to steer away from, a to-read
 title on the shelf is a very strong pick, and the avoid list is binding. It
-keeps v1's hard rules and reply shape. `recommend_v3.md`, the default, is
-v2 with the shelf list moved after the preferences and the shelf-only rule
-restated at the start and the end (`recommendation.md`). The `preferences` column of the
+keeps v1's hard rules and reply shape. `recommend_v3.md` is v2 with the
+shelf list moved after the preferences and the shelf-only rule restated at
+the start and the end; `recommend_v5.md`, the default, is v3 plus one line
+explaining "Favourite authors" (`recommendation.md`). The `preferences` column of the
 recommendation row logs the object as given to the command, not the
 laid-out text.
