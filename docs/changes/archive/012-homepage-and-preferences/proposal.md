@@ -12,7 +12,7 @@ The app is live (010) and every page on it is functional and bare: the
 scan page is a heading, a file picker and a button. The earlier
 ShelfScanner (shelfscanner.io, a different codebase) had a homepage that
 told a visitor what the thing does before asking for a photo, a genre list
-of eighteen, and a place to name favourite authors; this codebase has none
+of eighteen, and a place to name favorite authors; this codebase has none
 of those, and it is the one that will be shown. Two smaller things belong
 in the same pass: on an iPhone, tapping "Read the shelf" with no photo
 chosen does nothing at all (Safari enforces `required` silently, where
@@ -46,10 +46,10 @@ a contact form, none of which this change copies.
 - **The original's eighteen genres** replace the current twelve. A stored
   genre that is not on the list stays chosen and is shown as its own chip,
   so nobody's saved preferences lose anything.
-- **Favourite authors.** One text field on the preferences page,
-  "Favourite authors, separated by commas". Stored as a sixth key on the
+- **Favorite authors.** One text field on the preferences page,
+  "Favorite authors, separated by commas". Stored as a sixth key on the
   preferences object, `authors` (list of strings), laid out for the model
-  as `Favourite authors: a, b`. The prompt gains one sentence about it and
+  as `Favorite authors: a, b`. The prompt gains one sentence about it and
   becomes `recommend_v4`; v3 and v4 are compared on the core set with
   `research.report --by-prompt` before v4 becomes the default, as 004 and
   011 did.
@@ -88,7 +88,7 @@ shows the stored list back as the field's value.
 
 **D3. A new prompt version for one sentence.** The rule since 004:
 prompts are files named by version and a changed prompt is a new file,
-compared before it is the default. The sentence: "Favourite authors" are
+compared before it is the default. The sentence: "Favorite authors" are
 authors they love; a shelf book by one of them is a strong pick.
 
 **D4. The genre names are the original's, verbatim,** so the video can
@@ -103,7 +103,7 @@ their hyphens.
 | Scan moved | `/scan` is the old page; first visit with no preferences redirects to `/preferences` (existing test, moved) |
 | iOS button | Playwright: a click with no file shows "Choose a photo first" and opens the picker; `POST /scan` with no file is 400 with the message (test); Marina's iPhone: the tap opens the picker |
 | Genres | The eighteen chips render; a saved object with an off-list genre shows it checked (test) |
-| Authors | The field round-trips to `authors` on the stored object (test); the prompt text contains `Favourite authors: …` (test) |
+| Authors | The field round-trips to `authors` on the stored object (test); the prompt text contains `Favorite authors: …` (test) |
 | Prompt | v4 on the core set with the eval preferences plus two authors: on-list share 1.00, median overlap within 0.5 of v3; the table in `results.md` |
 | Favicon | `/static/favicon.svg` and the PNG are 200; a screenshot of the tab |
 | Nothing else moved | `uv run pytest`, the Playwright suite, `research.check` PASS |

@@ -132,7 +132,7 @@ def test_as_text_is_compact_and_omits_empty_sections():
     assert txt == ("Genres: sf\nAbout the reader: Voice matters.\nRated books, 1 (disliked) to 5 (loved):\n"
                    "- A — X (5/5)\n- B (1/5)\nWants to read:\n- C — Y")
     assert p.as_text(p.empty()) == "(no preferences given)"
-    assert "Favourite authors: A, B" in p.as_text({**p.empty(), "authors": ["A", "B"]})  # 012
+    assert "Favorite authors: A, B" in p.as_text({**p.empty(), "authors": ["A", "B"]})  # 012
 
 
 def test_prefs_text_keeps_v1_behaviour_for_the_flat_shape():

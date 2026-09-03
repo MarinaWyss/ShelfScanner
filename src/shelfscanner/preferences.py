@@ -99,7 +99,7 @@ def as_text(prefs: dict) -> str:
     if prefs.get("free_text"):
         parts.append("About the reader: " + prefs["free_text"].strip())
     if prefs.get("authors"):
-        parts.append("Favourite authors: " + ", ".join(prefs["authors"]))
+        parts.append("Favorite authors: " + ", ".join(prefs["authors"]))
     if prefs.get("rated_books"):
         parts.append("Rated books, 1 (disliked) to 5 (loved):")
         parts += [f"- {_book_line(b)} ({b['rating']}/5)" for b in prefs["rated_books"]]
@@ -259,7 +259,7 @@ def add_parser(subparsers: argparse._SubParsersAction) -> None:
     imp.add_argument("--genres", nargs="*", default=None, help="genres, added to any from --base")
     imp.add_argument("--free-text", default=None, help="what the reader likes, in their words; replaces --base's")
     imp.add_argument("--avoid", nargs="*", default=None, help="things to avoid, added to any from --base")
-    imp.add_argument("--authors", nargs="*", default=None, help="favourite authors, added to any from --base (012)")
+    imp.add_argument("--authors", nargs="*", default=None, help="favorite authors, added to any from --base (012)")
     imp.add_argument("--max-rated", type=int, default=MAX_RATED, help=f"cap on rated books (default {MAX_RATED}, D2)")
     imp.add_argument("--max-to-read", type=int, default=MAX_TO_READ, help=f"cap on to-read titles (default {MAX_TO_READ}, D2)")
     target = imp.add_mutually_exclusive_group()

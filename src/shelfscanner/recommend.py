@@ -16,7 +16,7 @@ from shelfscanner.router import ModelClient, Progress
 from shelfscanner.storage import get_photo
 from shelfscanner.verify import Verified  # change 007
 
-DEFAULT_PROMPT = "recommend_v5"  # 012: v3 plus the favourite-authors line (v4 tried a longer one and lost on-list share); v3 stays for comparison rows
+DEFAULT_PROMPT = "recommend_v5"  # 012: v3 plus the favorite-authors line (v4 tried a longer one and lost on-list share); v3 stays for comparison rows
 FLAT_JSON_PROMPT = "recommend_v1"  # the one prompt that takes the flat file as JSON, as change 001 sent it
 EXPECTED = 5
 

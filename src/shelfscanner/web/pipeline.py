@@ -24,7 +24,7 @@ from shelfscanner import extract, preferences, recommend, router, spend, storage
 from shelfscanner.config import load_config
 from shelfscanner.router import ModelClient, Progress
 
-CHOOSING_PROMPT = "recommend_v5"  # preferences first, the shelf last (004), the favourite-authors line (012)
+CHOOSING_PROMPT = "recommend_v5"  # preferences first, the shelf last (004), the favorite-authors line (012)
 NOT_FOR_ME = "not_for_me"
 
 # 005 D2: a scan with no preferences still runs; the model is told the taste is unknown. The note

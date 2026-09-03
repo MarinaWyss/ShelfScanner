@@ -10,7 +10,7 @@ JSON with six keys.
 
 - `genres`: list of strings.
 - `free_text`: what the reader likes, in their words.
-- `authors`: list of strings, favourite authors (012).
+- `authors`: list of strings, favorite authors (012).
 - `rated_books`: list of `{title, author, rating}`, rating 1 to 5, highest
   rating first and most recently read first within a rating. `author` is
   null when unknown.
@@ -77,7 +77,7 @@ table; anything else is a file path.
 The "Reading preferences" section of the recommendation input:
 
 - A structured object is laid out as labelled lists, whatever the prompt:
-  `Genres: a, b`, `About the reader: ...`, `Favourite authors: a, b`,
+  `Genres: a, b`, `About the reader: ...`, `Favorite authors: a, b`,
   `Rated books, 1 (disliked) to 5 (loved):` with one line per book as
   `Title — Author (5/5)`, `Wants to read:` and `Avoid:` as lists. Empty
   sections are omitted.
@@ -91,6 +91,6 @@ title on the shelf is a very strong pick, and the avoid list is binding. It
 keeps v1's hard rules and reply shape. `recommend_v3.md` is v2 with the
 shelf list moved after the preferences and the shelf-only rule restated at
 the start and the end; `recommend_v5.md`, the default, is v3 plus one line
-explaining "Favourite authors" (`recommendation.md`). The `preferences` column of the
+explaining "Favorite authors" (`recommendation.md`). The `preferences` column of the
 recommendation row logs the object as given to the command, not the
 laid-out text.

@@ -40,7 +40,7 @@ def test_preferences_scan_save_unsave_mark_and_the_saved_list(server: Server, pa
     expect(page.locator("#picks .pick")).to_have_count(5)
     expect(page.locator("#picks .pick-title")).to_have_text([p["title"] for p in DEFAULT_PICKS])
     (text,) = server.pipeline.client.inputs
-    assert "Genres: Science Fiction, Horror" in text and "Favourite authors: Ursula K. Le Guin, Shirley Jackson" in text and "The Salt Road" in text, "the model saw the preferences"
+    assert "Genres: Science Fiction, Horror" in text and "Favorite authors: Ursula K. Le Guin, Shirley Jackson" in text and "The Salt Road" in text, "the model saw the preferences"
     rid = int(page.locator("#picks").get_attribute("data-recommendation-id"))
 
     # Save two, unsave one, mark one.

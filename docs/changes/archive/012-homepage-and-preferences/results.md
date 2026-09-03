@@ -9,7 +9,7 @@ set).
 | Scan moved | `/scan` is the old page; first visit redirects to `/preferences` | yes (the sessions, scan and e2e suites, moved) |
 | iOS button | a click with no file shows the message and opens the picker; `POST /scan` with no file is 400 | yes in Chromium (`test_a_click_with_no_photo_says_so_and_sends_nothing`, `test_a_submit_with_no_photo_is_refused_with_the_message_not_a_422`); Marina's iPhone pending |
 | Genres | eighteen chips; an off-list stored genre stays checked | yes (`test_first_visit_shows_the_page_with_a_skip_and_the_originals_eighteen_genres`, `test_a_stored_genre_off_the_list_stays_chosen_with_its_own_chip`) |
-| Authors | round-trip to `authors`; the prompt text carries `Favourite authors: …` | yes (`test_favourite_authors_round_trip_as_a_list`, the e2e feedback flow reads it in the model input) |
+| Authors | round-trip to `authors`; the prompt text carries `Favorite authors: …` | yes (`test_favorite_authors_round_trip_as_a_list`, the e2e feedback flow reads it in the model input) |
 | Prompt | on-list 1.00, median overlap within 0.5 of v3 | v5 yes; v4 no (below) |
 | Favicon | the SVG and the PNG are 200 | yes (e2e); tab screenshot for the video is Marina's |
 | Nothing else moved | pytest, Playwright, `research.check` | 395 passed; check PASS |
@@ -18,7 +18,7 @@ set).
 
 GPT-5.4 mini, core set, the eval preferences (flat, no export). v3's
 thirty runs never put a pick off the shelf. v4 added one bullet: a shelf
-book by a favourite author is a strong pick, "and so is a book that
+book by a favorite author is a strong pick, "and so is a book that
 resembles their work". Two of its fifteen runs put a pick off the shelf,
 both on photo 1: one an invented title ("How to Know a Person"), one a
 mangled one ("How to Lose the Time War", 0.81 against the shelf's title,
@@ -40,7 +40,14 @@ on real scans.
 
 ## Decided during the work
 
-- The favourite-authors line reaches the model through the preferences
+- Same day, after the runs: the homepage lost its "what is kept" section
+  and took the original's "How It Works" wording verbatim (Upload Photo,
+  Set Preferences, Find Matching Books), and every "favourite" became
+  "favorite", including the label in the preferences text and the line in
+  `recommend_v5.md`. The fifteen v5 runs above used the British spelling;
+  the prompt is otherwise unchanged and keeps its version.
+
+- The favorite-authors line reaches the model through the preferences
   text whatever the prompt version; the prompt version only explains it.
 - The authors key is carried through the flat-shape upgrade too, so a
   hand-written preferences file can name them.

@@ -50,7 +50,8 @@ Four server-rendered pages, phone widths first, with htmx (vendored in
 palette) and an iPhone home-screen icon (`static/apple-touch-icon.png`):
 
 - `GET /` — the homepage (012): what the app does in a line, the three
-  steps, what is and is not kept, and a "Scan a shelf" link to `/scan`. It
+  "How It Works" steps in the original ShelfScanner's words, and a "Scan
+  a shelf" link to `/scan`. It
   is unsessioned (012 D1): no `sessions` row and no cookie until the
   visitor opens a page that needs one.
 - `GET /scan` — the scan page. On a session with no preferences row it
@@ -69,7 +70,7 @@ palette) and an iPhone home-screen icon (`static/apple-touch-icon.png`):
 `GET /preferences` shows eighteen genre checkboxes (`web/prefs.py:GENRES`,
 the original ShelfScanner's list, 012 D4; a stored genre that is not on the
 list is rendered as its own checked chip so nothing saved is lost), a
-"Favourite authors, separated by commas" text field, a free-text line, and
+"Favorite authors, separated by commas" text field, a free-text line, and
 a file field for a Goodreads export, filled in from the session's stored
 object; when an export has been imported it says how many rated books and
 to-read titles are on file. On a first visit (no row) it also offers "Skip

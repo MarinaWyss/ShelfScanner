@@ -16,7 +16,7 @@ five picks with reasons, save and "not for me", a device session with no
 account. Model calls go through a router of our own with per-stage
 failover, a spend guard, a dashboard and a weekly review, deployed to Vercel
 from this repository (010; `docs/specs/deployment.md`), with a homepage,
-the original's genres and favourite authors (012). The MVP that started it, and the
+the original's genres and favorite authors (012). The MVP that started it, and the
 numbers behind the model choice, are in
 `docs/changes/archive/001-mvp/results.md`; the roadmap and its status are
 in `docs/changes/README.md`.

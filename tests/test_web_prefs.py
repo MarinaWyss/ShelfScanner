@@ -40,7 +40,7 @@ def test_genres_and_free_text_are_stored_as_the_object_and_shown_again():
     assert client.get("/scan").status_code == 200 and 'hx-post="/scan"' in client.get("/scan").text
 
 
-def test_favourite_authors_round_trip_as_a_list():
+def test_favorite_authors_round_trip_as_a_list():
     # 012 D2: a comma-separated field, stored as the object's `authors` list, shown back joined.
     client, pipeline = make_client()
     client.post("/preferences", data={"authors": " Ursula K. Le Guin ,Hilary Mantel,, ursula k. le guin\nOctavia Butler "})
