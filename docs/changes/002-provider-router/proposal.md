@@ -119,3 +119,43 @@ can show which stage is running.
 - **Computed cost drifts from billed cost.** Mitigated by the price check
   date and by a monthly reconciliation against the provider invoices, noted
   as an operational task.
+
+## Decided during the work
+
+Task 4, Anthropic adapter (2026-09-02, worker; flagged for `results.md`).
+
+- **Model ids** are `claude-sonnet-5` and `claude-haiku-4-5`, taken from the
+  claude-api skill's model table (cached 2026-06-24), not from memory. No
+  date suffixes: those ids are complete as-is.
+- **Effort mapping.** Sonnet 5 takes adaptive thinking, so `reasoning_effort`
+  becomes `thinking={"type": "adaptive"}` plus `output_config.effort` for
+  `low`/`medium`/`high`/`xhigh`/`max` (`minimal` is an alias for `low`);
+  `none` disables thinking; absent sends nothing (provider default: adaptive
+  at `high`). Haiku 4.5 rejects `effort` and still wants `budget_tokens`, so
+  there the same values become a budget of 1024 / 4096 / 16384 tokens,
+  capped at `max_tokens - 1024` and dropped below the API minimum of 1024.
+  An unknown value is a failed result naming it, not an exception.
+- **Structured output without a schema in the contract.** `ModelClient` has no
+  schema argument, so the adapter carries the two shapes the prompts ask for
+  today (`{"books": [{title, author}]}` for `vision`, `{"recommendations":
+  [{title, reason}]}` for `text`) and passes them as `output_config.format`.
+  A constructor argument overrides or disables them. If 004's prompt v2
+  changes the recommendation shape, this schema must change with it; the
+  cleaner fix is a `schema` parameter on the contract, for the lead.
+- **Missing key is a failed result, not an exit.** `ANTHROPIC_API_KEY` is
+  read from `.env` on first use; when absent every call returns `error`
+  naming the key and `.env.example`, so a failover onto Sonnet 5 logs the
+  problem instead of aborting the run. The SDK client is built lazily, so
+  tests inject a stub and nothing touches the network.
+- **Stop reasons.** `end_turn`/`stop_sequence` are `stop`; `max_tokens` and
+  `model_context_window_exceeded` are `length`; `refusal`, `tool_use` and
+  `pause_turn` are kept verbatim and set `error`. Reasoning tokens come from
+  `usage.output_tokens_details.thinking_tokens`, already inside
+  `output_tokens`, so `cost_from_tokens` prices them as output (D5).
+- **Tests only, no live run.** There is no Anthropic key in `.env`, so
+  `uv run shelfscanner extract --photo all --model sonnet` and the "switch
+  the reading stage to sonnet" acceptance rerun are follow-ups once the key
+  exists.
+- **One line in `tests/test_config_and_adapter.py`** asserted every model was
+  on OpenRouter; it now asserts every adapter is a name in `router.ADAPTERS`,
+  the same edit main already carries from tasks 2 and 3.

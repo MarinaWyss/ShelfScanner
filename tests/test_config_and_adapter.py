@@ -6,6 +6,7 @@ import json
 import pytest
 from PIL import Image
 
+from shelfscanner import router
 from shelfscanner.config import load_config
 from shelfscanner.images import resize
 from shelfscanner.adapters.base import parse_json
@@ -26,7 +27,7 @@ def test_stages_name_known_models_with_fallbacks():
     for st in cfg.stages.values():
         assert cfg.model(st.primary).alias == st.primary
         assert st.fallback is not None and cfg.model(st.fallback).alias == st.fallback
-    assert all(m.adapter == "openrouter" for m in cfg.models.values())
+    assert all(m.adapter in router.ADAPTERS for m in cfg.models.values())
     assert cfg.prices_checked is not None
 
 

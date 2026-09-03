@@ -30,12 +30,16 @@ fallback = "qwen-flash"
 
 [models.haiku]
 slug = "anthropic/claude-haiku-4.5"
+adapter = "anthropic"
+model_id = "claude-haiku-4-5"
 provider = "Anthropic"
 price_input = 1.00
 price_output = 5.00
 
 [models.sonnet]
 slug = "anthropic/claude-sonnet-5"
+adapter = "anthropic"
+model_id = "claude-sonnet-5"
 provider = "Anthropic"
 price_input = 2.00
 price_output = 10.00
