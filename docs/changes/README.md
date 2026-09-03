@@ -23,6 +23,7 @@ out-of-scope list.
 | 008 | Hardening: limits, cost cap, retention, errors; caching if measured | app | 2026-09-23 | 003; 007 for caching |
 | 009 | Monitoring: dashboard from the rows, weekly review | either | 2026-09-23 | 003, 005 |
 | 010 | Deployment: Vercel from GitHub | app | 2026-09-30 | 008; Marina connects the repo |
+| 011 | Eval tooling: compare prompts, one eval command, promote a real scan | quality | before the S8 recording | proposed 2026-09-03, awaiting approval; 004, 006 |
 
 Where this departs from the earlier plan: CI and the regression gate are
 part of 002, not a testing phase; the test set gets its own phase (006)
