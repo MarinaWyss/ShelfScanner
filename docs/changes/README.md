@@ -78,6 +78,13 @@ decision.
 - Then 008 task 4 (caching, by 007's numbers) and 005 task 5 (e2e, phone).
 - 005, 007, 008, 009 close.
 
+Waves 2 and 3 closed on 2026-09-03 for everything that does not need a
+provider key or Marina's phone: 007 and 008 archived; 009 built (dashboard,
+metrics module, weekly review seeded) and closing after its second weekly
+file; 353 tests, CI green, advisors clean. Still open in 002, 003, 004,
+005, 006: the runs on the primaries (keys), the phone scans, the nightly
+job's two green nights.
+
 **Wave 4**, ends 2026-09-30. 010, once Marina has connected the repo to
 Vercel.
 
@@ -173,6 +180,8 @@ Everything else runs unattended.
    `SUPABASE_SECRET_KEY`, `OPENROUTER_API_KEY`, `GEMINI_API_KEY`,
    `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`; variable `NIGHTLY_EVAL=1` to
    switch the nightly job on (it stays off until then).
+   Set `WEEKLY_REVIEW=1` to turn on the Monday review (009); it also needs
+   `ANTHROPIC_API_KEY` and the Supabase secrets.
 4. **Connect the repo to Vercel** at 010, and only then. The app is laid
    out for Vercel's Python runtime from 003, so this is a click and a
    set of environment variables.

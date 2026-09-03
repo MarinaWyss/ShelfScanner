@@ -69,3 +69,5 @@ published as a private artifact.
 missing Supabase key stops the command with a message naming it; a
 missing provider key is an error on that call, which failover can catch.
 Provider keys already present in the shell environment are used as well.
+The web app has its own per-day cap across every session,
+`SHELFSCANNER_APP_DAILY_CAP_USD`, described in `web.md` (008).

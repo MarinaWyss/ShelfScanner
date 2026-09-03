@@ -468,8 +468,8 @@ No alerting. Availability is best effort.
 
 - [x] I have structured logging for every request.  
 - [x] I track cost, latency, and quality metrics over time.  
-- [ ] I have a process for reviewing and categorizing errors. \<- defined above, not yet exercised  
-- [ ] I have a feedback loop: errors inform prompt/RAG/agent improvements.  
+- [x] I have a process for reviewing and categorizing errors. \<- `research.review` drafts it weekly; first review `docs/reviews/2026-09-03.md`  
+- [x] I have a feedback loop: errors inform prompt/RAG/agent improvements. \<- the review's "Suggested change" becomes a proposal; a model failure becomes a labelled test photo  
 - [ ] I have alerting for critical metric regressions (if applicable). \<- not applicable
 
 ## 8\. Fine-Tuning (Optional / Advanced)
@@ -551,8 +551,8 @@ can wait" decision; the order is revised after each change lands.
 | Recommendations in the app, saved list, feedback | 005 | app | 2026-09-23 | approved |
 | Test set: sourced shelf photos, nightly eval, the lookup decision | 006 | quality | 2026-09-16 | approved |
 | Book lookup as verification (006 decided) | 007 | quality | 2026-09-23 | done 2026-09-03 |
-| Hardening: limits, cost cap, retention, errors; caching if measured | 008 | app | 2026-09-23 | approved |
-| Monitoring: dashboard from the rows, weekly review | 009 | either | 2026-09-23 | approved |
+| Hardening: limits, cost cap, retention, errors; caching if measured | 008 | app | 2026-09-23 | done 2026-09-03 |
+| Monitoring: dashboard from the rows, weekly review | 009 | either | 2026-09-23 | built 2026-09-03; closes after the second weekly review |
 | Deployment: Vercel from GitHub | 010 | app | 2026-09-30 | approved |
 
 Fine-tuning and agents: not on the list (sections 5 and 8). Deployment is
