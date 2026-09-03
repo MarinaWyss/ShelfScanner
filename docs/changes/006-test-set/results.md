@@ -50,19 +50,26 @@ of the invented count.
 |---|---|---|---|
 | Photos | 39 | 39 | 5 |
 | Labelled titles per photo, median | 43 | 43 | 12 |
-| Median recall | 0.46 | see below | 1.00 |
-| Titles found / labelled | 651 / 1,677 | | 67 / 69 |
-| Flagged as invented, per complete photo | 3.9 | | 0.0 |
-| p50 latency | 5.3 s | | 5.0 s |
-| Cost / photo | $0.011 | | $0.009 |
+| Median recall | 0.46 | 0.56 | 1.00 |
+| Titles found / labelled | 651 / 1,677 | 852 / 1,677 | 67 / 69 |
+| Flagged as invented, per complete photo | 3.9 | 4.9 | 0.0 |
+| p50 latency | 5.3 s | 7.5 s | 5.0 s |
+| Cost / photo | $0.011 | $0.017 | $0.009 |
 
 **Recall is a resolution story, not a reading story.** The sourced photos
 are bookshop walls and library bays at 2,000 to 6,000 px with a median of
 43 labelled spines; at a 1,568 px long edge most spines are a few pixels
 tall. The core photos are a phone at one shelf, which is the product's
 case. The worst rows are the widest shots (a 500-book Japanese wall at
-recall 0.02, a whole German living room at 0.06). The 2400 px rerun
-below measures how much of the gap is resolution.
+recall 0.02, a whole German living room at 0.06). At 2400 px the model
+finds a third more titles (852 against 651) for 40 % more latency and
+60 % more cost, and flags more near misses because it reads more tiny
+spines. Resolution is part of the gap, not all of it: a wall of 100
+spines is a different task from a shelf of 15, and the app's answer is
+the phone-side crop the user makes by pointing at one shelf, not a
+bigger upload. 1568 px stays the default (001 D7); the sourced set is a
+stress test, and its pass line (median recall at least 0.90) is not met
+by any setting tried.
 
 **The invented count is mostly not invention.** Sorting the 149 flagged
 strings over 38 complete photos:

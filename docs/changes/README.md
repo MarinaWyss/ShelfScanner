@@ -56,6 +56,10 @@ five-photo reruns in 002.
 - Then 002 task 5 (failover) and 003 task 2 (the scan endpoint on the real
   router), which need the adapters merged.
 
+Wave 1 closed on 2026-09-03: every branch merged, 251 tests, CI green,
+the regression check passing. Pending only the direct-provider keys for
+the 002 and 004 measurements on the primaries.
+
 **Wave 2**, ends 2026-09-16. Needs the adapters and the endpoint.
 
 - In parallel: 003 task 4 (phone test) · 004 task 4 (the eval, sets the
