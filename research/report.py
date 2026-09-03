@@ -135,12 +135,18 @@ def render(ex: list[ExtractionStats], rec: list[RecommendationStats]) -> str:
 
 
 def fetch_and_render() -> str:
+    """Only labelled photos count: a session upload (change 003) has no labels, so every title it
+    reads would be scored as invented and would poison the per-model numbers."""
     c = get_client()
+    labelled = {r["id"] for r in c.table("photos").select("id, titles").execute().data if r.get("titles")}
     ex = c.table("extractions").select(
         "id, photo_id, model, image_long_edge, error, found_count, missed_count, invented_count, latency_ms, cost_usd, failover_from, adapter").execute().data
+    ex = [r for r in ex if r["photo_id"] in labelled]
     rec = c.table("recommendations").select(
         "id, extraction_id, model, error, parsed_recommendations, valid_vs_extraction, valid_vs_ground_truth, specificity_scores, latency_ms, cost_usd, failover_from, adapter"
     ).execute().data
+    labelled_extractions = {r["id"] for r in ex}
+    rec = [r for r in rec if r["extraction_id"] in labelled_extractions]
     return render(extraction_stats(ex), recommendation_stats(rec))
 
 
