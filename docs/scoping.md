@@ -561,6 +561,8 @@ can wait" decision; the order is revised after each change lands.
 | Monitoring: dashboard from the rows, weekly review | 009 | either | 2026-09-23 | built 2026-09-03; closes after the second weekly review |
 | Deployment: Vercel from GitHub | 010 | app | 2026-09-30 | approved |
 | Eval tooling: compare prompts, one eval command, promote a real scan | 011 | quality | 2026-09-03 | done 2026-09-03 |
+| Homepage, the original's genres and favourite authors, the iOS scan button, a favicon | 012 | app | before the design segment | approved 2026-09-03 |
+| Donations, legal pages, contact | 013 | app | after 012 | proposed |
 
 Fine-tuning and agents: not on the list (sections 5 and 8). Deployment is
 last because it is the only phase that needs an account; until then the

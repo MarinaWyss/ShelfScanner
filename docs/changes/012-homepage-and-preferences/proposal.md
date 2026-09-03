@@ -1,6 +1,6 @@
 # 012 — Homepage, the original's preferences, the scan button on iOS, a favicon
 
-Status: proposed 2026-09-03, awaiting approval
+Status: approved 2026-09-03
 Date: 2026-09-03
 Deadline: before the design segment is recorded
 Spend cap: $1 (one prompt comparison on the core set)
