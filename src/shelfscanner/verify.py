@@ -66,6 +66,7 @@ class Verified:
     errors: int
     latency_ms: int
     lookup_id: int | None  # the `lookups` row
+    cache_hits: int = 0  # change 008: titles the lookup cache answered without a catalogue call
 
     @property
     def unverified(self) -> list[Kept]:
@@ -82,7 +83,7 @@ class Verified:
             f"kept {len(self.kept)}/{n}" + (f" ({len(self.unverified)} unverified)" if self.unverified else "")
             + f"  dropped {len(self.dropped)}")
         lid = f"{self.lookup_id:>3}" if self.lookup_id is not None else "  ?"
-        return f"lookup {lid}  photo {self.photo_id}  {status}  errors {self.errors}  {self.latency_ms}ms"
+        return f"lookup {lid}  photo {self.photo_id}  {status}  errors {self.errors}  cached {self.cache_hits}/{n}  {self.latency_ms}ms"  # change 008: cached
 
     def lines(self) -> list[str]:
         out = [self.line()]
@@ -145,7 +146,7 @@ def record(db, photo_id: int, batch: lk.Batch, kept: list[Kept]) -> int | None:
         db.table("books").upsert(list(rows.values()), on_conflict="catalogue,catalogue_id").execute()
     res = db.table("lookups").insert({
         "photo_id": photo_id, "hits": batch.hits, "misses": batch.misses, "errors": batch.errors,
-        "latency_ms": batch.latency_ms,
+        "latency_ms": batch.latency_ms, "cache_hits": batch.cache_hits,  # change 008: cache_hits
     }).execute()
     return res.data[0]["id"] if res.data else None
 
@@ -161,11 +162,11 @@ def verify_extraction(extraction: dict, *, client: lk.Transport | None = None, d
     if on_progress is not None:
         on_progress(PROGRESS_MESSAGE)
     items = read_books(extraction["parsed_titles"])
-    batch = lk.lookup_batch(items, concurrency=concurrency, client=client)
+    batch = lk.lookup_batch(items, concurrency=concurrency, client=client, cache=lk.cache_for(db))  # change 008: cache
     kept, dropped = classify(items, batch)
     lookup_id = record(db or get_client(), extraction["photo_id"], batch, kept)
     v = Verified(extraction["photo_id"], extraction["id"], kept, dropped,
-                 batch.hits, batch.misses, batch.errors, batch.latency_ms, lookup_id)
+                 batch.hits, batch.misses, batch.errors, batch.latency_ms, lookup_id, cache_hits=batch.cache_hits)  # change 008
     if v.catalogue_down:
         log.warning("catalogue unavailable for extraction %s: %d titles passed through unverified", extraction["id"], len(kept))
     for d in dropped:

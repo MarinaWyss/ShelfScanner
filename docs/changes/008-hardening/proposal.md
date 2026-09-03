@@ -78,6 +78,46 @@ Task 3, retention (2026-09-03):
   workflow needs the `SUPABASE_URL` and `SUPABASE_SECRET_KEY` repository
   secrets and reads an optional `SHELFSCANNER_RETENTION_DAYS` variable.
 
+Task 4, caching (2026-09-03):
+
+- **A cache hit is a title answered without a catalogue call**, whether
+  the answer is a record or a fresh miss. Both save the network round
+  trip, which is what the metric is for; `lookups.cache_hits / (hits +
+  misses)` is the hit rate.
+- **A catalogue error is never cached.** A timeout or a non-200 is not an
+  answer; the title is asked again on the next scan. So a repeated scan
+  is only fully warm once the catalogue has answered for every title,
+  which the measurement shows (results.md).
+- **Records do not expire; misses expire after 30 days**, as tasks.md
+  says. A record's `books` row is the source of truth for its fields, so
+  a stale cache row cannot show stale data; a miss is re-asked so a newly
+  catalogued book is found.
+- **The cache row references the `books` row** (`(catalogue,
+  catalogue_id)`, cascade). A cached record then always has a row to
+  resolve from, and deleting a book drops its cache rows. The store
+  writes `books` first for that reason. The natural key is the primary
+  key: it is the only way the table is read.
+- **The store is behind an interface** (`lookup.CacheStore`): the
+  Supabase store for the app, an in-memory one for tests and for
+  measuring before the migration is pushed. A store failure runs the
+  batch cold and writes nothing back, logged, never raised: the rule for
+  a catalogue failure (007 D2) applies to the cache too.
+- **`verify.py` got five marked one-line changes**, not the one the task
+  allowed for: passing the store (`cache=lk.cache_for(db)`), the
+  `cache_hits` column on the `lookups` insert, the field on `Verified`,
+  its constructor argument, and `cached n/total` in `line()`. The count
+  has to reach the row somewhere, and `record()` is where the row is
+  written.
+- **The migration's timestamp was chosen by hand** (`20260903160000`):
+  `supabase migration new` stamped 14:15 UTC, which sorts before the
+  saved-feedback migration already in the folder. The Supabase skills
+  were read first; `supabase db advisors --linked` is for the lead to
+  run at push time, since a worker does not touch the linked project.
+- **The measurement used the in-memory store** and skipped the `lookups`
+  inserts (the column does not exist until the push). The lead reruns it
+  with the real store after pushing; the numbers to beat are in
+  results.md.
+
 ## How we know it worked
 
 | Question | Pass |

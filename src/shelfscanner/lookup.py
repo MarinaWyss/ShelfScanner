@@ -15,6 +15,7 @@ import logging
 import time
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
+from datetime import UTC, datetime, timedelta  # change 008
 from difflib import SequenceMatcher
 from functools import lru_cache
 from typing import Any, Protocol
@@ -68,6 +69,8 @@ class Batch:
     # candidate under the threshold in the drop log. Same order as `matches`.
     item_errors: list[str | None] = field(default_factory=list)
     nearest: list[tuple[str, float] | None] = field(default_factory=list)
+    # --- change 008 --- titles answered from the cache (a record or a fresh miss) without a catalogue call
+    cache_hits: int = 0
 
 
 class Transport(Protocol):
@@ -100,18 +103,37 @@ def lookup(title: str, author: str | None, *, client: Transport | None = None, t
 
 
 def lookup_batch(items: list[tuple[str, str | None]], *, concurrency: int = 6,
-                 client: Transport | None = None, timeout_s: float = 4.0) -> Batch:
-    """Look up every (title, author) pair with at most `concurrency` requests in flight."""
+                 client: Transport | None = None, timeout_s: float = 4.0,
+                 cache: CacheStore | None = None) -> Batch:
+    """Look up every (title, author) pair with at most `concurrency` requests in flight.
+
+    With a `cache` (change 008), pairs the cache answers are not sent to the catalogue: a
+    cached record is resolved from `books`, a miss younger than `MISS_TTL` stays a miss.
+    Everything else is queried as before and the answers are written back. No cache means
+    the module behaves as it did in 007.
+    """
     started = time.perf_counter()
     if not items:
         return Batch([], 0, 0, 0, 0)
-    with ThreadPoolExecutor(max_workers=max(1, concurrency)) as pool:
-        attempts = list(pool.map(lambda it: _attempt_detail(it[0], it[1], client=client, timeout_s=timeout_s), items))
+    # --- change 008 --- the cache first; only the pairs it cannot answer reach the catalogue
+    cached = consult_cache(items, cache)  # None when the store is unavailable: cold, and nothing written back
+    attempts: list[Attempt | None] = list(cached) if cached is not None else [None] * len(items)
+    todo = [i for i, a in enumerate(attempts) if a is None]
+    if todo:
+        with ThreadPoolExecutor(max_workers=max(1, concurrency)) as pool:
+            fresh = list(pool.map(lambda i: _attempt_detail(items[i][0], items[i][1], client=client, timeout_s=timeout_s), todo))
+        for i, a in zip(todo, fresh, strict=True):
+            attempts[i] = a
+        if cached is not None:
+            remember(items, todo, attempts, cache)
+    cache_hits = len(items) - len(todo)
+    # --- end change 008 ---
     matches = [a.match for a in attempts]
     hits = sum(m is not None for m in matches)
     errors = sum(a.error is not None for a in attempts)
     return Batch(matches, hits, len(items) - hits, errors, int((time.perf_counter() - started) * 1000),
-                 item_errors=[a.error for a in attempts], nearest=[a.nearest for a in attempts])  # change 007 (task 3)
+                 item_errors=[a.error for a in attempts], nearest=[a.nearest for a in attempts],  # change 007 (task 3)
+                 cache_hits=cache_hits)  # change 008
 
 
 def lookup_many(items: list[tuple[str, str | None]], *, concurrency: int = 6,
@@ -261,3 +283,187 @@ def to_record(doc: dict[str, Any]) -> BookRecord | None:
         first_year=year if isinstance(year, int) else None,
         cover_id=str(cover) if isinstance(cover, int) else None,
     )
+
+
+# ---------------------------------------------------------------------------
+# --- change 008 (task 4) --- the lookup cache.
+#
+# 007 measured 4.5 s p50 per scan against the scoping doc's 3 s line, and 329
+# read strings were 88 distinct (title, author) pairs, so a cache keyed on the
+# normalised pair answers most lookups on a repeated shelf. The table is
+# `lookup_cache` (migration 20260903160000): what the catalogue said for a
+# pair, and when. A hit is resolved from `books` without a network call; a
+# miss younger than MISS_TTL is returned without a call; an older miss is
+# asked again so a newly catalogued book is found. A catalogue error is never
+# cached. The store is one read and one write per batch, never per title, and
+# a store failure of any kind runs the batch cold (D2 again: never fail a scan
+# for a cache).
+# ---------------------------------------------------------------------------
+
+MISS_TTL = timedelta(days=30)
+KEY_SEPARATOR = "|"  # `normalise` strips punctuation, so the separator cannot occur in either part
+
+
+@dataclass(frozen=True)
+class CacheEntry:
+    key: str
+    catalogue: str
+    catalogue_id: str | None  # None records a miss
+    fetched_at: datetime
+    record: BookRecord | None  # the `books` row for a hit; None for a miss, or when the row is gone
+
+    @property
+    def is_miss(self) -> bool:
+        return self.catalogue_id is None
+
+    def fresh(self, now: datetime) -> bool:
+        """A record never expires; a miss expires after MISS_TTL."""
+        return not self.is_miss or now - self.fetched_at < MISS_TTL
+
+
+class CacheStore(Protocol):
+    """One read and one write per batch. `read` returns None when the store is unavailable."""
+
+    def read(self, keys: list[str]) -> dict[str, CacheEntry] | None: ...
+
+    def write(self, entries: list[CacheEntry]) -> None: ...
+
+
+def cache_key(title: str, author: str | None) -> str | None:
+    """The normalised read string, the separator, the normalised author ('' when none). None for an empty title."""
+    t = normalise(title or "")
+    if not t:
+        return None
+    return t + KEY_SEPARATOR + (normalise(author) if author and author.strip() else "")
+
+
+def consult_cache(items: list[tuple[str, str | None]], cache: CacheStore | None) -> list[Attempt | None] | None:
+    """An Attempt for every pair the cache answers, None for every pair the catalogue must be asked.
+
+    None for the whole list when the store is unavailable (or there is none), so the caller
+    knows not to write back either."""
+    if cache is None:
+        return None
+    out: list[Attempt | None] = [None] * len(items)
+    keys = [cache_key(t, a) for t, a in items]
+    wanted = sorted({k for k in keys if k is not None})
+    if not wanted:
+        return out
+    entries = cache.read(wanted)
+    if entries is None:
+        return None
+    now = datetime.now(UTC)
+    for i, ((title, author), key) in enumerate(zip(items, keys, strict=True)):
+        e = entries.get(key) if key is not None else None
+        if e is None or not e.fresh(now):
+            continue
+        if e.is_miss:
+            out[i] = Attempt(None, None, None)
+        elif e.record is not None:  # a hit whose book row has gone is asked again
+            out[i] = Attempt(Match(e.record, record_score(title, author, e.record)), None, None)
+    return out
+
+
+def remember(items: list[tuple[str, str | None]], queried: list[int], attempts: list[Attempt | None],
+             cache: CacheStore | None) -> None:
+    """Write what the catalogue answered for the queried pairs: a record or a miss, never an error."""
+    if cache is None or not queried:
+        return
+    now = datetime.now(UTC)
+    rows: dict[str, CacheEntry] = {}
+    for i in queried:
+        a = attempts[i]
+        key = cache_key(*items[i])
+        if a is None or a.error is not None or key is None:
+            continue
+        record = a.match.record if a.match is not None else None
+        rows[key] = CacheEntry(key, record.catalogue if record else CATALOGUE,
+                               record.catalogue_id if record else None, now, record)
+    if rows:
+        cache.write(list(rows.values()))
+
+
+def record_score(title: str, author: str | None, record: BookRecord) -> float:
+    """The score a cached record gets against the pair as read: `score`'s arithmetic, fed from the book row."""
+    doc = {"title": record.title, "author_name": record.author.split(", ") if record.author else []}
+    return score(title, author, doc)
+
+
+class MemoryCache:
+    """The store kept in a dict: tests, and the measurement before the migration is pushed."""
+
+    def __init__(self) -> None:
+        self.entries: dict[str, CacheEntry] = {}
+        self.reads = 0
+        self.writes = 0
+
+    def read(self, keys: list[str]) -> dict[str, CacheEntry] | None:
+        self.reads += 1
+        return {k: self.entries[k] for k in keys if k in self.entries}
+
+    def write(self, entries: list[CacheEntry]) -> None:
+        self.writes += 1
+        for e in entries:
+            self.entries[e.key] = e
+
+
+class SupabaseCache:
+    """The store on the `lookup_cache` and `books` tables. Two selects to read (the cache rows, then
+    the book rows they point at), two upserts to write (books first, so the cache's foreign key
+    holds). Any failure is logged and the batch runs cold."""
+
+    _BOOK_COLUMNS = "catalogue, catalogue_id, title, author, first_year, cover_id"
+
+    def __init__(self, db) -> None:
+        self.db = db
+
+    def read(self, keys: list[str]) -> dict[str, CacheEntry] | None:
+        try:
+            rows = (self.db.table("lookup_cache").select("key, catalogue, catalogue_id, fetched_at")
+                    .in_("key", keys).execute().data or [])
+            ids = sorted({r["catalogue_id"] for r in rows if r.get("catalogue_id")})
+            books: dict[tuple[str, str], BookRecord] = {}
+            if ids:
+                for b in self.db.table("books").select(self._BOOK_COLUMNS).in_("catalogue_id", ids).execute().data or []:
+                    books[(b["catalogue"], b["catalogue_id"])] = BookRecord(
+                        b["catalogue"], b["catalogue_id"], b["title"], b.get("author"), b.get("first_year"), b.get("cover_id"))
+            return {r["key"]: CacheEntry(r["key"], r["catalogue"], r.get("catalogue_id"), _parse_ts(r["fetched_at"]),
+                                         books.get((r["catalogue"], r.get("catalogue_id")))) for r in rows}
+        except Exception as e:  # a cache failure never fails a scan
+            log.warning("lookup cache unavailable, running cold: %s", e)
+            return None
+
+    def write(self, entries: list[CacheEntry]) -> None:
+        try:
+            now = datetime.now(UTC).isoformat()
+            records = {(e.record.catalogue, e.record.catalogue_id): e.record for e in entries if e.record is not None}
+            if records:
+                self.db.table("books").upsert([{
+                    "catalogue": r.catalogue, "catalogue_id": r.catalogue_id, "title": r.title, "author": r.author,
+                    "first_year": r.first_year, "cover_id": r.cover_id, "fetched_at": now,
+                } for r in records.values()], on_conflict="catalogue,catalogue_id").execute()
+            self.db.table("lookup_cache").upsert([{
+                "key": e.key, "catalogue": e.catalogue, "catalogue_id": e.catalogue_id, "fetched_at": e.fetched_at.isoformat(),
+            } for e in entries], on_conflict="key").execute()
+        except Exception as e:
+            log.warning("lookup cache write failed: %s", e)
+
+
+def cache_for(db=None) -> CacheStore:
+    """The store on the app's database; `db` is the Supabase client (a fake in tests), the shared one when None."""
+    if db is None:
+        from shelfscanner.db import get_client  # local: the module stays importable without settings
+
+        db = get_client()
+    return SupabaseCache(db)
+
+
+def _parse_ts(value: str | datetime) -> datetime:
+    if isinstance(value, datetime):
+        ts = value
+    else:
+        ts = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    return ts if ts.tzinfo else ts.replace(tzinfo=UTC)
+
+
+# --- end change 008 ---
