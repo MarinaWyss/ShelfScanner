@@ -18,7 +18,7 @@ from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
 COOKIE = "shelfscanner_session"
 COOKIE_MAX_AGE = 365 * 24 * 3600
-UNSESSIONED_PREFIXES = ("/static/",)
+UNSESSIONED_PREFIXES = ("/static/", "/admin")  # /admin (009) has its own cookie
 
 
 class SessionStore(Protocol):
