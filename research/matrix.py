@@ -59,9 +59,11 @@ def run_vision(aliases: list[str], max_dim: int | None, set_name: str = "core") 
 
 
 def run_llm(aliases: list[str], prefs_path: Path, prompt_name: str = recommend.DEFAULT_PROMPT,
-            set_name: str = "core") -> None:
+            set_name: str = "core", verify: bool = False) -> None:
     """Over the best extraction of each labelled photo in `set_name` (core by default: the photos that
-    have Marina's picks, so overlap can be scored). `all` means every labelled photo."""
+    have Marina's picks, so overlap can be scored). `all` means every labelled photo. `verify` runs the
+    catalogue check first (007) and hands every model the same verified list; off by default so the
+    comparison rows stay like for like with the earlier ones."""
     cfg = load_config()
     prefs = recommend.load_prefs(prefs_path)
     sets = {p["id"]: (p.get("set") or "core") for p in storage.list_photos() if p.get("titles")}
@@ -72,11 +74,21 @@ def run_llm(aliases: list[str], prefs_path: Path, prompt_name: str = recommend.D
         print(f"photo {r['photo_id']}: best extraction {r['id']} ({r['model']} @{r['image_long_edge']}, "
               f"found {r['found_count']}, invented {r['invented_count']})")
 
+    # --- change 007 --- one verification per extraction, shared by every model
+    verified: dict[int, object] = {}
+    if verify:
+        from shelfscanner import verify as verification
+
+        for ex in inputs:
+            verified[ex["id"]] = v = verification.verify_extraction(ex)
+            print(v.line(), flush=True)
+    # --- end change 007 ---
+
     def one(alias: str) -> list:
         m = cfg.model(alias)
         out = []
         for ex in inputs:
-            row = recommend.recommend_from_extraction(ex, m, prefs, prompt_name)
+            row = recommend.recommend_from_extraction(ex, m, prefs, prompt_name, verified=verified.get(ex["id"]))
             print(row.lines()[0], flush=True)
             out.append(row)
         return out
@@ -99,12 +111,14 @@ def main() -> None:
     t.add_argument("--prefs", type=Path, default=DATA_DIR / "prefs" / "marina.json")
     t.add_argument("--prompt", default=recommend.DEFAULT_PROMPT, help="prompt name under prompts/ (004)")
     t.add_argument("--set", default="core", help="core (the photos with Marina's picks), sourced, derived, or all")
+    t.add_argument("--verify", action="store_true",
+                   help="run the catalogue check first and hand the models the verified list (007); off by default")
     args = ap.parse_args()
     aliases = args.models.split(",")
     if args.stage == "vision":
         run_vision(aliases, args.max_dim, args.set)
     else:
-        run_llm(aliases, args.prefs, args.prompt, args.set)
+        run_llm(aliases, args.prefs, args.prompt, args.set, verify=args.verify)
 
 
 if __name__ == "__main__":

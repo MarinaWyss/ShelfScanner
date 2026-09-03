@@ -14,6 +14,7 @@ from shelfscanner.extract import get_extraction, titles_from
 from shelfscanner.matching import similarity
 from shelfscanner.router import ModelClient, Progress
 from shelfscanner.storage import get_photo
+from shelfscanner.verify import Verified  # change 007
 
 DEFAULT_PROMPT = "recommend_v1"
 EXPECTED = 5
@@ -102,15 +103,25 @@ def shelf_text(parsed_titles: object) -> str:
 
 
 def recommend_from_extraction(extraction: dict, model: Model | None, prefs: dict, prompt_name: str, *,
-                              client: ModelClient | None = None, on_progress: Progress | None = None) -> RecommendationRow:
+                              client: ModelClient | None = None, on_progress: Progress | None = None,
+                              verified: Verified | None = None) -> RecommendationRow:
     cfg = load_config()
     prompt_version, prompt = router.load_prompt(prompt_name)
     extracted = titles_from(extraction["parsed_titles"])
+    shelf = shelf_text(extraction["parsed_titles"])
+    # --- change 007 --- with a verified list, the kept titles (canonical, from the record) are what the
+    # model sees and what R1 checks against; without one, behaviour is unchanged.
+    if verified is not None:
+        if not verified.kept:
+            raise SystemExit(f"Extraction {extraction['id']}: verification dropped every title ({len(verified.dropped)} dropped)")
+        extracted = [k.title for k in verified.kept]
+        shelf = verified_shelf_text(verified)
+    # --- end change 007 ---
     if not extracted:
         raise SystemExit(f"Extraction {extraction['id']} has no parsed titles (error: {extraction.get('error')})")
     labels = get_photo(extraction["photo_id"])["titles"]
 
-    text = f"Books on the shelf:\n{shelf_text(extraction['parsed_titles'])}\n\nReading preferences:\n{prefs_text(prefs, prompt_name)}"
+    text = f"Books on the shelf:\n{shelf}\n\nReading preferences:\n{prefs_text(prefs, prompt_name)}"
     if client is None:  # a fake client spends nothing
         spend.check_spend()
     sr = router.with_failover(
@@ -126,6 +137,11 @@ def recommend_from_extraction(extraction: dict, model: Model | None, prefs: dict
     if error is None and len(recs) != min(EXPECTED, len(extracted)):
         error = f"expected {min(EXPECTED, len(extracted))} recommendations, got {len(recs)}"
 
+    parsed_out = res.parsed if res.ok else None
+    # --- change 007 --- each stored pick says whether it was verified and which record it is
+    if verified is not None and parsed_out is not None:
+        parsed_out = annotate_picks(parsed_out, verified, cfg.match_threshold)
+    # --- end change 007 ---
     row = {
         "extraction_id": extraction["id"],
         "provider": res.provider,
@@ -137,7 +153,7 @@ def recommend_from_extraction(extraction: dict, model: Model | None, prefs: dict
         "prompt_version": prompt_version,
         "preferences": prefs,
         "raw_output": res.raw_text,
-        "parsed_recommendations": res.parsed if res.ok else None,
+        "parsed_recommendations": parsed_out,
         "valid_vs_extraction": validity.vs_extraction if validity else None,
         "valid_vs_ground_truth": validity.vs_ground_truth if validity else None,
         "latency_ms": res.latency_ms,
@@ -189,3 +205,32 @@ def prefs_text(prefs: dict, prompt_name: str) -> str:
     if prompt_name == DEFAULT_PROMPT and not preferences.is_v2(prefs):
         return json.dumps(prefs, indent=2, ensure_ascii=False)
     return preferences.as_text(preferences.upgrade(prefs))
+
+
+# --- change 007 ---
+def verified_shelf_text(verified: Verified) -> str:
+    """The kept list for the prompt: canonical title and author from the record; as read when unverified."""
+    return "\n".join(f"- {k.title}" + (f" — {k.author}" if k.author else "") for k in verified.kept)
+
+
+def annotate_picks(parsed: object, verified: Verified, threshold: float) -> object:
+    """A copy of the model's reply with, on each pick, `verified` (the kept title it matches was verified;
+    False when it matches nothing on the list) and `catalogue_id`/`cover_id` from the record (or None).
+    Matching uses the same matcher as R1, so a pick's flags agree with the validity check."""
+    def annotate(item: object) -> object:
+        if not (isinstance(item, dict) and isinstance(item.get("title"), str)):
+            return item
+        best, best_s = None, 0.0
+        for k in verified.kept:
+            s = similarity(item["title"], k.title)
+            if s >= threshold and s > best_s:
+                best, best_s = k, s
+        return {**item, "verified": bool(best and best.verified),
+                "catalogue_id": best.catalogue_id if best else None,
+                "cover_id": best.record.cover_id if best and best.record else None}
+
+    if isinstance(parsed, dict) and isinstance(parsed.get("recommendations"), list):
+        return {**parsed, "recommendations": [annotate(it) for it in parsed["recommendations"]]}
+    if isinstance(parsed, list):
+        return [annotate(it) for it in parsed]
+    return parsed
