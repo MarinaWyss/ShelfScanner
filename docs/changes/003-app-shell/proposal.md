@@ -68,6 +68,57 @@ Change 001 showed that size loses nothing; it also makes U1 literally
 true (no metadata leaves the device) and cuts upload time on a weak
 signal. The server check stays as the second line.
 
+## Decided during the work
+
+Tasks 1 to 3, 2026-09-02.
+
+**W1. The scan id is the `photos` row id, and the reading stage runs inside
+the events request.** Nothing is held in process between requests: `POST
+/scan` stores the photo and returns its id, `GET /scan/{id}/events` runs
+extraction while streaming, `GET /scan/{id}` reads the latest extraction
+row. One uvicorn process and a Vercel function behave the same way, and
+a reconnect after `done` replays the result instead of reading again. A
+second connection during the reading would run it twice; 008 can add a
+lock if it matters.
+
+**W2. Four stage events plus a `close` event.** The htmx SSE extension
+closes its connection on one named event, and an `EventSource` reconnects
+whenever the server ends the stream, so `done` and `failed` are each
+followed by `close`. The four stages in D3 are unchanged.
+
+**W3. The pipeline boundary is a four-method protocol** (`store`, `photo`,
+`read`, `result` in `web/pipeline.py`). The real one wraps
+`storage.store_session_photo`, `extract.extract_photo` and one query on
+`extractions`; `web/fakes.py` holds the in-memory one and a fake
+`ModelClient`, used by the tests and by `SHELFSCANNER_FAKE_PIPELINE=1`
+for running the server without credentials. The Playwright suite starts
+uvicorn in a thread with those fakes rather than a subprocess, so the
+test can read the stored bytes directly.
+
+**W4. Sessions are a plain ASGI middleware, not a dependency.** A FastAPI
+dependency cannot set a cookie on a `StreamingResponse`, and Starlette's
+`BaseHTTPMiddleware` buffers streams. The cookie has no `Secure` flag
+until 010 puts the app behind https. `photos.session_id` is `on delete
+cascade`: a session's photos may show a private room and go with it.
+
+**W5. Vercel entry at `api/index.py`.** Vercel's FastAPI guide looks for an
+`app` instance in `index`/`app`/`main`/... files at the root or under
+`api/`, `src/` or `app/`; `pyproject.toml` is off limits to workers, so
+the `tool.vercel.entrypoint` alternative was not used. The file only
+re-exports `shelfscanner.web.app:app`, with a `src/` path fallback in case
+the build installs dependencies but not the project. No `vercel.json`.
+Static files are served by the app from `web/static/` rather than a
+`public/` directory, so the local and hosted layouts are identical.
+
+**W6. htmx is vendored, not loaded from a CDN**, so the Playwright suite
+and a phone on a network without internet both work; 50 KB in the repo.
+
+**W7. `extract_photo` is reused unchanged.** It downloads the photo it just
+stored and logs the extraction with every title as `invented` (no labels).
+The redundant download costs one bucket round trip per scan; the titles
+come from the logged `parsed_titles`. Changing the pipeline's signature
+to take bytes was left for when latency numbers (task 4) say it matters.
+
 ## How we know it worked
 
 | Question | Pass |
