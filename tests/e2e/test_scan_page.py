@@ -28,6 +28,22 @@ def test_homepage_explains_and_leads_to_the_scan_page(server: Server, page: Page
     expect(page.locator("#stepper")).to_have_attribute("data-step", "1")
 
 
+def test_the_theme_toggle_flips_and_is_remembered(server: Server, page: Page):
+    # 016: the system setting until the device chooses; the choice is kept in localStorage.
+    page.goto(server.url)
+    expect(page.locator("html")).to_have_attribute("data-theme", "light")
+    expect(page.locator("#theme-toggle")).to_contain_text("Dark")
+    page.click("#theme-toggle")
+    expect(page.locator("html")).to_have_attribute("data-theme", "dark")
+    expect(page.locator("#theme-toggle")).to_contain_text("Light")
+    page.reload()
+    expect(page.locator("html")).to_have_attribute("data-theme", "dark")
+    page.goto(f"{server.url}/books")
+    expect(page.locator("html")).to_have_attribute("data-theme", "dark")
+    page.click("#theme-toggle")
+    expect(page.locator("html")).to_have_attribute("data-theme", "light")
+
+
 def test_photo_to_picks_with_progress(server: Server, page: Page):
     open_scan_page(page, server.url)
     pick(page, small_jpeg())

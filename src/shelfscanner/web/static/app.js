@@ -6,6 +6,16 @@
   var MAX_EDGE = 1568;
   var QUALITY = 0.85;
 
+  // --- the theme toggle (016; ThemeToggle.tsx): flips data-theme and remembers it on the device ---
+  var themeToggle = document.getElementById('theme-toggle');
+  if (themeToggle) {
+    themeToggle.addEventListener('click', function () {
+      var next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+      document.documentElement.dataset.theme = next;
+      try { localStorage.setItem('theme', next); } catch (e) {}
+    });
+  }
+
   // --- the drawer (Navbar.tsx) ---
   var toggle = document.getElementById('menu-toggle');
   var overlay = document.getElementById('overlay');

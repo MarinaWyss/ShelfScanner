@@ -27,6 +27,7 @@ out-of-scope list.
 | 012 | Homepage, the original's genres and favorite authors, the iOS scan button, a favicon | app | before the design segment | done 2026-09-03; archived |
 | 014 | The v1 look and flow, copied from ShelfScanner-v1 | app | 2026-09-03 | asked for and done 2026-09-03; archived |
 | 015 | The warm look (Marina's design file) on the v1 structure | app | 2026-09-03 | asked for and done 2026-09-03; archived |
+| 016 | Dark/light toggle; readable olive in the dark | app | 2026-09-03 | asked for and done 2026-09-03; archived |
 | 013 | Donations, legal pages, contact | app | after 014 | proposed 2026-09-03; detailed after 014 |
 
 Where this departs from the earlier plan: CI and the regression gate are
