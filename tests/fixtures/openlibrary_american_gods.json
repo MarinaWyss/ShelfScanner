@@ -1,0 +1,74 @@
+{
+  "request": {
+    "url": "https://openlibrary.org/search.json",
+    "params": {
+      "title": "American Gods",
+      "fields": "key,title,author_name,first_publish_year,cover_i",
+      "limit": 5,
+      "author": "Neil Gaiman"
+    }
+  },
+  "status": 200,
+  "recorded": "2026-09-02",
+  "response": {
+    "numFound": 21,
+    "start": 0,
+    "numFoundExact": true,
+    "num_found": 21,
+    "documentation_url": "https://openlibrary.org/dev/docs/api/search",
+    "q": "",
+    "offset": null,
+    "docs": [
+      {
+        "author_name": [
+          "Neil Gaiman"
+        ],
+        "cover_i": 8494659,
+        "first_publish_year": 2001,
+        "key": "/works/OL679360W",
+        "title": "American Gods"
+      },
+      {
+        "author_name": [
+          "Neil Gaiman"
+        ],
+        "cover_i": 8904272,
+        "first_publish_year": 2006,
+        "key": "/works/OL20078177W",
+        "title": "Novels (American Gods / Anansi Boys)"
+      },
+      {
+        "author_name": [
+          "Neil Gaiman",
+          "P. Craig Russell",
+          "Scott Hampton",
+          "Walt Simonson",
+          "Colleen Doran",
+          "Glenn Fabry"
+        ],
+        "cover_i": 10630506,
+        "first_publish_year": 2021,
+        "key": "/works/OL24196318W",
+        "title": "The Complete American Gods"
+      },
+      {
+        "author_name": [
+          "Neil Gaiman"
+        ],
+        "first_publish_year": 2016,
+        "key": "/works/OL36649559W",
+        "title": "American Gods"
+      },
+      {
+        "author_name": [
+          "Neil Gaiman",
+          "P. Craig Russell"
+        ],
+        "cover_i": 14399056,
+        "first_publish_year": 2020,
+        "key": "/works/OL28836701W",
+        "title": "American Gods Volume 3"
+      }
+    ]
+  }
+}

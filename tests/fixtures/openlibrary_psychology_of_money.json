@@ -1,0 +1,42 @@
+{
+  "request": {
+    "url": "https://openlibrary.org/search.json",
+    "params": {
+      "title": "The Psychology of Money",
+      "fields": "key,title,author_name,first_publish_year,cover_i",
+      "limit": 5,
+      "author": "Housel"
+    }
+  },
+  "status": 200,
+  "recorded": "2026-09-02",
+  "response": {
+    "numFound": 2,
+    "start": 0,
+    "numFoundExact": true,
+    "num_found": 2,
+    "documentation_url": "https://openlibrary.org/dev/docs/api/search",
+    "q": "",
+    "offset": null,
+    "docs": [
+      {
+        "author_name": [
+          "Morgan Housel"
+        ],
+        "cover_i": 10389354,
+        "first_publish_year": 2020,
+        "key": "/works/OL21640039W",
+        "title": "The Psychology of Money"
+      },
+      {
+        "author_name": [
+          "Morgan Housel"
+        ],
+        "cover_i": 15218642,
+        "first_publish_year": 2026,
+        "key": "/works/OL45352338W",
+        "title": "The Psychology Of Money Urdu Book PDF"
+      }
+    ]
+  }
+}

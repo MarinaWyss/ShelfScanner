@@ -1,0 +1,22 @@
+{
+  "request": {
+    "url": "https://openlibrary.org/search.json",
+    "params": {
+      "title": "Zorbulon Quantum Shelf Diaries",
+      "fields": "key,title,author_name,first_publish_year,cover_i",
+      "limit": 5
+    }
+  },
+  "status": 200,
+  "recorded": "2026-09-02",
+  "response": {
+    "numFound": 0,
+    "start": 0,
+    "numFoundExact": true,
+    "num_found": 0,
+    "documentation_url": "https://openlibrary.org/dev/docs/api/search",
+    "q": "",
+    "offset": null,
+    "docs": []
+  }
+}
