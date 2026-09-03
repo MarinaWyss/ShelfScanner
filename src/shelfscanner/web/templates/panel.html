@@ -62,6 +62,14 @@
   </div>
   {% endif %}
   <div class="row-start"><a class="btn outline" href="/books/upload"><svg class="i s" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7"/></svg>Scan More Books</a></div>
+  {% if picks %}
+  <div class="support-card" id="support">
+    <h3>Found the perfect book?</h3>
+    <p>Support ShelfScanner and help us recommend more amazing books! Your contribution keeps our AI recommendations improving.</p>
+    <a class="btn support" href="{{ donate_url }}" target="_blank" rel="noopener noreferrer">
+      <svg class="i s" viewBox="0 0 24 24"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>Support Us</a>
+  </div>
+  {% endif %}
 {% elif stage == 'failed' %}
   <div class="error" role="alert" id="scan-error" data-stage="{{ failed_stage }}"><strong>{{ error_title }}</strong>{{ error }}</div>
   {% include "retry.html" %}

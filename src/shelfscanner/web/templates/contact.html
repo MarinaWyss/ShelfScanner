@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% set page = 'contact' %}
+{% block title %}Contact Us - ShelfScanner{% endblock %}
+{% block content %}
+<div class="prose">
+  <h1 class="page-title">Contact Us</h1>
+  <p class="lede">Have questions or suggestions about ShelfScanner? Send us a message and we'll get back to you as soon as possible.</p>
+
+  <form class="contact-form" id="contact-form" action="mailto:shelfscannerapp@gmail.com" method="post" enctype="text/plain">
+    <div class="field">
+      <label class="field-label" for="contact-name">Name</label>
+      <input class="text-input" id="contact-name" name="name" type="text" placeholder="Your name" required>
+    </div>
+    <div class="field">
+      <label class="field-label" for="contact-email">Email</label>
+      <input class="text-input" id="contact-email" name="email" type="email" placeholder="your.email@example.com" required>
+    </div>
+    <div class="field">
+      <label class="field-label" for="contact-message">Message</label>
+      <textarea class="text-input" id="contact-message" name="message" rows="5" placeholder="How can we help you?" required></textarea>
+    </div>
+    <button class="btn primary" type="submit" id="contact-send">Send Message</button>
+    <p class="hint">Send Message opens your email app with the message filled in; nothing is sent from this page.</p>
+  </form>
+
+  <p class="contact-direct">You can also email us directly at <a href="mailto:shelfscannerapp@gmail.com">shelfscannerapp@gmail.com</a></p>
+</div>
+{% endblock %}

@@ -129,7 +129,33 @@
   footer { margin-top: 5rem; padding-top: 1.5rem; border-top: 1px solid var(--line); display: flex; flex-direction: column; align-items: center; gap: .5rem;
            font-size: .8rem; color: var(--muted); }
   @media (min-width: 768px) { footer { flex-direction: row; justify-content: center; gap: 1.5rem; } }
-  footer a { text-decoration: none; }
+  footer a { text-decoration: none; color: var(--muted); }
+  footer a:hover { color: var(--olive-text); }
+
+  /* 013: the legal and contact pages, the support links and card */
+  .prose { max-width: 42rem; }
+  .prose .updated { color: var(--muted); font-size: .875rem; margin-bottom: 1.5rem; }
+  .prose h2 { font-size: 1.2rem; color: var(--olive-text); margin: 1.75rem 0 .5rem; }
+  .prose p { margin-bottom: .9rem; line-height: 1.6; }
+  .prose code { font-size: .9em; background: var(--paper-deep); padding: .1em .35em; border-radius: .3rem; }
+  .prose .back { display: inline-block; margin-top: 1rem; }
+  .prose .lede { margin-bottom: 1.5rem; }
+  .contact-form { display: grid; gap: 1rem; max-width: 30rem; margin-bottom: 1.75rem; }
+  .contact-form .field { display: grid; gap: .4rem; }
+  .contact-form .field-label { justify-self: start; }
+  textarea.text-input { height: auto; padding: .7rem .85rem; resize: vertical; line-height: 1.5; }
+  .contact-form .btn { justify-self: start; }
+  .contact-form .hint { margin-top: 0; }
+  .contact-direct { color: var(--muted); font-size: .9rem; }
+  .btn.support { background: var(--terracotta-tint); color: var(--terracotta); border-color: transparent; }
+  .btn.support:hover { background: var(--terracotta); color: var(--cream); }
+  .btn.small-btn { height: auto; padding: .55rem .9rem; font-size: .875rem; border-radius: .5rem; }
+  .drawer-support { margin-top: auto; padding: .75rem; border-top: 1px solid var(--line); }
+  .drawer-support .btn { width: 100%; }
+  .support-card { margin-top: 3rem; padding: 2rem 1.5rem; text-align: center; border-radius: .75rem;
+                  background-color: var(--paper-deep); background-image: repeating-linear-gradient(115deg, var(--hatch) 0 1px, transparent 1px 3px); }
+  .support-card h3 { font-size: 1.25rem; margin-bottom: .6rem; color: var(--olive-text); }
+  .support-card p { color: var(--muted); max-width: 28rem; margin: 0 auto 1.25rem; font-size: .95rem; line-height: 1.5; }
 
   /* the stepper */
   .stepper { margin-bottom: 2rem; }
@@ -302,7 +328,7 @@
         <svg class="i sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
         <span class="label"><span class="to-dark">Dark</span><span class="to-light">Light</span></span>
       </button>
-      <a class="icon-btn" href="mailto:shelfscannerapp@gmail.com">
+      <a class="icon-btn" href="/contact" {% if page == 'contact' %}aria-current="page"{% endif %}>
         <svg class="i" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
         <span class="label">Contact</span>
       </a>
@@ -321,9 +347,20 @@
         <svg class="i s" viewBox="0 0 24 24"><path d="M17 3H7a2 2 0 0 0-2 2v16l7-3 7 3V5a2 2 0 0 0-2-2z"/></svg><span>Reading List</span></a></li>
     </ul>
   </nav>
+  <div class="drawer-support">
+    <a class="btn support small-btn" href="{{ donate_url }}" target="_blank" rel="noopener noreferrer">
+      <svg class="i s" viewBox="0 0 24 24"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>Support ShelfScanner</a>
+  </div>
 </aside>
 <main>
   {% block content %}{% endblock %}
+  <footer>
+    <span>© {{ year }} ShelfScanner. All rights reserved.</span>
+    <a href="/privacy-policy">Privacy Policy</a>
+    <a href="/terms-conditions">Terms &amp; Conditions</a>
+    <a href="/contact">Contact</a>
+    <a href="{{ donate_url }}" target="_blank" rel="noopener noreferrer">Support ShelfScanner</a>
+  </footer>
 </main>
 <script src="/static/app.js"></script>
 {% block scripts %}{% endblock %}
