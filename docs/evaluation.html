@@ -30,18 +30,17 @@ td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
 
   <figure>
     <div class="scroll">
-    <svg viewBox="0 0 1168 720" role="img" aria-label="Three columns. Left: the software tests, unit, API and browser tests, run by CI on every push. Middle: the evaluation, where labelled photos go through the reading model and the choosing model, the results are scored in code against labels and Marina's own picks, and a check compares the numbers to a committed baseline and answers pass or fail; it runs nightly and on every prompt or model change. Right: real scans through the app feed a weekly review, which says which scans to promote into the labelled set with one command, so the set grows from use. A prompt comparison reads the same rows to put prompt versions side by side." style="color: var(--ink);">
+    <svg viewBox="0 0 1168 640" role="img" aria-label="Three columns. Left: unit, API and browser tests, run by CI on every push. Middle: labelled photos go through the reading model and the choosing model, are scored in code, and a check against a committed baseline answers pass or fail. Right: real scans feed a weekly review, which promotes scans into the labelled set, and a dashboard shows the same rows in use." style="color: var(--ink);">
       <defs>
         <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
           <path d="M 0 0 L 10 5 L 0 10 z" fill="currentColor"/>
         </marker>
       </defs>
 
-      <!-- Column headings -->
       <g font-size="11" letter-spacing="1.5" fill="var(--ink-2)">
-        <text x="30" y="36">THE CODE · DETERMINISTIC</text>
-        <text x="392" y="36">THE MODEL · EVALUATED AGAINST LABELS</text>
-        <text x="846" y="36">GROWS FROM USE</text>
+        <text x="30" y="36">THE CODE</text>
+        <text x="392" y="36">THE MODEL</text>
+        <text x="846" y="36">REAL USE</text>
       </g>
       <g stroke="var(--rule)" stroke-width="1">
         <line x1="30" y1="44" x2="330" y2="44"/>
@@ -49,127 +48,83 @@ td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
         <line x1="846" y1="44" x2="1140" y2="44"/>
       </g>
 
-      <!-- Left column: software tests -->
-      <g font-size="12" text-anchor="middle">
-        <rect x="40" y="70" width="280" height="62" rx="3" fill="none" stroke="currentColor" stroke-width="1.4"/>
-        <text x="180" y="95" fill="currentColor" font-weight="500">Unit tests</text>
-        <text x="180" y="113" fill="var(--ink-2)" font-size="11">matching, CSV import, sessions, limits, adapters</text>
-
-        <rect x="40" y="162" width="280" height="62" rx="3" fill="none" stroke="currentColor" stroke-width="1.4"/>
-        <text x="180" y="187" fill="currentColor" font-weight="500">API tests</text>
-        <text x="180" y="205" fill="var(--ink-2)" font-size="11">every route, a fake pipeline, no model called</text>
-
-        <rect x="40" y="254" width="280" height="62" rx="3" fill="none" stroke="currentColor" stroke-width="1.4"/>
-        <text x="180" y="279" fill="currentColor" font-weight="500">Browser tests</text>
-        <text x="180" y="297" fill="var(--ink-2)" font-size="11">Playwright, five flows against a local server</text>
-
-        <rect x="40" y="366" width="280" height="62" rx="3" fill="var(--paper-2)" stroke="currentColor" stroke-width="1.4"/>
-        <text x="180" y="391" fill="currentColor" font-weight="500">CI on every push</text>
-        <text x="180" y="409" fill="var(--ink-2)" font-size="11">lint, then all 388 tests · a bug found = a test added</text>
+      <!-- Left: software tests -->
+      <g font-size="13" text-anchor="middle" fill="currentColor">
+        <rect x="40" y="70" width="280" height="56" rx="3" fill="none" stroke="currentColor" stroke-width="1.4"/>
+        <text x="180" y="103" font-weight="500">Unit tests</text>
+        <rect x="40" y="156" width="280" height="56" rx="3" fill="none" stroke="currentColor" stroke-width="1.4"/>
+        <text x="180" y="189" font-weight="500">API tests, no model</text>
+        <rect x="40" y="242" width="280" height="56" rx="3" fill="none" stroke="currentColor" stroke-width="1.4"/>
+        <text x="180" y="275" font-weight="500">Browser tests</text>
+        <rect x="40" y="356" width="280" height="56" rx="3" fill="var(--paper-2)" stroke="currentColor" stroke-width="1.4"/>
+        <text x="180" y="389" font-weight="500">CI, every push</text>
       </g>
       <g fill="none" stroke="currentColor" stroke-width="1.4" marker-end="url(#arrow)">
-        <line x1="180" y1="132" x2="180" y2="160"/>
-        <line x1="180" y1="224" x2="180" y2="252"/>
-        <line x1="180" y1="316" x2="180" y2="364"/>
+        <line x1="180" y1="126" x2="180" y2="154"/>
+        <line x1="180" y1="212" x2="180" y2="240"/>
+        <line x1="180" y1="298" x2="180" y2="354"/>
       </g>
-      <text x="196" y="346" font-size="11" fill="var(--ink-2)">runs</text>
 
-      <!-- Middle column: the eval -->
-      <g font-size="12" text-anchor="middle">
-        <rect x="402" y="70" width="388" height="84" rx="3" fill="none" stroke="currentColor" stroke-width="1.4"/>
-        <text x="596" y="93" fill="currentColor" font-weight="500">The labelled set: 65 photos</text>
-        <text x="596" y="111" fill="var(--ink-2)" font-size="11">5 own shelves with Marina's picks · 20 degraded copies</text>
-        <text x="596" y="127" fill="var(--ink-2)" font-size="11">39 sourced from Wikimedia Commons · 1 promoted real scan</text>
-        <text x="596" y="143" fill="var(--ink-3)" font-size="10">data/labels/*.json and the photos table</text>
+      <!-- Middle: the eval -->
+      <g font-size="13" text-anchor="middle" fill="currentColor">
+        <rect x="402" y="70" width="388" height="56" rx="3" fill="none" stroke="currentColor" stroke-width="1.4"/>
+        <text x="596" y="97" font-weight="500">65 labelled photos</text>
+        <text x="596" y="115" fill="var(--ink-2)" font-size="11">plus Marina's own picks for five of them</text>
 
-        <!-- research.eval frame -->
-        <rect x="402" y="184" width="388" height="276" rx="3" fill="none" stroke="var(--ink-3)" stroke-width="1" stroke-dasharray="4 4"/>
-        <text x="412" y="203" fill="var(--ink-2)" font-size="11" text-anchor="start">research.eval, one command</text>
+        <rect x="402" y="164" width="388" height="264" rx="3" fill="none" stroke="var(--ink-3)" stroke-width="1" stroke-dasharray="4 4"/>
+        <text x="412" y="183" fill="var(--ink-2)" font-size="11" text-anchor="start">research.eval</text>
 
-        <rect x="420" y="214" width="352" height="50" rx="3" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.8"/>
-        <text x="596" y="235" fill="currentColor" font-weight="500">Reading model reads each photo</text>
-        <text x="596" y="252" fill="var(--ink-2)" font-size="11">one extractions row per photo</text>
+        <rect x="420" y="196" width="352" height="50" rx="3" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.8"/>
+        <text x="596" y="226" font-weight="500">Reading model</text>
+        <rect x="420" y="266" width="352" height="50" rx="3" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.8"/>
+        <text x="596" y="296" font-weight="500">Choosing model</text>
+        <rect x="420" y="336" width="352" height="72" rx="3" fill="none" stroke="currentColor" stroke-width="1.4"/>
+        <text x="596" y="362" font-weight="500">Scored in code</text>
+        <text x="596" y="382" fill="var(--ink-2)" font-size="11">found · missed · invented · on the shelf · overlap</text>
 
-        <rect x="420" y="284" width="352" height="50" rx="3" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.8"/>
-        <text x="596" y="305" fill="currentColor" font-weight="500">Choosing model picks five per shelf</text>
-        <text x="596" y="322" fill="var(--ink-2)" font-size="11">one recommendations row per photo</text>
+        <rect x="402" y="458" width="388" height="56" rx="3" fill="var(--paper-2)" stroke="currentColor" stroke-width="1.4"/>
+        <text x="596" y="485" font-weight="500">Check against the baseline</text>
+        <text x="596" y="503" fill="var(--ink-2)" font-size="11">PASS or FAIL · nightly and on every prompt change</text>
 
-        <rect x="420" y="354" width="352" height="92" rx="3" fill="none" stroke="currentColor" stroke-width="1.4"/>
-        <text x="596" y="375" fill="currentColor" font-weight="500">Scored in code</text>
-        <text x="596" y="393" fill="var(--ink-2)" font-size="11">found, missed, invented against the labels</text>
-        <text x="596" y="409" fill="var(--ink-2)" font-size="11">every pick on the shelf, exactly five, a reason each</text>
-        <text x="596" y="425" fill="var(--ink-2)" font-size="11">overlap with Marina's own five picks</text>
-
-        <rect x="402" y="490" width="388" height="62" rx="3" fill="var(--paper-2)" stroke="currentColor" stroke-width="1.4"/>
-        <text x="596" y="513" fill="currentColor" font-weight="500">research.check against baseline.json</text>
-        <text x="596" y="531" fill="var(--ink-2)" font-size="11">tolerances per number, see the table · PASS or FAIL, exit code</text>
+        <rect x="402" y="560" width="388" height="50" rx="3" fill="none" stroke="currentColor" stroke-width="1.4"/>
+        <text x="596" y="590" font-weight="500">Prompt versions side by side</text>
       </g>
       <g fill="none" stroke="currentColor" stroke-width="1.4" marker-end="url(#arrow)">
-        <line x1="596" y1="154" x2="596" y2="212"/>
-        <line x1="596" y1="264" x2="596" y2="282"/>
-        <line x1="596" y1="334" x2="596" y2="352"/>
-        <line x1="596" y1="446" x2="596" y2="488"/>
-      </g>
-      <g font-size="11" fill="var(--ink-2)">
-        <text x="608" y="178">photos and labels</text>
-        <text x="608" y="470">the numbers</text>
-      </g>
-
-      <!-- Triggers into the eval -->
-      <g font-size="11" fill="var(--ink-2)">
-        <text x="404" y="580">runs: nightly (GitHub Actions) · on every prompt or model change · before a demo</text>
-      </g>
-
-      <!-- Prompt comparison, reading the rows -->
-      <g font-size="12" text-anchor="middle">
-        <rect x="402" y="606" width="388" height="62" rx="3" fill="none" stroke="currentColor" stroke-width="1.4"/>
-        <text x="596" y="629" fill="currentColor" font-weight="500">report --by-prompt</text>
-        <text x="596" y="647" fill="var(--ink-2)" font-size="11">prompt versions side by side, from the same rows, no new calls</text>
+        <line x1="596" y1="126" x2="596" y2="194"/>
+        <line x1="596" y1="246" x2="596" y2="264"/>
+        <line x1="596" y1="316" x2="596" y2="334"/>
+        <line x1="596" y1="408" x2="596" y2="456"/>
       </g>
       <g fill="none" stroke="currentColor" stroke-width="1.4" stroke-dasharray="5 4" marker-end="url(#arrow)">
-        <path d="M 782 300 L 810 300 L 810 636 L 792 636"/>
+        <path d="M 782 291 L 812 291 L 812 585 L 792 585"/>
       </g>
-      <text x="818" y="470" font-size="11" fill="var(--ink-2)" transform="rotate(90 818 470)">reads the rows</text>
 
-      <!-- Right column: grows from use -->
-      <g font-size="12" text-anchor="middle">
-        <rect x="856" y="70" width="284" height="62" rx="3" fill="none" stroke="currentColor" stroke-width="1.4"/>
-        <text x="998" y="95" fill="currentColor" font-weight="500">Real scans through the app</text>
-        <text x="998" y="113" fill="var(--ink-2)" font-size="11">every call a row · saves and not-for-me marks</text>
-
-        <rect x="856" y="184" width="284" height="76" rx="3" fill="none" stroke="currentColor" stroke-width="1.4"/>
-        <text x="998" y="207" fill="currentColor" font-weight="500">Weekly review</text>
-        <text x="998" y="225" fill="var(--ink-2)" font-size="11">error rows and marks sorted: model, application, noise</text>
-        <text x="998" y="241" fill="var(--ink-2)" font-size="11">an agent writes it, opens a pull request</text>
-
-        <rect x="856" y="312" width="284" height="62" rx="3" fill="var(--paper-2)" stroke="currentColor" stroke-width="1.4"/>
-        <text x="998" y="335" fill="currentColor" font-weight="500">photos label &lt;scan&gt;</text>
-        <text x="998" y="353" fill="var(--ink-2)" font-size="11">a real scan becomes a labelled photo</text>
-
-        <rect x="856" y="426" width="284" height="62" rx="3" fill="none" stroke="currentColor" stroke-width="1.4"/>
-        <text x="998" y="449" fill="currentColor" font-weight="500">Dashboard, /admin</text>
-        <text x="998" y="467" fill="var(--ink-2)" font-size="11">save rate, failures, latency and cost per stage, in use</text>
+      <!-- Right: real use -->
+      <g font-size="13" text-anchor="middle" fill="currentColor">
+        <rect x="856" y="70" width="284" height="56" rx="3" fill="none" stroke="currentColor" stroke-width="1.4"/>
+        <text x="998" y="103" font-weight="500">Real scans</text>
+        <rect x="856" y="164" width="284" height="56" rx="3" fill="none" stroke="currentColor" stroke-width="1.4"/>
+        <text x="998" y="197" font-weight="500">Weekly review</text>
+        <rect x="856" y="258" width="284" height="56" rx="3" fill="var(--paper-2)" stroke="currentColor" stroke-width="1.4"/>
+        <text x="998" y="291" font-weight="500">Promote a scan into the set</text>
+        <rect x="856" y="356" width="284" height="56" rx="3" fill="none" stroke="currentColor" stroke-width="1.4"/>
+        <text x="998" y="389" font-weight="500">Dashboard</text>
       </g>
       <g fill="none" stroke="currentColor" stroke-width="1.4" marker-end="url(#arrow)">
-        <line x1="998" y1="132" x2="998" y2="182"/>
-        <line x1="998" y1="260" x2="998" y2="310"/>
-        <line x1="936" y1="132" x2="936" y2="424"/>
-        <path d="M 856 343 L 830 343 L 830 112 L 792 112"/>
-      </g>
-      <g font-size="11" fill="var(--ink-2)">
-        <text x="1006" y="162">the week's rows</text>
-        <text x="1006" y="290">"promote this one"</text>
-        <text x="836" y="240" transform="rotate(-90 836 240)" text-anchor="middle">joins the set</text>
+        <line x1="998" y1="126" x2="998" y2="162"/>
+        <line x1="998" y1="220" x2="998" y2="256"/>
+        <line x1="900" y1="126" x2="900" y2="354"/>
+        <path d="M 856 286 L 830 286 L 830 98 L 792 98"/>
       </g>
 
       <!-- Legend -->
       <g font-size="11" fill="var(--ink-2)">
-        <rect x="30" y="690" width="26" height="14" rx="2" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.4"/>
-        <text x="64" y="701">a model call, non-deterministic</text>
-        <rect x="290" y="690" width="26" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.2"/>
-        <text x="324" y="701">code of our own</text>
-        <rect x="470" y="690" width="26" height="14" rx="2" fill="var(--paper-2)" stroke="currentColor" stroke-width="1.2"/>
-        <text x="504" y="701">the gate or the command that runs it</text>
+        <rect x="30" y="616" width="26" height="14" rx="2" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.4"/>
+        <text x="64" y="627">model call</text>
+        <rect x="170" y="616" width="26" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.2"/>
+        <text x="204" y="627">our code</text>
+        <rect x="300" y="616" width="26" height="14" rx="2" fill="var(--paper-2)" stroke="currentColor" stroke-width="1.2"/>
+        <text x="334" y="627">a gate</text>
       </g>
     </svg>
     </div>
