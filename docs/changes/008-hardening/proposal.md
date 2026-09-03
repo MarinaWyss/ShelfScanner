@@ -78,6 +78,72 @@ Task 3, retention (2026-09-03):
   workflow needs the `SUPABASE_URL` and `SUPABASE_SECRET_KEY` repository
   secrets and reads an optional `SHELFSCANNER_RETENTION_DAYS` variable.
 
+Tasks 1 and 2, limits, errors and validation (2026-09-03):
+
+- **The hour is rolling and the day is UTC.** The per-device limit counts
+  the session's `photos` rows created in the sixty minutes before the
+  request, so a burst clears one scan at a time rather than all at once on
+  the hour. The daily cap sums `cost_usd` over both runs tables since
+  midnight UTC, every session together: it is the app's budget, not the
+  user's, and when it is reached nobody scans until tomorrow. Defaults 10
+  scans and $5; env `SHELFSCANNER_SCANS_PER_HOUR`,
+  `SHELFSCANNER_APP_DAILY_CAP_USD`. Refusals are 429 (device) and 503
+  (app), each with the number in the message (D1); the device limit is
+  reported first. Refused uploads store no row, so they never count.
+- **Validation reads the header, not the pixels.** Declared type must be
+  `image/jpeg` or `image/png` and the bytes must decode as one of those
+  (the bytes decide: a GIF called `.jpg` is refused as a GIF); the long
+  edge must be at least 400 px, checked before the resize on the header's
+  dimensions, which the orientation tag cannot change. 400 px is the
+  floor below which no spine is legible at any model resolution; the
+  message gives the photo's dimensions. Uploads over 4 MB stay 413.
+- **The status column is the lock.** `photos.status` (`pending`,
+  `reading`, `choosing`, `done`, `failed`) with `status_at`, in migration
+  `20260903170000_scan_status.sql`, not null with default `pending`, so
+  test-set rows carry a harmless default rather than a nullable column
+  with a special meaning. A claim is one `update` whose filter is the
+  claim rule, so two connections cannot both win. A `reading` is
+  claimable from `pending`; a `choosing` from `pending` or `reading`, the
+  latter meaning the reading finished (the extraction row exists) or its
+  connection died. A claim older than three minutes is stale and may be
+  taken over; three minutes is one adapter timeout plus a failover with
+  room to spare. A connection that cannot claim waits, polling once a
+  second with keepalives, rather than ending the stream and leaving the
+  browser to reconnect every few seconds. Terminal statuses are written
+  by the stage runners in the worker thread, so a browser that leaves
+  mid-stage still gets a correct row; a stage that raised (not a model
+  error, which is in the row) puts the status back so a reconnect retries.
+- **`resized_by_client` is a nullable boolean** in the same migration:
+  true or false from the form field for web uploads, null for everything
+  else. It replaces the log line as the way to know the fallback rate.
+- **`last_seen_at` is written once per ten minutes per session**, decided
+  from the value the `find` query already returns, so the throttle costs
+  no extra read. The unit is the presence signal a dashboard needs;
+  finer than ten minutes was a write per htmx request.
+- **Checking is a named stage on the page.** The scoping doc names three
+  stages to the user (reading, checking titles, choosing), and 007 put the
+  catalogue check inside the pipeline's choosing. The page now shows five
+  rows and switches from `checking` to `choosing` on the first progress
+  note that is not the check's; a choosing that fails because every title
+  was dropped is reported as `checking` failed, with `stage: "checking"`
+  in the JSON. The pipeline protocol is unchanged apart from a `step` on
+  the choosing result.
+- **A failover that also fails names both attempts.** The stage results
+  carry `model`, `failover_from` and `failover_error` from the row; the
+  message is "Both models failed. <primary>: <error>. Then <fallback>:
+  <error>." The fake pipeline now goes through `router.with_failover`, so
+  the tests exercise the real failover path (an `http` error fails over,
+  a `provider` one does not, as in 002 D8).
+- **Retry is a new scan.** "Try again" resubmits the form, so the photo
+  still in the picker becomes a new `photos` row and a fresh event stream;
+  the failed row keeps its status and its logged runs. A failed choosing
+  is not retried on the same scan, as before. Refused uploads (bad type,
+  too small) do not offer it: the fix is a different photo.
+- **`storage.store_session_photo` takes extra columns** (`**columns`) so
+  the web pipeline can write `status` and `resized_by_client` without a
+  second update; `SESSION_PHOTO_COLUMNS` selects the new columns, so the
+  migration must be pushed before this branch serves real scans.
+
 ## How we know it worked
 
 | Question | Pass |
