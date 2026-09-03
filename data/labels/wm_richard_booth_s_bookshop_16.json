@@ -1,7 +1,26 @@
 {
-  "titles": [],
-  "partial": [],
-  "notes": "",
+  "titles": [
+    "Tragedies",
+    "The Complete Sherlock Holmes",
+    "The Brontë Sisters: Three Novels",
+    "Ulysses",
+    "Dracula",
+    "The Ring of the Nibelung",
+    "Tess of the D'Urbervilles",
+    "The Sound and the Fury",
+    "In This Our Life",
+    "Selected Lives",
+    "Candide",
+    "His Family",
+    "Tom Jones",
+    "Persuasion",
+    "Pride and Prejudice",
+    "Sense and Sensibility"
+  ],
+  "partial": [
+    "Wuthering Heights"
+  ],
+  "notes": "Landscape, straight-on, a display of leather-bound Franklin Library and clothbound Penguin classics on a table in Richard Booth's Bookshop (Hay-on-Wye), bright daylight from windows behind, mild reflections on the shrink-wrapped Dracula. English throughout. Spines read from the shelf and covers from the four clothbound Penguins lying flat in front; Tess of the D'Urbervilles appears both as a spine and a cover and is labelled once. Partial: Wuthering Heights, the blue spine cut by the right edge of the frame. Left out: the pinkish-red Franklin spine between Selected Lives and Candide (gilt lettering too faint), the tall spine at the far left reading '...David Jones...' (subject or author, no clear title), the Penguin covers cut by the bottom and right edges, and the shop's stock in the background, which is too small to read. A shop assistant with curly red hair is visible from the side behind the display; her face is partly turned away but recognisable. Drafted by claude-sonnet-5 (extraction 107), verified by an agent.",
   "set": "sourced",
   "provisional": true,
   "source": {

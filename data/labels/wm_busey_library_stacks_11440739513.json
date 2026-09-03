@@ -1,7 +1,17 @@
 {
-  "titles": [],
+  "titles": [
+    "Illini Loyalty",
+    "My Korean Deli",
+    "Selling Sickness: How the World's Biggest Pharmaceutical Companies Are Turning Us All into Patients",
+    "Fugitive Denim",
+    "The Immortal Class",
+    "Born in the Big Rains",
+    "Just Food: Where Locavores Get It Wrong and How We Can Truly Eat Responsibly",
+    "The Omnivore's Dilemma",
+    "The Tattooed Lady: A History"
+  ],
   "partial": [],
-  "notes": "",
+  "notes": "Landscape, slightly from the left, one shelf of a public-library display (Dewey call-number labels, 'Environment' stickers) in even indoor light, no glare; eight spines and one book face-out on a stand. English throughout. Subtitles are included where the spine prints them in full (Selling Sickness, Just Food); the Omnivore's Dilemma subtitle 'A Natural History of Four Meals' is partly covered by a sticker, so only the title is labelled. Left out: the leftmost spine cut by the frame, which shows only the author names 'Kanfer & Kanfer', and the yellow book on the shelf above (no readable text). The Tattooed Lady cover carries a vintage photograph of a tattooed woman. Drafted by claude-sonnet-5 (extraction 101), verified by an agent.",
   "set": "sourced",
   "provisional": true,
   "source": {
