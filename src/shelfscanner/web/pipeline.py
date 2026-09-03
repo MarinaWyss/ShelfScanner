@@ -209,8 +209,19 @@ class SupabasePipeline:
 
     def choose(self, photo: dict, reading: Reading, prefs: dict, on_progress: Progress) -> Choosing:
         assert reading.extraction_id is not None
-        row = recommend.recommend_from_extraction(extract.get_extraction(reading.extraction_id), None, prefs,
-                                                  CHOOSING_PROMPT, client=self.client, on_progress=on_progress)
+        extraction = extract.get_extraction(reading.extraction_id)
+        # --- change 007: verify the read titles against the catalogue before choosing (L1). A catalogue
+        # outage keeps every title, unverified (007 D2); every title dropped is a failed stage, not a crash.
+        from shelfscanner import verify
+
+        verified = verify.verify_extraction(extraction, on_progress=on_progress)
+        if not verified.kept:
+            return Choosing(error=f"none of the {len(verified.dropped)} titles read matched a catalogue record")
+        try:
+            row = recommend.recommend_from_extraction(extraction, None, prefs, CHOOSING_PROMPT, client=self.client,
+                                                      on_progress=on_progress, verified=verified)
+        except SystemExit as e:  # the CLI-shaped failure for an empty list; the page names the stage instead
+            return Choosing(error=str(e))
         if row.error:
             return Choosing(error=row.error, recommendation_id=row.id)
         return Choosing(picks=[Pick(r.title, r.reason) for r in row.recs], recommendation_id=row.id)

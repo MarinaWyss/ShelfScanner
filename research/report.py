@@ -147,7 +147,9 @@ def fetch_and_render() -> str:
     ).execute().data
     labelled_extractions = {r["id"] for r in ex}
     rec = [r for r in rec if r["extraction_id"] in labelled_extractions]
-    return render(extraction_stats(ex), recommendation_stats(rec))
+    from shelfscanner.web.metrics import save_rate  # change 005: the primary metric, over session scans
+
+    return render(extraction_stats(ex), recommendation_stats(rec)) + "\n\nFEEDBACK  (scans from the app)\n" + save_rate().line()
 
 
 def main() -> None:
