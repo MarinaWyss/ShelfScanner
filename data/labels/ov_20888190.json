@@ -1,7 +1,24 @@
 {
-  "titles": [],
+  "titles": [
+    "100 Years of Architectural Drawing: 1900-2000",
+    "Archi-Doodle",
+    "The Cabin",
+    "The Farmhouse",
+    "Paris Flea Market Style",
+    "Grand Hotel",
+    "University of Massachusetts Amherst",
+    "Houses of Maine",
+    "Garden Park Community Farm",
+    "Towards a New Architecture",
+    "American Decoration",
+    "Living Artfully: At Home with Marjorie Merriweather Post",
+    "The Welcoming House",
+    "Cottage",
+    "My Cool Shed",
+    "How to Architect"
+  ],
   "partial": [],
-  "notes": "",
+  "notes": "Landscape, straight-on, close-up of one shelf of architecture and design books in a bookshop, even indoor light, in focus, a little reflection on the shrink-wrapped Grand Hotel. English throughout. All titles from spines. Duplicates on the shelf listed once (two full copies of Archi-Doodle plus a third mostly hidden, two of Cottage). University of Massachusetts Amherst is a volume in 'The Campus Guide' series, labelled by the volume name. Left out: the spine at the far left cut by the frame, with only '...RUCE' and the author name Phyllis showing, and the thin spine at the far right which has no readable title. Drafted by claude-sonnet-5 (extraction 73), verified by an agent.",
   "set": "sourced",
   "provisional": true,
   "source": {

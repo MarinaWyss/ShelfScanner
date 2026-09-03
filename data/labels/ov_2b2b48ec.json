@@ -1,7 +1,28 @@
 {
-  "titles": [],
-  "partial": [],
-  "notes": "",
+  "titles": [
+    "The Disney Touch",
+    "Noble House",
+    "Legends of the Fall",
+    "Pauline's",
+    "What Makes the Great Great",
+    "800,000,000: The Real China",
+    "Dolores Claiborne",
+    "The Bible",
+    "The Moneychangers",
+    "Sons and Lovers",
+    "The Sleep of Reason",
+    "Night Sky",
+    "In Contempt",
+    "Tell Me How Long the Train's Been Gone"
+  ],
+  "partial": [
+    "The Way Things Ought to Be",
+    "The Works of Maupassant",
+    "Malibu",
+    "The Thurber Album",
+    "Intruder"
+  ],
+  "notes": "Portrait, not a shelf: a wall of old hardbacks set horizontally into rough plaster like bricks (an installation), photographed at a slight upward angle in warm indoor light, soft focus towards the edges, no glare. English throughout, spines only, most cloth spines faded or worn. Partial: The Way Things Ought to Be (Rush Limbaugh, cut by the right edge), The Works of Maupassant (small blurred label), Malibu (word partly covered), The Thurber Album (worn, bottom left), Intruder (bottom right corner, cut). Left out: the 'Honor' fragment at the top left, the red and brown spines at the top right whose lettering is too worn, the Reader's Digest condensed volumes (no titles), the '...s Travels' fragment at the bottom, the pink spine at the right edge ('Ma...'), and a dozen blank or illegible cloth spines. The draft's 'Paulines' is printed with an apostrophe. Drafted by claude-sonnet-5 (extraction 74), verified by an agent.",
   "set": "sourced",
   "provisional": true,
   "source": {
