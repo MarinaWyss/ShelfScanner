@@ -1,7 +1,25 @@
 {
-  "titles": [],
-  "partial": [],
-  "notes": "",
+  "titles": [
+    "Lääketieteen termit",
+    "The Annotated Alice",
+    "Suomi-ruotsi",
+    "Ruotsi-suomi",
+    "Saksa-suomi",
+    "Ranska-suomi",
+    "Lakikirja",
+    "Duden Deutsches Universalwörterbuch",
+    "Freud",
+    "Suursanakirja Stor ordbok",
+    "Suuri sivistyssanakirja",
+    "Aarre Merikanto",
+    "Suomen säveltäjiä",
+    "Suomen kielen rakenne ja kehitys",
+    "Nykysuomen etymologinen sanakirja"
+  ],
+  "partial": [
+    "Concise Routledge Encyclopedia of Philosophy"
+  ],
+  "notes": "Portrait, straight-on, a whole wall of a private library (three bookcases, a CD tower, shelves above the door) in a Finnish home, taken from across the room at low resolution (1706 px wide) in flat daylight, no glare; only the largest spine lettering on the nearer shelves reads. Finnish, Swedish, German and English. Titles as printed: the WSOY dictionaries carry only their language pairs (Suomi-ruotsi etc.) and are labelled as such; the yellow Finnish-Swedish dictionary spine reads 'Suur sanakirja / Stor ordbok'; 'Freud' is the large pink spine on the second shelf (a biography), and two further 'Freud' spines on the top shelf are labelled once with it. Partial: the Routledge philosophy encyclopedia, whose spine reads 'PHILOSOPHY' large with the series name in small type. Left out: the black Otavan encyclopedia set and the blue numbered set (volumes 1-12 and 2-10, no readable titles), the three-volume 'Sanakirja' set (a-i, k-r, s-ö), the Jules Verne and Harry Potter series (series name readable, volume names not), the 'A-Ö' and 'A P Ö' reference spines, the Saarikoski and Boyd spines (author only), the grey 'Le Robert' spine, the yellow 'Harpo puhuu' spine (not readable with confidence), the music scores and magazines on the bottom shelves (Falstaff, Symphony No. 8, Daphnis et Chloé), the CDs in the left tower, and everything on the upper shelves and the far-left bookcase, which is too small to read. Non-book items: a glass pendant lamp, CDs, sheet music. Drafted by claude-sonnet-5 (extraction 106), verified by an agent.",
   "set": "sourced",
   "provisional": true,
   "source": {

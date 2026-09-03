@@ -1,7 +1,25 @@
 {
-  "titles": [],
+  "titles": [
+    "Collins German Dictionary",
+    "Collins Spanish Dictionary",
+    "Diccionario Gran Larousse Español/Inglés-English/Spanish",
+    "The Compact Oxford English Dictionary",
+    "Webster's Third New International Dictionary",
+    "Eastern Europe Phrasebook",
+    "India Phrasebook",
+    "The Concise Oxford English-Arabic Dictionary",
+    "ABC Chinese-English Dictionary",
+    "Chinese: An Essential Grammar",
+    "Czech-English English-Czech",
+    "Estonian-English English-Estonian Dictionary",
+    "Le Robert & Collins Compact",
+    "Alemán",
+    "Gramática de la lengua guatusa",
+    "The New Bantam-Megiddo Hebrew & English Dictionary",
+    "Hindi"
+  ],
   "partial": [],
-  "notes": "",
+  "notes": "Portrait, straight-on, two shelves of dictionaries and phrasebooks in a dim room under warm tungsten light; the large white Collins spines on the top shelf catch a flash so only 'German' and 'Spanish' read clearly, and the lower shelf is soft and slightly blurred. Mixed languages: English, Spanish (Larousse, Alemán, Gramática de la lengua guatusa), French (Le Robert), Hebrew and Georgian script on two spines. Titles as printed: the Larousse spine stacks 'Diccionario', 'Gran', 'Larousse', 'Español/Inglés-English/Spanish'; the Trnka dictionary spine reads only 'Czech-English English-Czech'; the small Collins gem is labelled once with the large Collins German Dictionary; 'Hindi' is a Teach Yourself-style yellow spine reading only 'hindi'. Left out: the red spine at the far right of the top shelf cut by the frame ('Dic... Le... Esp...'), the two thin red and light-blue spines left of the Arabic dictionary and the tall purple Chinese book behind the grammar (text too small or hidden), the dark blue Croatian-English spine (Hrvatsko-engleski, title not fully legible), the orange 'Conversemos en ...' spine, the Georgian-script spine, and the red pocket dictionary cut by the right edge. Drafted by claude-sonnet-5 (extraction 102), verified by an agent.",
   "set": "sourced",
   "provisional": true,
   "source": {

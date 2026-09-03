@@ -1,7 +1,21 @@
 {
-  "titles": [],
-  "partial": [],
-  "notes": "",
+  "titles": [
+    "Latin",
+    "A Boy and His Tank",
+    "An Introduction to Statistical Physics",
+    "The Capitalist Manifesto",
+    "Intermolecular & Surface Forces",
+    "Thermodynamics and an Introduction to Thermostatistics",
+    "University Physics",
+    "Selections from De Rerum Natura",
+    "Mill",
+    "Victorian Painting",
+    "Alma-Tadema"
+  ],
+  "partial": [
+    "Quantum"
+  ],
+  "notes": "Portrait, straight-on, a single shelf of eleven mixed-size books against a whitewashed brick wall under flat indoor light, low resolution (1161 px wide) but every spine reads. English throughout. Titles as printed: the Oxford dictionary spine says only 'Oxford' and 'Latin', so it is labelled 'Latin'; 'Mill' is David Macaulay's Houghton Mifflin book (the spine reads MILL / Macaulay); the Lucretius spine reads 'Lucretius • Selections from De Rerum Natura' and is labelled by the title after the author name; edition lines (Second Edition, Ninth Edition) are not part of the title. Partial: 'Quantum', a blue spine cut by the right edge of the frame. Left out: the tan spine between Mill and Victorian Painting (no readable text), a dark object at the bottom left corner that is not a book. Drafted by claude-sonnet-5 (extraction 98), verified by an agent.",
   "set": "sourced",
   "provisional": true,
   "source": {
