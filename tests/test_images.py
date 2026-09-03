@@ -10,7 +10,7 @@ import pytest
 from PIL import Image
 from PIL.TiffImagePlugin import IFDRational
 
-from shelfscanner.images import has_metadata, strip_metadata
+from shelfscanner.images import degrade, has_metadata, strip_metadata
 
 ORIENTATION = 0x0112
 GPS_IFD = 0x8825
@@ -74,3 +74,56 @@ def test_strip_applies_orientation_to_pixels(tagged_jpeg):
 def test_strip_keeps_icc_profile(tagged_jpeg):
     with Image.open(io.BytesIO(strip_metadata(tagged_jpeg))) as im:
         assert im.info.get("icc_profile") == FAKE_ICC
+
+
+# --- change 006: degrade() builds the derived set from the core photos in memory ---
+
+
+@pytest.fixture
+def plain_jpeg() -> bytes:
+    """A 300x200 JPEG with a dark left half and a light right half, so blur and glare are measurable."""
+    im = Image.new("RGB", (300, 200), (20, 20, 20))
+    im.paste((230, 230, 230), (150, 0, 300, 200))
+    buf = io.BytesIO()
+    im.save(buf, format="JPEG", quality=95)
+    return buf.getvalue()
+
+
+def _open(data: bytes) -> Image.Image:
+    return Image.open(io.BytesIO(data))
+
+
+def test_degrade_rejects_unknown_kind(plain_jpeg):
+    with pytest.raises(ValueError):
+        degrade(plain_jpeg, "sepia")
+
+
+def test_degrade_blur_keeps_size_and_softens_the_edge(plain_jpeg):
+    out = _open(degrade(plain_jpeg, "blur", radius=6))
+    assert out.size == (300, 200)
+    # The hard dark/light edge at x=150 becomes a ramp: the pixel just left of it lightens.
+    assert _open(plain_jpeg).getpixel((146, 100))[0] < 40
+    assert out.getpixel((146, 100))[0] > 60
+
+
+def test_degrade_glare_whitens_the_chosen_corner_only(plain_jpeg):
+    out = _open(degrade(plain_jpeg, "glare", alpha=0.9, corner="tl"))
+    assert out.size == (300, 200)
+    assert out.getpixel((2, 2))[0] > 180  # the dark corner under the glare is nearly white
+    assert out.getpixel((297, 197)) == _open(plain_jpeg).getpixel((297, 197))  # the far corner is untouched
+
+
+def test_degrade_rotate_expands_the_canvas(plain_jpeg):
+    out = _open(degrade(plain_jpeg, "rotate", degrees=7))
+    assert out.width > 300 and out.height > 200
+    assert out.getpixel((0, 0)) == (0, 0, 0)  # filled corner
+
+
+def test_degrade_small_shrinks_the_long_edge(plain_jpeg):
+    out = _open(degrade(plain_jpeg, "small", max_edge=120))
+    assert out.size == (120, 80)
+
+
+def test_degrade_output_carries_no_metadata(plain_jpeg):
+    for kind in ("blur", "glare", "rotate", "small"):
+        assert not has_metadata(degrade(plain_jpeg, kind))

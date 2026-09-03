@@ -1,0 +1,34 @@
+{
+  "titles": [
+    "How to Know a Person",
+    "The StatQuest Illustrated Guide to Neural Networks and AI",
+    "The Subtle Art of Not Giving a F*ck",
+    "The Coddling of the American Mind",
+    "Meditations",
+    "What Unites Us",
+    "The Comfort Crisis",
+    "Atomic Habits",
+    "Feel-Good Productivity",
+    "Four Thousand Weeks",
+    "Factfulness",
+    "Thinking, Fast and Slow",
+    "When Breath Becomes Air",
+    "The Coaching Habit",
+    "Doing Good Better",
+    "Awe",
+    "Everything Is F*cked",
+    "Be Useful: Seven Tools for Life"
+  ],
+  "partial": [],
+  "notes": "Derived from PXL_20260902_201050368: Soft white radial glare from the top-right corner, alpha 0.85: a window reflection on the spines there. Original notes: Portrait, two shelves, taken 2026-09-02, indoor light with a plant partly covering the right side. Top shelf: six spines, two leaning so their front covers show behind them (those are the same books, not extra titles). Subtle Art title is printed as 'A #@%!' on the spine. Bottom shelf: seven upright spines plus a horizontal stack of five on the right, partly hidden by the plant; Doing Good Better and Be Useful are cut off mid-word but recognisable. Unreadable: a dark object on top of the stack, possibly a book or device. Meditations appears here and in ...504550, so it is a duplicate across the test set.",
+  "set": "derived",
+  "provisional": false,
+  "derived_from": "PXL_20260902_201050368",
+  "degradation": {
+    "kind": "glare",
+    "params": {
+      "alpha": 0.85,
+      "corner": "tr"
+    }
+  }
+}

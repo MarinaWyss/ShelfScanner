@@ -1,0 +1,31 @@
+{
+  "titles": [
+    "Well-Being",
+    "Bushcraft 101",
+    "How to Suffer Outside",
+    "Mildly Scenic: A Trail Guide to the Lower American River",
+    "A Walk in the Woods",
+    "Six Easy Pieces",
+    "Being Logical",
+    "Le Petit Prince",
+    "After Capitalism",
+    "The Ethics of Identity",
+    "Black Wave",
+    "Love You Forever"
+  ],
+  "partial": [
+    "Die schönsten Götter-, Helden- und Rittersagen des Mittelalters",
+    "The Promise",
+    "Atomic Habits"
+  ],
+  "notes": "Derived from PXL_20250519_214507243: Gaussian blur, radius 4 px at full resolution: soft focus as from a shaky hand. Original notes: Landscape, slightly from the left, lower shelf so some downward angle. Six thin upright spines on the left, then a horizontal stack of five including one library copy with barcode stickers over the author name (Black Wave, Kim Ghattas) and a French title. Love You Forever is a thin children's book at the bottom of the stack, small text. Unreadable: a colourful thin book under Love You Forever. Partial: the German book from the shelf above along the top edge; Avatar 'The Promise' at the right edge; Atomic Habits below, only its tagline 'Tiny Changes, Remarkable Results' visible.",
+  "set": "derived",
+  "provisional": false,
+  "derived_from": "PXL_20250519_214507243",
+  "degradation": {
+    "kind": "blur",
+    "params": {
+      "radius": 4
+    }
+  }
+}

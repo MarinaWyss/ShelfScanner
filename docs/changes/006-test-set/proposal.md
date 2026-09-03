@@ -74,3 +74,37 @@ full-set numbers; `check` compares like with like by set name.
 | Eval runs itself | Nightly job green two nights running, under the cap |
 | Reading holds | Median recall at least 0.90 on the new photos; invented rate reported |
 | Lookup decided | D2's rule applied and written in results.md with the counts |
+
+## Decided during the work
+
+Task 1 (sourcing and the degraded set), 2026-09-02:
+
+- **Openverse only yields full-resolution files for its Wikimedia Commons
+  provider.** Its `url` for Flickr, rawpixel and StockSnap items is a 1024
+  or 960 px derivative and larger sizes are not reachable without an account,
+  so those fail the 1200 px floor and were dropped (23 of 40 full-view
+  rejections). Every sourced photo is therefore a Wikimedia Commons file,
+  found either through Openverse (`ov_` stems, `source.url` on
+  upload.wikimedia.org) or through the Commons API directly (`wm_` stems).
+  Anonymous Openverse is capped at 20 results a page and 200 requests a day.
+- **Faces printed on book covers do not count as faces.** The face rule
+  protects people present in the photo; a cover portrait is published
+  material. Photos with a bystander's face were rejected; one photo keeps a
+  person turned away (`wm_richard_booth_s_bookshop_16`).
+- **Legibility is judged at 1600 px on the long edge**, close to the 1568 px
+  the reading models receive, not at the file's full resolution. Wide
+  library-aisle shots that are legible only at 4000+ px were rejected.
+- **Derived photos are rebuildable.** `photos fetch` regenerates every
+  `derived` photo from its local original with the recorded `degradation`,
+  so the degraded set needs no download and no storage beyond the label
+  file. Parameters: blur radius 4 px, glare alpha 0.85 from the top-right
+  corner, rotate 7 degrees counter-clockwise with black fill, small 1024 px.
+  Derived labels carry `provisional: false` because they copy confirmed
+  labels; the notes say what was done and repeat the original's notes.
+- **Label `source` holds exactly the five contract keys.** The Commons file
+  page and the pixel size go in `data/labels/SOURCES.md`, which is the
+  attribution record.
+- **`sync_photos` is overridden, not edited.** The 006 block at the end of
+  `storage.py` rebinds `sync_photos` and extends `PHOTO_COLUMNS`; the lead
+  can fold it into the original when merging. The migration adds a check
+  constraint on `set`.

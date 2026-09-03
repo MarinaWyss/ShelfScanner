@@ -1,0 +1,27 @@
+{
+  "titles": [
+    "The Promise",
+    "The Rift",
+    "Smoke and Shadow",
+    "North and South",
+    "Imbalance",
+    "Mythos",
+    "Awe: The New Science of Everyday Wonder and How It Can Transform Your Life",
+    "Cognitive Behavioral Therapy Made Simple",
+    "Stranger in a Strange Land",
+    "Overdiagnosed: Making People Sick in the Pursuit of Health",
+    "Homochronos: Emergence of Time Consciousness",
+    "Leviathan Wakes"
+  ],
+  "partial": [],
+  "notes": "Derived from PXL_20250519_214509570: Downscaled to 1024 px on the long edge: a low-resolution upload. Original notes: Smaller image (2143x1628), close-up, slightly from the left. Five Avatar: The Last Airbender graphic novels with identical spine layout and small subtitle text; a model may return 'Avatar: The Last Airbender' rather than the volume names. Unreadable: a glossy plastic-wrapped spine between Overdiagnosed and Homochronos that only shows a mirrored reflection of Overdiagnosed; a dark blue book between Homochronos and Leviathan Wakes showing only fragments of white text.",
+  "set": "derived",
+  "provisional": false,
+  "derived_from": "PXL_20250519_214509570",
+  "degradation": {
+    "kind": "small",
+    "params": {
+      "max_edge": 1024
+    }
+  }
+}

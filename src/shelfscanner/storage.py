@@ -122,3 +122,67 @@ def sync_photos() -> list[str]:
     for stem in unlabelled:
         lines.append(f"skip  {stem}: photo has no label file")
     return lines
+
+
+# --- change 006 ---
+# Label files may carry `set`, `provisional` and `source` (docs/specs/photo-storage.md).
+# `sync_photos` sends them when present, so the photos table can tell the sets apart.
+# The columns arrive with migration 20260903004500_photo_sets.sql.
+
+
+def read_label_extras(path: Path) -> dict:
+    """The 006 keys of a label file as row columns; absent keys are left to the column defaults."""
+    raw = json.loads(path.read_text())
+    extras: dict = {}
+    if "set" in raw:
+        extras["set"] = raw["set"]
+    if "provisional" in raw:
+        extras["provisional"] = bool(raw["provisional"])
+    if raw.get("source") is not None:
+        extras["source"] = raw["source"]
+    return extras
+
+
+def upsert_photo_row_with_extras(label: Label, extras: dict) -> dict:
+    row = {
+        "storage_path": label.storage_path,
+        "titles": label.titles,
+        "partial_titles": label.partial,
+        "notes": label.notes,
+        **extras,
+    }
+    res = get_client().table("photos").upsert(row, on_conflict="storage_path").execute()
+    return res.data[0]
+
+
+def _sync_photos_006() -> list[str]:
+    labels = sorted(LABELS_DIR.glob("*.json"))
+    if not labels:
+        raise SystemExit(f"No label files in {LABELS_DIR}")
+
+    lines: list[str] = []
+    for label_path in labels:
+        label = read_label(label_path)
+        extras = read_label_extras(label_path)
+        local = local_photo_for(label.stem)
+        if local is None:
+            lines.append(f"skip  {label.stem}: no photo in {PHOTOS_DIR}")
+            continue
+        sent = upload_photo(local, label.storage_path)
+        row = upsert_photo_row_with_extras(label, extras)
+        lines.append(
+            f"ok    {label.stem}: id={row['id']} set={extras.get('set', 'core')} titles={len(label.titles)} "
+            f"partial={len(label.partial)} uploaded={sent / 1e6:.1f}MB"
+        )
+
+    unlabelled = sorted(
+        p.stem for p in PHOTOS_DIR.iterdir()
+        if p.suffix.lower() in PHOTO_EXTENSIONS and not (LABELS_DIR / f"{p.stem}.json").exists()
+    ) if PHOTOS_DIR.exists() else []
+    for stem in unlabelled:
+        lines.append(f"skip  {stem}: photo has no label file")
+    return lines
+
+
+sync_photos = _sync_photos_006  # noqa: F811 - the 006 version replaces the original on import
+PHOTO_COLUMNS = PHOTO_COLUMNS + ", set, provisional, source"
