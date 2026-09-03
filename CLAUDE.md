@@ -26,3 +26,7 @@ Specs live in files, not in chat. Chat is gone next session; files aren't.
 3. When a change is complete, update `docs/specs/` to match what is now true and
    move the change folder to `docs/changes/archive/`.
 4. Specs describe behavior. Proposals record decisions. Don't mix them.
+5. Work on a branch, never on `main`. `main` is protected: a change lands
+   as a pull request that merges when CI is green. One branch per change
+   (`016-theme-toggle`, `docs/branch-protection`), pushed with `-u`, and a
+   PR opened with `gh pr create` whose body says why, in a sentence or two.

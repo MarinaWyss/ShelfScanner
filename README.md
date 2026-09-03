@@ -65,7 +65,8 @@ The app runs on Vercel from this repository: `index.py` is the entry point
 its FastAPI preset finds, `vercel.json` trims the bundle, and the
 environment variables in `.env.example` (minus the fake-pipeline, retention
 and CLI-cap ones) are set in the Vercel project for Production and Preview.
-`main` is production; every branch and pull request gets a preview URL.
+`main` is production and protected: work happens on a branch, lands by pull
+request once CI is green, and every branch and pull request gets a preview URL.
 `docs/specs/deployment.md` has the rest.
 
 ## Layout

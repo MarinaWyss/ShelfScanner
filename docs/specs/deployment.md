@@ -22,9 +22,14 @@ request time. Dependencies come from `pyproject.toml` and `uv.lock`.
 - Every other branch, and every pull request, gets a preview deployment at
   its own URL.
 - GitHub Actions runs lint and the tests on every push (CI); a pull request
-  shows the check, and the review PRs are merged only when it is green.
-  Vercel does not wait for CI: a direct push to `main` is live before its
-  tests finish, so a change that must be gated goes through a pull request.
+  shows the check.
+- `main` is protected (2026-09-03): nothing is pushed to it directly, not
+  even by an admin. A change lands as a pull request from a branch, merges
+  only when the CI `test` check is green on a branch that is up to date with
+  `main` and every review conversation is resolved, and `main` cannot be
+  force-pushed or deleted. Vercel does not wait for CI, so the protection
+  is what keeps an untested change from going live. No approving review
+  is required: one person works here.
 
 ## What is different from the laptop
 
