@@ -49,3 +49,30 @@ rule: main is always deployable because nothing reaches it untested.
 | Streams | Progress events arrive stage by stage on the deployed URL, not all at the end |
 | Automatic | A merge to main is live within ten minutes with no manual step; a branch gets a preview URL |
 | Secrets | No key in the repo; the preview and production environments both resolve them |
+
+## Decided during the work
+
+2026-09-03, before the repo was connected:
+
+- **The entry point moved from `api/index.py` to `index.py`.** Vercel's
+  FastAPI preset (the zero-config path that routes every request to the
+  app) looks for the entry file at the repository root or under `src/` or
+  `app/`; `api/` is the older file-based layout, in which `api/index.py`
+  would have served `/api` only. The file also puts `src/` first on the
+  import path so `settings.REPO_ROOT` resolves to the checkout, where
+  `config/` and `prompts/` are read from.
+- **Retention stays on GitHub Actions**, against "What changes". The job
+  exists, is tested and runs daily; a Vercel cron would need a protected
+  route and a second secret for the same run, and the Hobby plan schedules
+  it to the hour. The workflow comment says so.
+- **The session cookie gets `Secure` over https only.** The deployed app is
+  https; the local-network path is http, and a `Secure` cookie is dropped
+  there.
+- **Nothing gates a direct push to `main`.** Vercel deploys on push; CI
+  runs alongside. D2 holds for pull requests (the check is visible and the
+  merge waits for it) and not for a direct push. Branch protection would
+  close that and also block the lead's pushes; left as a finding.
+- **`vercel.json` excludes** `tests/`, `docs/`, `research/`, `data/`,
+  `supabase/` and the agent folders from the bundle. Nothing in them is
+  read at request time; the bundle limit is 500 MB and the dependencies
+  alone are about 120 MB.

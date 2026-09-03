@@ -94,8 +94,9 @@ same day with a test each in `tests/test_review_fixes.py`; the document
 drift it listed (scoping section 3 and 6, ticks, deadlines) is a separate
 pass.
 
-**Wave 4**, ends 2026-09-30. 010, once Marina has connected the repo to
-Vercel.
+**Wave 4**, ends 2026-09-30. 010: the repo side is done (2026-09-03,
+`010-deployment/tasks.md`); the dashboard steps, the first deploy and the
+phone scans are Marina's, written out in `010-deployment/demo.md`.
 
 ### Carried forward
 

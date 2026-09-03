@@ -1,5 +1,5 @@
-# Change 008, task 3: the photo retention job. Runs daily until 010 moves it
-# to Vercel cron. Deletes bucket objects for unlabelled photos older than the
+# Change 008, task 3: the photo retention job. Runs daily here, not as a Vercel
+# cron (010 kept it here). Deletes bucket objects for unlabelled photos older than the
 # window (default 30 days, SHELFSCANNER_RETENTION_DAYS) and nulls their
 # storage_path; labelled test-set photos are never touched.
 name: retention

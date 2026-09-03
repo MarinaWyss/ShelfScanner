@@ -31,6 +31,20 @@ def test_first_visit_sets_a_cookie_and_creates_a_row():
     assert "HttpOnly" in set_cookie and "SameSite=Lax" in set_cookie and "Path=/" in set_cookie
 
 
+def test_cookie_is_secure_only_over_https():
+    # 010: Vercel terminates TLS and forwards plain http with x-forwarded-proto; the local network is http.
+    client, _ = make_client()
+    plain = client.get("/", follow_redirects=False).headers["set-cookie"]
+    assert "Secure" not in plain
+    client, _ = make_client()
+    forwarded = client.get("/", follow_redirects=False, headers={"x-forwarded-proto": "https"}).headers["set-cookie"]
+    assert "; Secure" in forwarded and "HttpOnly" in forwarded
+    client, _ = make_client()
+    client.base_url = "https://testserver"
+    direct = client.get("/", follow_redirects=False).headers["set-cookie"]
+    assert "; Secure" in direct
+
+
 def test_second_request_reuses_the_session():
     client, store = make_client()
     first = client.get("/", follow_redirects=False)

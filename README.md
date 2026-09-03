@@ -14,8 +14,8 @@ as a phone-first web app served locally: upload with metadata stripped,
 spines read by a vision model, titles verified against Open Library,
 five picks with reasons, save and "not for me", a device session with no
 account. Model calls go through a router of our own with per-stage
-failover, a spend guard, a dashboard and a weekly review. Deployment to
-Vercel is the remaining change (010). The MVP that started it, and the
+failover, a spend guard, a dashboard and a weekly review, deployed to Vercel
+from this repository (010; `docs/specs/deployment.md`). The MVP that started it, and the
 numbers behind the model choice, are in
 `docs/changes/archive/001-mvp/results.md`; the roadmap and its status are
 in `docs/changes/README.md`.
@@ -57,6 +57,15 @@ uv run python -m research.matrix vision sonnet,gemini-flash          # every mod
 uv run python -m research.matrix llm gpt-mini,qwen-flash              # every model over the best extraction per photo
 uv run python -m research.report [--html docs/changes/archive/001-mvp/report.html]
 ```
+
+## Deploy
+
+The app runs on Vercel from this repository: `index.py` is the entry point
+its FastAPI preset finds, `vercel.json` trims the bundle, and the
+environment variables in `.env.example` (minus the fake-pipeline, retention
+and CLI-cap ones) are set in the Vercel project for Production and Preview.
+`main` is production; every branch and pull request gets a preview URL.
+`docs/specs/deployment.md` has the rest.
 
 ## Layout
 

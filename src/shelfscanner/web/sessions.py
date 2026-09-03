@@ -52,9 +52,21 @@ def hash_token(token: str) -> str:
     return hashlib.sha256(token.encode()).hexdigest()
 
 
-def cookie_header(token: str) -> str:
-    # No `Secure`: until change 010 the app is reached over plain http on the local network.
-    return f"{COOKIE}={token}; Max-Age={COOKIE_MAX_AGE}; Path=/; HttpOnly; SameSite=Lax"
+def cookie_header(token: str, *, secure: bool = False) -> str:
+    """The Set-Cookie value. `Secure` only when the request came over https (010): the deployed app
+    is only ever https, but on the local network the phone reaches the laptop over plain http, and a
+    Secure cookie would be dropped there."""
+    flags = "; Secure" if secure else ""
+    return f"{COOKIE}={token}; Max-Age={COOKIE_MAX_AGE}; Path=/; HttpOnly; SameSite=Lax{flags}"
+
+
+def is_https(scope: Scope) -> bool:
+    """Whether the client reached us over https: the scheme uvicorn saw, or the one the proxy in
+    front of the function reports in `x-forwarded-proto` (Vercel terminates TLS and forwards http)."""
+    if scope.get("scheme") == "https":
+        return True
+    forwarded = Headers(scope=scope).get("x-forwarded-proto", "")
+    return forwarded.split(",")[0].strip().lower() == "https"
 
 
 class SupabaseSessions:
@@ -109,7 +121,8 @@ class SessionMiddleware:
 
         async def send_with_cookie(message: Message) -> None:
             if message["type"] == "http.response.start" and fresh_token is not None:
-                MutableHeaders(scope=message).append("set-cookie", cookie_header(fresh_token))
+                MutableHeaders(scope=message).append("set-cookie",
+                                                     cookie_header(fresh_token, secure=is_https(scope)))
             await send(message)
 
         await self.app(scope, receive, send_with_cookie)

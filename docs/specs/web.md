@@ -22,9 +22,8 @@ provider: sessions, photos, preferences, saves and feedback live in memory
 and every scan returns the same fixed titles and picks. That is the mode the
 Playwright suite drives.
 
-`api/index.py` re-exports the same `app` for Vercel's Python runtime, which
-looks for a FastAPI instance named `app` in an `index` file under `api/`
-(deployment is change 010).
+`index.py` at the repository root re-exports the same `app` for Vercel's
+FastAPI preset (`deployment.md`).
 
 ## Sessions
 

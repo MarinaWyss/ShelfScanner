@@ -2,19 +2,24 @@
 
 Work in order.
 
-## 1. Connect
+## 0. Repo side (done 2026-09-03)
 
-- Vercel project linked to the repo; environment variables set; a preview
-  deploy from a branch runs one scan end to end. Cold-start time
-  recorded.
+- [x] `index.py` at the root as the entry point, `vercel.json`, `Secure`
+  cookie over https with a test, retention kept on GitHub Actions,
+  `docs/specs/deployment.md`, `demo.md` with the dashboard steps.
 
-## 2. Production and cron
+## 1. Connect (Marina, in the dashboard)
 
-- Merge to main; production URL; retention cron wired to its route with
-  the secret.
+- Vercel project linked to the repo; environment variables set for
+  Production and Preview; a preview deploy from a branch runs one scan end
+  to end. Cold-start time recorded in `results.md`.
+
+## 2. Production
+
+- Merge to main; production URL in `results.md`.
 
 ## 3. Phone test and archive
 
 - Three scans on mobile data, timings in `results.md`.
-- `docs/specs/deployment.md`; scoping doc section 6 filled in with what is
-  now true; archive.
+- Scoping doc section 6 and section 9 (the live demo link) filled in with
+  what is now true; archive.
