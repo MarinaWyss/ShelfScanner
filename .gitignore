@@ -18,3 +18,4 @@ data/prefs/goodreads*.csv
 
 # Agent worktrees
 .claude/worktrees/
+data/prefs/marina_goodreads.json

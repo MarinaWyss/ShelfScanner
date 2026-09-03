@@ -58,10 +58,16 @@ def run_vision(aliases: list[str], max_dim: int | None, set_name: str = "core") 
     print(f"\n{len(ok)}/{len(results)} ok, total cost ${sum(r.cost_usd or 0 for r in ok):.4f}")
 
 
-def run_llm(aliases: list[str], prefs_path: Path, prompt_name: str = recommend.DEFAULT_PROMPT) -> None:
+def run_llm(aliases: list[str], prefs_path: Path, prompt_name: str = recommend.DEFAULT_PROMPT,
+            set_name: str = "core") -> None:
+    """Over the best extraction of each labelled photo in `set_name` (core by default: the photos that
+    have Marina's picks, so overlap can be scored). `all` means every labelled photo."""
     cfg = load_config()
     prefs = recommend.load_prefs(prefs_path)
-    inputs = best_extractions()
+    sets = {p["id"]: (p.get("set") or "core") for p in storage.list_photos() if p.get("titles")}
+    inputs = [r for r in best_extractions() if r["photo_id"] in sets and (set_name == "all" or sets[r["photo_id"]] == set_name)]
+    if not inputs:
+        raise SystemExit(f"No extractions for labelled photos in set {set_name!r}")
     for r in inputs:
         print(f"photo {r['photo_id']}: best extraction {r['id']} ({r['model']} @{r['image_long_edge']}, "
               f"found {r['found_count']}, invented {r['invented_count']})")
@@ -92,12 +98,13 @@ def main() -> None:
     t.add_argument("models")
     t.add_argument("--prefs", type=Path, default=DATA_DIR / "prefs" / "marina.json")
     t.add_argument("--prompt", default=recommend.DEFAULT_PROMPT, help="prompt name under prompts/ (004)")
+    t.add_argument("--set", default="core", help="core (the photos with Marina's picks), sourced, derived, or all")
     args = ap.parse_args()
     aliases = args.models.split(",")
     if args.stage == "vision":
         run_vision(aliases, args.max_dim, args.set)
     else:
-        run_llm(aliases, args.prefs, args.prompt)
+        run_llm(aliases, args.prefs, args.prompt, args.set)
 
 
 if __name__ == "__main__":
