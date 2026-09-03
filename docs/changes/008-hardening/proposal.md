@@ -47,6 +47,8 @@ accumulate. A config value.
 
 **D3. Caching is decided by the runs table, not by taste.** The line is in
 the scoping doc; this change reads the number and acts on it either way.
+Read on 2026-09-03 from 007's measurement: 4.5 s p50 against a 3 s line,
+so the cache is in scope (tasks, step 4).
 
 ## Decided during the work
 

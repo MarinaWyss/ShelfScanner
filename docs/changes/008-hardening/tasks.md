@@ -23,10 +23,19 @@ Work in order. ∥ marks tasks that can run in parallel worktrees.
 - Scheduled job (GitHub Actions until 010, Vercel cron after) deleting objects older than
   the config window, nulling `storage_path`, exempting labelled photos.
 
-## 4. Caching decision
+## 4. Caching, decided by 007's numbers on 2026-09-03: build it
 
-- Read 007's lookup latency and cost from the rows; apply the line; build
-  the `books`-first lookup only if crossed. Either way, results.md.
+- 007 measured lookup at 4.5 s p50 per scan (Open Library serves about
+  six requests a second to one client, about one request per title),
+  against the scoping doc's line of 3 s. And 329 read strings were 88
+  distinct (title, author) pairs, so a cache keyed on the normalised
+  read string answers roughly three lookups in four on repeated shelves.
+- Build: consult `books` (and a `lookup_cache` of read string to
+  catalogue id or miss, with a fetched_at) before calling the catalogue;
+  misses expire after 30 days so a newly catalogued book is found;
+  hit-rate and latency logged on the `lookups` row.
+- Pass: a repeated scan of a core photo verifies in under 1 s; a cold
+  scan is no slower than before.
 
 ## 5. Specs, results, archive
 

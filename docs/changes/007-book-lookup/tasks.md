@@ -26,3 +26,18 @@ Work in order. ∥ marks tasks that can run in parallel worktrees.
 ## 5. Specs, results, archive
 
 - `docs/specs/book-lookup.md`; `recommendation.md` and `web.md` updated.
+
+## Follow-ups from task 4 (not blocking archive)
+
+- Query shape: when the read string has a colon and the part before it
+  matches a record's author, search the part after the colon as the title
+  with the part before as the author, and prefer that record. Fixes the
+  two wrong-record matches ("Archie Brown: The Rise and Fall of
+  Communism", "Schalk: Götter und Heldensagen"). The matcher itself stays
+  as is: "Author: Title" and "Title: Subtitle" are indistinguishable
+  without the record's author, and the subtitle rule is what change 001
+  needs.
+- Try the title alone before title-with-author for strings where the
+  author was glued into the title field.
+- A second catalogue for recent and self-published books, if the miss
+  rate on real scans says so.
