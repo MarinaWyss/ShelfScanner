@@ -9,6 +9,12 @@ Work in order. ∥ marks tasks that can run in parallel worktrees.
 
 ## 2. Errors and validation ∥
 
+- Carried over from 003's open issues: a second connection to
+  `/scan/{id}/events` while a reading is in flight must not run the model
+  twice (a status column or a lock); `last_seen_at` is written on every
+  request and should be throttled; the browser-resize fallback rate is
+  only logged and wants a column if it matters.
+
 - Audit each stage's failure path to the page; provider failure after
   failover shows a retry; input validation before the bucket.
 
