@@ -147,6 +147,7 @@ def recommend_from_extraction(extraction: dict, model: Model | None, prefs: dict
     # --- change 007 --- each stored pick says whether it was verified and which record it is
     if verified is not None and parsed_out is not None:
         parsed_out = annotate_picks(parsed_out, verified, cfg.match_threshold)
+        recs = recs_from(parsed_out)  # the row handed back carries the author and cover too, as the stored one does
     # --- end change 007 ---
     row = {
         "extraction_id": extraction["id"],

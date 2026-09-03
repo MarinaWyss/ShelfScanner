@@ -223,3 +223,21 @@ def test_picks_carry_verified_and_the_record():
     assert annotate_picks([{"title": "American Gods"}], v, T) == [
         {"title": "American Gods", "verified": True, "catalogue_id": "OL679360W", "cover_id": "8494659", "author": "Neil Gaiman"}]
     assert annotate_picks("garbage", v, T) == "garbage"
+
+
+def test_the_row_handed_back_carries_the_author_and_cover_like_the_stored_one(monkeypatch):
+    # The live panel is built from the returned row, a reload from the stored one; without this the
+    # covers and authors only appeared after a refresh (2026-09-03, reported by Marina).
+    from shelfscanner import recommend as rc
+    from shelfscanner.web.fakes import FakeClient
+    db = FakeDB()
+    v = vf.verify_extraction(extraction(("American Gods", "Neil Gaiman"), ("Made Up Title", None)), client=StubCatalogue(), db=db)
+    monkeypatch.setattr(rc, "get_client", lambda: db)
+    monkeypatch.setattr(rc, "get_photo", lambda photo_id: {"titles": []})
+    client = FakeClient(picks={"recommendations": [{"title": "American Gods", "reason": "r1"}]})
+    row = rc.recommend_from_extraction(extraction(("American Gods", "Neil Gaiman")), None, {}, rc.DEFAULT_PROMPT,
+                                       client=client, verified=v, guard=False)
+    assert row.error is None
+    assert [(r.title, r.author, r.cover_id) for r in row.recs] == [("American Gods", "Neil Gaiman", "8494659")]
+    stored = db.tables["recommendations"][0]["parsed_recommendations"]["recommendations"][0]
+    assert (stored["author"], stored["cover_id"]) == ("Neil Gaiman", "8494659")
