@@ -111,12 +111,12 @@ def test_error_rows_are_counted_but_do_not_score():
 @pytest.mark.parametrize("change, metric", [
     (lambda rows: [e.update(found_count=5, missed_count=5) for e in rows["extractions"][:3]], "reading.median_recall"),
     (lambda rows: rows["extractions"][0].update(invented_count=1), "reading.mean_invented"),
-    (lambda rows: [e.update(latency_ms=12_200) for e in rows["extractions"]], "reading.p50_latency_ms"),
+    (lambda rows: [e.update(latency_ms=14_000) for e in rows["extractions"]], "reading.p50_latency_ms"),  # +27 %
     (lambda rows: [e.update(cost_usd=0.0084) for e in rows["extractions"]], "reading.mean_cost_usd"),
     (lambda rows: rows["recommendations"][0].update(valid_vs_extraction=4), "choosing.share_valid_vs_extraction"),
     (lambda rows: [r["parsed_recommendations"]["recommendations"].pop(1) for r in rows["recommendations"]],
      "choosing.median_overlap"),
-    (lambda rows: [r.update(latency_ms=3400) for r in rows["recommendations"]], "choosing.p50_latency_ms"),
+    (lambda rows: [r.update(latency_ms=3900) for r in rows["recommendations"]], "choosing.p50_latency_ms"),  # +30 %
     (lambda rows: [r.update(cost_usd=0.0023) for r in rows["recommendations"]], "choosing.mean_cost_usd"),
 ])
 def test_each_regression_is_named(change, metric):
@@ -135,17 +135,34 @@ def test_median_recall_uses_the_median():
     assert any(x.startswith("reading.median_recall:") for x in run(rows)[1])
 
 
-def test_latency_and_cost_tolerance_is_ten_percent():
+def test_cost_tolerance_is_ten_percent_and_latency_twenty_five():
     rows = good_rows()
     for e in rows["extractions"]:
-        e.update(latency_ms=12_000, cost_usd=0.0083)  # +9 %
+        e.update(latency_ms=13_500, cost_usd=0.0083)  # latency +23 %, cost +9 %
     for r in rows["recommendations"]:
-        r.update(latency_ms=3290, cost_usd=0.00218)
+        r.update(latency_ms=3700, cost_usd=0.00218)
     assert run(rows)[1] == []
     for e in rows["extractions"]:
-        e.update(latency_ms=12_200)  # +11 %
+        e.update(latency_ms=14_000, cost_usd=0.0084)  # latency +27 %, cost +11 %
     regressions = run(rows)[1]
-    assert regressions == ["reading.p50_latency_ms: 12200 vs baseline 11000, 10% allowed"]
+    assert regressions == ["reading.p50_latency_ms: 14000 vs baseline 11000, 25% allowed",
+                           "reading.mean_cost_usd: 0.0084 vs baseline 0.0076, 10% allowed",
+                           "cost_per_scan_usd: 0.0106 vs baseline 0.0096, 10% allowed"]
+
+
+def test_latency_pools_the_latest_three_runs_per_photo():
+    """One run's five samples swung 2.4 to 3.5 s on identical calls (2026-09-03); three runs pool fifteen."""
+    rows = good_rows()
+    e1 = rows["extractions"][0]["id"]
+    slow = [rec(e1, ms=9000), rec(e1, ms=9000)]  # two earlier slow runs on photo 1 (older ids come first)
+    rows["recommendations"] = slow + rows["recommendations"]
+    m = measure(rows, CFG, "core", PICKS)
+    # 7 fast runs at 3000 and 2 slow at 9000 pooled: the median is still 3000; one run per photo would too,
+    # but a single slow run at the latest position would not.
+    assert m["choosing"]["p50_latency_ms"] == 3000
+    rows["recommendations"].append(rec(e1, ms=9000))  # the latest run on photo 1 is slow
+    m = measure(rows, CFG, "core", PICKS)
+    assert m["choosing"]["p50_latency_ms"] == 3000  # 4 fast + 3 slow of photo 1's window... still the pooled median
 
 
 def test_cost_per_scan_is_compared_too():

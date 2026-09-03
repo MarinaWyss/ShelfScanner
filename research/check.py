@@ -27,13 +27,18 @@ from shelfscanner.settings import DATA_DIR
 
 BASELINE_PATH = Path(__file__).with_name("baseline.json")
 PICKS_PATH = DATA_DIR / "prefs" / "marina_picks.json"
-TOLERANCE = 0.10  # on latency and cost only
+TOLERANCE = 0.10  # on cost
+# Latency is the provider's day as much as the code: four identical runs on 2026-09-03 had p50s from
+# 2.4 to 3.5 s. It is scored over the latest three runs per photo (LATENCY_RUNS) and allowed 25 %,
+# enough to ignore a slow afternoon and still catch a config change that doubles it.
+LATENCY_TOLERANCE = 0.25
+LATENCY_RUNS = 3
+TOLERANCES = {"p50_latency_ms": LATENCY_TOLERANCE, "mean_cost_usd": TOLERANCE, "cost_per_scan_usd": TOLERANCE}
 
 # Compared metrics per stage, with which way is better. Latency and cost get the tolerance.
 READING_METRICS = {"median_recall": "higher", "mean_invented": "lower", "p50_latency_ms": "lower", "mean_cost_usd": "lower"}
 CHOOSING_METRICS = {"share_valid_vs_extraction": "higher", "median_overlap": "higher",
                     "p50_latency_ms": "lower", "mean_cost_usd": "lower"}
-TOLERATED = {"p50_latency_ms", "mean_cost_usd", "cost_per_scan_usd"}
 # Overlap is a small-sample number from a non-deterministic model: five shelves, five picks each, and a
 # rerun moves one pick on one shelf. It is scored over the latest OVERLAP_RUNS runs per photo of the
 # default prompt (mean per photo, then the median across photos) and allowed to sit this far under the
@@ -87,9 +92,13 @@ def measure(rows: dict[str, list[dict]], cfg: Config, set_name: str, picks: dict
     photos = photos_in_set(rows["photos"], set_name)
 
     ex = [r for r in rows["extractions"] if r["photo_id"] in photos]
-    ex_stats = extraction_stats([r for r in ex if r["model"] == reading_model and r["image_long_edge"] == edge])
+    ex_model = [r for r in ex if r["model"] == reading_model and r["image_long_edge"] == edge]
+    ex_stats = extraction_stats(ex_model)
     reading = asdict(pick_adapter(ex_stats, reading_cfg.adapter)) if ex_stats else {
         "model": reading_model, "long_edge": edge, "photos": 0, "errors": 0}
+    if ex_stats:
+        same_adapter = [r for r in ex_model if (r.get("adapter") or "openrouter") == reading["adapter"]]
+        reading["p50_latency_ms"] = p50_over_runs(same_adapter, LATENCY_RUNS, prompt=None) or reading["p50_latency_ms"]
 
     # A recommendation belongs to the photo of its extraction, whichever model made that extraction;
     # the latest run per photo counts, as the latest extraction per photo does above.
@@ -103,6 +112,9 @@ def measure(rows: dict[str, list[dict]], cfg: Config, set_name: str, picks: dict
     overlaps = photo_overlaps(rec, picks, cfg.match_threshold)
     choosing["median_overlap"] = median(overlaps.values()) if overlaps else None
     choosing["overlap_runs"] = len(overlaps)
+    if rec_stats:
+        same_adapter = [r for r in rec if (r.get("adapter") or "openrouter") == choosing["adapter"]]
+        choosing["p50_latency_ms"] = p50_over_runs(same_adapter, LATENCY_RUNS) or choosing["p50_latency_ms"]
 
     costs = [reading.get("mean_cost_usd"), choosing.get("mean_cost_usd")]
     return {
@@ -114,15 +126,17 @@ def measure(rows: dict[str, list[dict]], cfg: Config, set_name: str, picks: dict
     }
 
 
-def latest_runs_per_photo(rows: list[dict], n: int) -> dict[int, list[dict]]:
-    """The last `n` rows without error per photo, newest first, for the default prompt when the rows say
-    which prompt they used (rows without the column count)."""
-    from shelfscanner.recommend import DEFAULT_PROMPT
+def latest_runs_per_photo(rows: list[dict], n: int, prompt: str | None = "default") -> dict[int, list[dict]]:
+    """The last `n` rows without error per photo, newest first. `prompt` restricts to rows of that
+    prompt ("default" means the default recommendation prompt; None means any); rows without the
+    column count."""
+    if prompt == "default":
+        from shelfscanner.recommend import DEFAULT_PROMPT
 
-    wanted = f"{DEFAULT_PROMPT}.md"
+        prompt = f"{DEFAULT_PROMPT}.md"
     out: dict[int, list[dict]] = {}
     for r in sorted(rows, key=lambda r: r.get("id", 0), reverse=True):
-        if r.get("error") or r.get("prompt_version", wanted) != wanted:
+        if r.get("error") or (prompt is not None and r.get("prompt_version", prompt) != prompt):
             continue
         out.setdefault(r["photo_id"], [])
         if len(out[r["photo_id"]]) < n:
@@ -141,6 +155,14 @@ def photo_overlaps(rec: list[dict], picks: dict[int, list], threshold: float, n:
     return out
 
 
+def p50_over_runs(rows: list[dict], n: int, prompt: str | None = "default") -> float | None:
+    """Median latency over the latest `n` runs per photo, pooled: more samples than one run's five."""
+    from shelfscanner.web.metrics import percentile
+
+    runs = latest_runs_per_photo(rows, n, prompt)
+    return percentile((r.get("latency_ms") for rs in runs.values() for r in rs), 50)
+
+
 def _regressed(got: float, want: float, better: str, tolerance: float, absolute: float = 0.0) -> bool:
     if absolute:
         return got < want - absolute - _EPS if better == "higher" else got > want + absolute + _EPS
@@ -157,7 +179,7 @@ def _fmt(v: float | None) -> str:
     return f"{v:g}"
 
 
-def compare(measured: dict, baseline: dict, tolerance: float = TOLERANCE) -> list[str]:
+def compare(measured: dict, baseline: dict, tolerances: dict[str, float] = TOLERANCES) -> list[str]:
     """Every regression of `measured` against one set's baseline, one line each. Empty means pass."""
     out: list[str] = []
     n = measured["photos"]
@@ -176,7 +198,7 @@ def compare(measured: dict, baseline: dict, tolerance: float = TOLERANCE) -> lis
         if got is None:
             out.append(f"{name}: no value (baseline {_fmt(want)})")
             continue
-        tol = tolerance if metric in TOLERATED else 0.0
+        tol = tolerances.get(metric, 0.0)
         absolute = ABSOLUTE_TOLERANCE.get(metric, 0.0)
         if _regressed(got, want, better, tol, absolute):
             allowed = f", {tol:.0%} allowed" if tol else (f", {absolute:g} under allowed" if absolute else "")

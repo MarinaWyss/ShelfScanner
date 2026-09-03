@@ -237,7 +237,8 @@ Gates, all automated, all must pass before a task is done:
   `research/baseline.json` (change 001's numbers). Any regression in
   recall, invented, overlap, p50 latency or cost per scan fails (overlap is
   averaged over the latest three runs per photo and gets half a point of
-  room; latency and cost ten percent; recall and invented none).
+  room; latency is pooled over the same three runs and gets twenty-five
+  percent; cost ten percent; recall and invented none).
 - For app phases: the Playwright suite passes against a local server.
 - `docs/specs/` changed in the same branch as `src/`, or the commit says
   `no-spec` and why.
