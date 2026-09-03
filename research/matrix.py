@@ -82,9 +82,9 @@ def main() -> None:
     v = sub.add_parser("vision", help="every named model over every photo")
     v.add_argument("models", help="comma-separated aliases from config/models.toml")
     v.add_argument("--max-dim", type=int, default=None)
-    l = sub.add_parser("llm", help="every named model over the best extraction of each photo")
-    l.add_argument("models")
-    l.add_argument("--prefs", type=Path, default=DATA_DIR / "prefs" / "marina.json")
+    t = sub.add_parser("llm", help="every named model over the best extraction of each photo")
+    t.add_argument("models")
+    t.add_argument("--prefs", type=Path, default=DATA_DIR / "prefs" / "marina.json")
     args = ap.parse_args()
     aliases = args.models.split(",")
     if args.stage == "vision":

@@ -6,9 +6,9 @@ import json
 import pytest
 from PIL import Image
 
+from shelfscanner.adapters.base import parse_json
 from shelfscanner.config import load_config
 from shelfscanner.images import resize
-from shelfscanner.adapters.base import parse_json
 
 
 def test_config_has_four_candidates_with_slugs_and_settings():

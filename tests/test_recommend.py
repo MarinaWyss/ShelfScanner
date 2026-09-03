@@ -1,6 +1,7 @@
 """D5 validity checks are pure and decide the pass/fail, so they are tested."""
 
-from shelfscanner.recommend import Recommendation as R, check, recs_from, shelf_text
+from shelfscanner.recommend import Recommendation as R
+from shelfscanner.recommend import check, recs_from, shelf_text
 
 T = 0.85
 EXTRACTED = ["American Gods", "The Alchemist", "Stumbling on Happiness", "Economics for Everyone"]

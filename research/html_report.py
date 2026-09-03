@@ -13,12 +13,12 @@ from datetime import date
 from pathlib import Path
 from statistics import mean, median
 
+from research.report import latest_per_key
 from shelfscanner.config import load_config
 from shelfscanner.db import get_client
 from shelfscanner.extract import titles_from
-from shelfscanner.recommend import recs_from
 from shelfscanner.matching import similarity
-from research.report import latest_per_key
+from shelfscanner.recommend import recs_from
 from shelfscanner.settings import DATA_DIR
 
 PICKS_PATH = DATA_DIR / "prefs" / "marina_picks.json"
@@ -96,7 +96,6 @@ def collect() -> dict:
         key = (-(_recall(r) or 0), r["invented_count"], r["id"])
         if r["photo_id"] not in best or key < best[r["photo_id"]][0]:
             best[r["photo_id"]] = (key, r)
-    best_ids = {pid: v[1]["id"] for pid, v in best.items()}
     best_meta = {v[1]["id"]: {"photo_id": pid, "model": v[1]["model"], "edge": v[1]["image_long_edge"],
                               "found": v[1]["found_count"], "invented": v[1]["invented_count"]} for pid, v in best.items()}
 
