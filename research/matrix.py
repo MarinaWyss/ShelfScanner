@@ -53,7 +53,7 @@ def run_vision(aliases: list[str], max_dim: int | None) -> None:
     print(f"\n{len(ok)}/{len(results)} ok, total cost ${sum(r.cost_usd or 0 for r in ok):.4f}")
 
 
-def run_llm(aliases: list[str], prefs_path: Path) -> None:
+def run_llm(aliases: list[str], prefs_path: Path, prompt_name: str = recommend.DEFAULT_PROMPT) -> None:
     cfg = load_config()
     prefs = recommend.load_prefs(prefs_path)
     inputs = best_extractions()
@@ -65,7 +65,7 @@ def run_llm(aliases: list[str], prefs_path: Path) -> None:
         m = cfg.model(alias)
         out = []
         for ex in inputs:
-            row = recommend.recommend_from_extraction(ex, m, prefs, recommend.DEFAULT_PROMPT)
+            row = recommend.recommend_from_extraction(ex, m, prefs, prompt_name)
             print(row.lines()[0], flush=True)
             out.append(row)
         return out
@@ -85,12 +85,13 @@ def main() -> None:
     l = sub.add_parser("llm", help="every named model over the best extraction of each photo")
     l.add_argument("models")
     l.add_argument("--prefs", type=Path, default=DATA_DIR / "prefs" / "marina.json")
+    l.add_argument("--prompt", default=recommend.DEFAULT_PROMPT, help="prompt name under prompts/ (004)")
     args = ap.parse_args()
     aliases = args.models.split(",")
     if args.stage == "vision":
         run_vision(aliases, args.max_dim)
     else:
-        run_llm(aliases, args.prefs)
+        run_llm(aliases, args.prefs, args.prompt)
 
 
 if __name__ == "__main__":
