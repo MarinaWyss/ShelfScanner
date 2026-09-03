@@ -1,0 +1,32 @@
+{
+  "titles": [
+    "Creativity, Inc.",
+    "How to Day Trade for a Living",
+    "The Rise and Fall of Communism",
+    "The Night Circus",
+    "A People's History of the United States",
+    "How to Survive History",
+    "Meditations",
+    "The New Middle East",
+    "Im Westen nichts Neues",
+    "An Irish Dream",
+    "Götter und Heldensagen",
+    "Die schönsten Götter-, Helden- und Rittersagen des Mittelalters"
+  ],
+  "partial": [
+    "In My Time of Dying",
+    "Stumbling on Happiness",
+    "The Search",
+    "The Incal"
+  ],
+  "notes": "Derived from PXL_20250519_214504550: Downscaled to 1024 px on the long edge: a low-resolution upload. Original notes: Landscape, straight-on, same shelf as ...502479 shifted left. Left half is a run of red spines with varied typography; Meditations has a very thin spine with small text. Same German stack as the other photo. Unreadable: a dark spine behind The Night Circus and something between How to Survive History and Meditations. Partial: In My Time of Dying and Stumbling on Happiness are cut at the right edge (author names readable, titles mostly not); The Search and The Incal (upside down) are on the shelf above, only their bottom edges show.",
+  "set": "derived",
+  "provisional": false,
+  "derived_from": "PXL_20250519_214504550",
+  "degradation": {
+    "kind": "small",
+    "params": {
+      "max_edge": 1024
+    }
+  }
+}

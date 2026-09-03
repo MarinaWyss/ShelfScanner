@@ -1,0 +1,33 @@
+{
+  "titles": [
+    "The New Middle East",
+    "Im Westen nichts Neues",
+    "An Irish Dream",
+    "Götter und Heldensagen",
+    "Die schönsten Götter-, Helden- und Rittersagen des Mittelalters",
+    "In My Time of Dying",
+    "Stumbling on Happiness",
+    "American Gods",
+    "The Book of Five Rings",
+    "This Is How You Lose the Time War",
+    "Economics for Everyone: A Short Guide to the Economics of Capitalism",
+    "The Creative Act",
+    "The Psychology of Money",
+    "Apocalypse Never: Why Environmental Alarmism Hurts Us All",
+    "Economic Facts and Fallacies"
+  ],
+  "partial": [
+    "The Search"
+  ],
+  "notes": "Derived from PXL_20250519_214502479: Soft white radial glare from the top-right corner, alpha 0.85: a window reflection on the spines there. Original notes: Landscape, straight-on, indoor daylight. Right half is upright spines, one leaning. Left half is a stack of four old German/Irish hardcovers read horizontally, including one in Fraktur (Schalk, Götter und Heldensagen) and one with faded cloth spine (Remarque). The New Middle East is cut off at the left edge but the title is fully readable. Partial: Avatar: The Last Airbender volume 'The Search' shows only along the top edge from the shelf above.",
+  "set": "derived",
+  "provisional": false,
+  "derived_from": "PXL_20250519_214502479",
+  "degradation": {
+    "kind": "glare",
+    "params": {
+      "alpha": 0.85,
+      "corner": "tr"
+    }
+  }
+}

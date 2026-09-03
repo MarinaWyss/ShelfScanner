@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import argparse
 
-from shelfscanner import extract, preferences, recommend, retention, storage
+from shelfscanner import extract, photos_fetch, preferences, recommend, retention, storage
 from shelfscanner.config import load_config
 
 
@@ -32,6 +32,7 @@ def build_parser() -> argparse.ArgumentParser:
     photos_sub.add_parser("sync", help="strip EXIF, upload photos, upsert label rows").set_defaults(func=_photos_sync)
     photos_sub.add_parser("list", help="list photo rows").set_defaults(func=_photos_list)
     retention.add_parser(photos_sub)
+    photos_fetch.add_parser(photos_sub)
 
     ex = sub.add_parser("extract", help="run a vision model over a photo and log the scored extraction")
     ex.add_argument("--photo", required=True, help="photo id, or 'all'")

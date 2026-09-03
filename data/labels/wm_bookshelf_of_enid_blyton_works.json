@@ -1,0 +1,14 @@
+{
+  "titles": [],
+  "partial": [],
+  "notes": "",
+  "set": "sourced",
+  "provisional": true,
+  "source": {
+    "url": "https://upload.wikimedia.org/wikipedia/commons/a/ac/Bookshelf_of_Enid_Blyton_works.jpg",
+    "author": "Blytonite at English Wikipedia",
+    "license": "CC BY 3.0",
+    "license_url": "https://creativecommons.org/licenses/by/3.0",
+    "query": "category:Book spines"
+  }
+}
