@@ -101,6 +101,11 @@ to Vercel cron.
   `partial_titles` (text arrays), `notes`, `set` (text, default `core`,
   checked against `core`/`sourced`/`derived`), `provisional` (boolean,
   default false), `source` (jsonb, null unless sourced), `created_at`,
-  `photo_deleted_at` (when retention removed the object). A row has a
-  `storage_path` or a `photo_deleted_at`, enforced by a check constraint.
+  `photo_deleted_at` (when retention removed the object), `status` (text,
+  default `pending`, checked against `pending`/`reading`/`choosing`/`done`/
+  `failed`: the web scan's state and stage lock, see `web.md`; test-set
+  rows keep the default), `status_at` (when `status` was set),
+  `resized_by_client` (boolean; whether the browser shrank an upload, null
+  outside the web form). A row has a `storage_path` or a
+  `photo_deleted_at`, enforced by a check constraint.
   RLS enabled, no policies; only `service_role` has data privileges.
