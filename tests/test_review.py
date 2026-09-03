@@ -101,3 +101,11 @@ def test_last_review_date_reads_the_newest_dated_file(tmp_path):
     (tmp_path / "2026-09-01.md").write_text("x")
     (tmp_path / "2026-09-08.md").write_text("x")
     assert review.last_review_date(tmp_path) == datetime(2026, 9, 8, tzinfo=UTC)
+
+
+def test_the_next_window_starts_when_the_last_review_was_drafted(tmp_path):
+    """Starting at the file's date counted that day's rows twice; the drafted-at line is the cutoff."""
+    text = review.draft(SINCE, datetime(2026, 9, 8, 6, 17, 3, tzinfo=UTC), rows=seeded(), failover_errors=FAILOVER_ERRORS)
+    assert "drafted by `research.review` at 2026-09-08T06:17:03+00:00" in text
+    (tmp_path / "2026-09-08.md").write_text(text)
+    assert review.last_review_date(tmp_path) == datetime(2026, 9, 8, 6, 17, 3, tzinfo=UTC)

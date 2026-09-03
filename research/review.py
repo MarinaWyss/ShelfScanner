@@ -28,6 +28,7 @@ from shelfscanner.web import metrics
 
 REVIEWS_DIR = REPO_ROOT / "docs" / "reviews"
 DATE_FILE = re.compile(r"^(\d{4}-\d{2}-\d{2})\.md$")
+DRAFTED_AT = re.compile(r"drafted by `research\.review` at (\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:\+00:00|Z))")
 DEFAULT_LOOKBACK_DAYS = 7
 EXAMPLES = 3  # error texts shown per group
 REPEAT = 3  # a group this size or larger is called out as a pattern
@@ -207,8 +208,9 @@ def render_population(review: Review) -> list[str]:
 def render(app: Review, test_set: Review, today: datetime) -> str:
     since, until = app.since, app.until
     lines = [f"# Weekly review, {today.strftime('%Y-%m-%d')}", "",
-             f"Rows written from {since.strftime('%Y-%m-%d')} to {until.strftime('%Y-%m-%d')} (UTC), "
-             f"drafted by `research.review`. App scans are what people did; the test set is what the "
+             f"Rows written from {since.strftime('%Y-%m-%d %H:%M')} to {until.strftime('%Y-%m-%d %H:%M')} (UTC), "
+             f"drafted by `research.review` at {until.strftime('%Y-%m-%dT%H:%M:%S')}+00:00. The next review "
+             f"starts where this one stops. App scans are what people did; the test set is what the "
              f"nightly and matrix runs did. The two headings at the end are the reviewer's.", ""]
     patterns = [f"App: {p}" for p in app.patterns()] + [f"Test set: {p}" for p in test_set.patterns()]
     lines += ["## Patterns", ""]
@@ -228,8 +230,17 @@ def render(app: Review, test_set: Review, today: datetime) -> str:
 
 
 def last_review_date(reviews_dir: Path = REVIEWS_DIR) -> datetime | None:
-    dates = sorted(m.group(1) for p in reviews_dir.glob("*.md") if (m := DATE_FILE.match(p.name)))
-    return datetime.fromisoformat(dates[-1]).replace(tzinfo=UTC) if dates else None
+    """Where the next window starts: the moment the newest review was drafted (its "drafted at" line),
+    or midnight of its file date for a file without one. Starting at the file's date would count that
+    day's rows in two consecutive reviews, which the first scheduled review noticed."""
+    files = sorted((m.group(1), p) for p in reviews_dir.glob("*.md") if (m := DATE_FILE.match(p.name)))
+    if not files:
+        return None
+    date, path = files[-1]
+    m = DRAFTED_AT.search(path.read_text())
+    if m:
+        return datetime.fromisoformat(m.group(1).replace("Z", "+00:00"))
+    return datetime.fromisoformat(date).replace(tzinfo=UTC)
 
 
 def fetch_failover_errors(rows: metrics.Rows) -> dict[tuple[str, int], str]:
@@ -269,9 +280,10 @@ def main() -> None:
     ap.add_argument("--out", type=Path, default=None, help="default docs/reviews/<today>.md")
     ap.add_argument("--stdout", action="store_true", help="print instead of writing")
     args = ap.parse_args()
-    today = datetime.now(UTC).replace(hour=0, minute=0, second=0, microsecond=0)
+    now = datetime.now(UTC).replace(microsecond=0)
+    today = now.replace(hour=0, minute=0, second=0)
     since = args.since or last_review_date() or today - timedelta(days=DEFAULT_LOOKBACK_DAYS)
-    text = draft(since, today)
+    text = draft(since, now)
     if args.stdout:
         sys.stdout.write(text)
         return
