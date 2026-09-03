@@ -109,7 +109,7 @@ def recommend_from_extraction(extraction: dict, model: Model, prefs: dict, promp
         raise SystemExit(f"Extraction {extraction['id']} has no parsed titles (error: {extraction.get('error')})")
     labels = get_photo(extraction["photo_id"])["titles"]
 
-    text = f"Books on the shelf:\n{shelf_text(extraction['parsed_titles'])}\n\nReading preferences:\n{json.dumps(prefs, indent=2, ensure_ascii=False)}"
+    text = f"Books on the shelf:\n{shelf_text(extraction['parsed_titles'])}\n\nReading preferences:\n{prefs_text(prefs, prompt_name)}"
     res = router.text(model, prompt, text, client=client, on_progress=on_progress)
 
     recs = recs_from(res.parsed) if res.ok else []
@@ -163,3 +163,17 @@ def set_specificity(recommendation_id: int, scores: list[int]) -> dict:
 def run_recommend(extraction_id: int, model_name: str, prefs_path: Path, prompt_name: str) -> RecommendationRow:
     model = load_config().model(model_name)
     return recommend_from_extraction(get_extraction(extraction_id), model, load_prefs(prefs_path), prompt_name)
+
+
+# --- change 004 ---
+def prefs_text(prefs: dict, prompt_name: str) -> str:
+    """The "Reading preferences" section (docs/specs/preferences.md).
+
+    The flat shape with `recommend_v1` is sent as JSON, exactly as change 001 did. A structured object
+    is laid out as labelled lists whatever the prompt; the flat shape is upgraded first for any other prompt.
+    """
+    from shelfscanner import preferences
+
+    if prompt_name == DEFAULT_PROMPT and not preferences.is_v2(prefs):
+        return json.dumps(prefs, indent=2, ensure_ascii=False)
+    return preferences.as_text(preferences.upgrade(prefs))

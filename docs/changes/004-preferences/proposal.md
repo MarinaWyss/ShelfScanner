@@ -64,3 +64,41 @@ decides the default in config.
   the set. A gain here is "keep going", not "proven".
 - **A long history bloats the prompt.** D2's cap, with tokens logged so
   the cost of raising it is visible.
+
+## Decided during the work
+
+Taken by the worker on tasks 1 to 3 (2026-09-03) where the proposal was
+silent. Each is behaviour in `docs/specs/preferences.md`; this records why.
+
+- **Low ratings stay in `rated_books`.** The contract gives `rated_books`
+  a 1 to 5 range and `avoid` free text, so 1s and 2s are not moved to
+  `avoid`; the prompt explains what a low rating means. `avoid` holds what
+  the reader wrote plus did-not-finish books.
+- **`did-not-finish` is an avoid entry.** The export has this exclusive
+  shelf; D1 does not mention it. Not finishing is a clearer signal than a
+  rating, so the book goes to `avoid` as "Title — Author (did not finish)"
+  whether or not it was also rated.
+- **`currently-reading` is dropped.** Recommending a book the reader is
+  holding is useless; putting it in `to_read` would do that.
+- **Unrated `read` books are dropped.** No signal about taste, and they
+  would eat the cap.
+- **The cap's priority order.** D2 says "by recency and rating" without an
+  order. Sorting purely by rating then recency would fill 60 slots with
+  5-star books and discard every 1 and 2, losing the avoid signal; sorting
+  purely by recency would discard older 5s. Chosen: dislikes (1, 2) always
+  survive, then 5s, then 4s, then 3s, most recent first within a rating.
+  On the real export this keeps all 8 dislikes and the 52 most recent 5s.
+  Task 4 may move it; the caps are flags on the command.
+- **Titles verbatim, series suffix kept.** "Reign & Ruin (Mages of the
+  Wheel, #1)" stays as Goodreads wrote it: the series tells the model that
+  book 2 on a shelf is a strong pick. Only whitespace runs are collapsed.
+- **Flat shape with prompt v2 is upgraded; a structured object is laid out
+  whatever the prompt.** The flat shape with `recommend_v1` is still sent as
+  JSON, so change 001's rows stay comparable. The `preferences` column logs
+  the object as given, not the upgraded or laid-out form.
+- **`--base` on import.** The export has no genres or free text; the
+  command takes an existing preferences file for those so the eval can run
+  "the export plus Marina's genres" without a hand-merged file.
+- **Migration timestamp `20260903120000`.** The `sessions` migration is
+  another worker's and was not visible at the time; the lead checks it
+  sorts earlier before `db push`.
