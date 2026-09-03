@@ -48,6 +48,34 @@ accumulate. A config value.
 **D3. Caching is decided by the runs table, not by taste.** The line is in
 the scoping doc; this change reads the number and acts on it either way.
 
+## Decided during the work
+
+Task 3, retention (2026-09-03):
+
+- **Exemption is by label, not by session.** A row is exempt when `titles`
+  is non-empty or `set` is anything but the default `core` (the column may
+  not exist yet; a failed `select` of it means it is absent). `session_id`
+  is not used: a test-set photo is identified by its label, and an
+  unlabelled row with a null session is still someone's room. The rule is
+  sent to the server as a filter and re-applied client-side to every
+  returned row, so a mistake in either alone cannot delete the test set.
+- **Rows keep their history.** `storage_path` becomes nullable and
+  `photo_deleted_at timestamptz` records the deletion; a check constraint
+  requires one or the other. The unique constraint stays, so `photos sync`
+  still upserts on `storage_path`.
+- **Object first, then the row.** A failure between the two leaves a row
+  pointing at a missing object, which the next run repairs; the reverse
+  would leave an orphaned object. Removing a missing key is not an error.
+  One failed deletion does not stop the rest; the command exits non-zero
+  if any failed, so the workflow run goes red.
+- **The window is `SHELFSCANNER_RETENTION_DAYS`** (default 30), read from
+  the environment or `.env` at run time, with `--days` as an override.
+  Age is `created_at`, strictly older than `now - window`.
+- **Schedule.** GitHub Actions daily at 04:17 UTC plus manual dispatch
+  with a `dry_run` input, until 010 moves it to Vercel cron. The
+  workflow needs the `SUPABASE_URL` and `SUPABASE_SECRET_KEY` repository
+  secrets and reads an optional `SHELFSCANNER_RETENTION_DAYS` variable.
+
 ## How we know it worked
 
 | Question | Pass |
