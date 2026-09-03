@@ -1,0 +1,38 @@
+# Change 006, task 3: the primaries over every labelled photo, nightly, then the regression
+# check against research/baseline.json. Needs the Supabase secrets, the provider keys the
+# primaries use, and a spend cap. Skipped silently until the secrets exist.
+name: Nightly eval
+
+on:
+  schedule:
+    - cron: "17 3 * * *"
+  workflow_dispatch:
+    inputs:
+      set:
+        description: "photo set for the check: core, sourced, derived"
+        default: "core"
+
+jobs:
+  eval:
+    runs-on: ubuntu-latest
+    if: ${{ vars.NIGHTLY_EVAL == '1' }}
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      SHELFSCANNER_SPEND_CAP_USD: ${{ vars.SHELFSCANNER_SPEND_CAP_USD || '15' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - run: uv sync --frozen --no-dev
+      - name: Reading primary over every labelled photo
+        run: uv run python -m research.matrix vision $(uv run python -c "from shelfscanner.config import load_config as l; print(l().stage('reading').primary)") --set all
+      - name: Choosing primary over the best extraction per photo
+        run: uv run python -m research.matrix llm $(uv run python -c "from shelfscanner.config import load_config as l; print(l().stage('choosing').primary)")
+      - name: Regression check
+        run: uv run python -m research.check --set ${{ github.event.inputs.set || 'core' }} | tee -a "$GITHUB_STEP_SUMMARY"

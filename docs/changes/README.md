@@ -164,10 +164,15 @@ Everything else runs unattended.
 1. **Batch approval** of proposals 002 to 010. Given 2026-09-02.
 2. **Goodreads export**: `data/prefs/goodreads_library_export.csv`, already
    there and gitignored.
-3. **Connect the repo to Vercel** at 010, and only then. The app is laid
+3. **GitHub repository secrets and one variable**, for the retention job
+   (008) and the nightly eval (006): secrets `SUPABASE_URL`,
+   `SUPABASE_SECRET_KEY`, `OPENROUTER_API_KEY`, `GEMINI_API_KEY`,
+   `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`; variable `NIGHTLY_EVAL=1` to
+   switch the nightly job on (it stays off until then).
+4. **Connect the repo to Vercel** at 010, and only then. The app is laid
    out for Vercel's Python runtime from 003, so this is a click and a
    set of environment variables.
-4. **One look per phase** at `results.md` and the linked page.
+5. **One look per phase** at `results.md` and the linked page.
 
 Shelf photos for 006 are sourced by an agent from openly licensed images
 (details in 006). Nothing is needed from Marina for that.
