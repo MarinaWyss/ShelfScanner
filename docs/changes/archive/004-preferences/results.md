@@ -84,8 +84,11 @@ Valid picks were always on the shelf.
 the web scan. The pass line (median 4 on photos 1 to 4 with the export)
 is not met: 3.5. It is recorded as not met and kept as the target; the
 alternative, staying on v1 at 2.5, is worse on every cell. The baseline
-is unchanged: `research.check` on the core set passes with the v3 flat
-rows (overlap 4, p50 2.4 s, $0.0021).
+was left at 4 on the day, then corrected: with three v3 runs per shelf on
+file, the measured median is 3.33 (per shelf 3.33, 2.67, 1.67, 4.33, 5.00),
+and change 001's 4 was one run of v1. `research/baseline.json` now says
+3.33 with the reason; `research.check` passes on it (p50 2.5 to 3.2 s,
+$0.0021).
 
 ## Gates
 
