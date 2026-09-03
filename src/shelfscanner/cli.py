@@ -35,22 +35,22 @@ def build_parser() -> argparse.ArgumentParser:
 
     ex = sub.add_parser("extract", help="run a vision model over a photo and log the scored extraction")
     ex.add_argument("--photo", required=True, help="photo id, or 'all'")
-    ex.add_argument("--model", required=True, help="model alias or OpenRouter slug from config/models.toml")
+    ex.add_argument("--model", default=None, help="model alias or slug (default: the reading stage's primary, with failover)")
     ex.add_argument("--max-dim", type=int, default=None, help="long edge in px (default from config)")
     ex.add_argument("--prompt", default=extract.DEFAULT_PROMPT, help="prompt name under prompts/ (default extract_v1)")
     ex.set_defaults(func=_extract)
 
     rec = sub.add_parser("recommend", help="run a language model over an extraction and log the checked recommendations")
     rec.add_argument("--extraction", required=True, type=int, help="extraction id")
-    rec.add_argument("--model", required=True, help="model alias or OpenRouter slug")
+    rec.add_argument("--model", default=None, help="model alias or slug (default: the choosing stage's primary, with failover)")
     rec.add_argument("--prefs", required=True, help="preferences JSON file, or a session id (change 004)")
     rec.add_argument("--prompt", default=recommend.DEFAULT_PROMPT, help="prompt name under prompts/ (default recommend_v1)")
     rec.set_defaults(func=_recommend)
 
     run = sub.add_parser("run", help="extract then recommend for a photo")
     run.add_argument("--photo", required=True, help="photo id, or 'all'")
-    run.add_argument("--vision-model", required=True, help="model for extraction")
-    run.add_argument("--llm-model", required=True, help="model for recommendation")
+    run.add_argument("--vision-model", default=None, help="model for extraction (default: reading primary)")
+    run.add_argument("--llm-model", default=None, help="model for recommendation (default: choosing primary)")
     run.add_argument("--prefs", required=True, help="preferences JSON file, or a session id")
     run.add_argument("--max-dim", type=int, default=None)
     run.add_argument("--extract-prompt", default=extract.DEFAULT_PROMPT)
@@ -77,7 +77,7 @@ def _recommend(args: argparse.Namespace) -> None:
 
 def _run(args: argparse.Namespace) -> None:
     prefs = preferences.load(args.prefs)
-    llm = load_config().model(args.llm_model)
+    llm = load_config().model(args.llm_model) if args.llm_model else None
     for ex_row in extract.run_extract(args.photo, args.vision_model, args.max_dim, args.extract_prompt):
         print(ex_row.line())
         if ex_row.error:

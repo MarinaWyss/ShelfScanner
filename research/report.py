@@ -24,6 +24,7 @@ class ExtractionStats:
     mean_invented: float | None
     p50_latency_ms: float | None
     mean_cost_usd: float | None
+    failovers: int = 0  # rows answered by this model after the stage's primary failed (002 D8)
 
 
 @dataclass(frozen=True)
@@ -37,6 +38,7 @@ class RecommendationStats:
     scored_runs: int
     p50_latency_ms: float | None
     mean_cost_usd: float | None
+    failovers: int = 0
 
 
 def _opt(fn, values):
@@ -60,6 +62,7 @@ def extraction_stats(rows: list[dict]) -> list[ExtractionStats]:
             mean_invented=_opt(mean, [r["invented_count"] for r in ok]),
             p50_latency_ms=_opt(median, [r["latency_ms"] for r in ok]),
             mean_cost_usd=_opt(mean, [r["cost_usd"] for r in ok]),
+            failovers=sum(1 for r in rs if r.get("failover_from")),
         ))
     return out
 
@@ -84,6 +87,7 @@ def recommendation_stats(rows: list[dict]) -> list[RecommendationStats]:
             scored_runs=len(scored),
             p50_latency_ms=_opt(median, [r["latency_ms"] for r in ok]),
             mean_cost_usd=_opt(mean, [r["cost_usd"] for r in ok]),
+            failovers=sum(1 for r in rs if r.get("failover_from")),
         ))
     return out
 
@@ -111,18 +115,18 @@ def _f(v, fmt):
 
 def render(ex: list[ExtractionStats], rec: list[RecommendationStats]) -> str:
     lines = ["EXTRACTION  (per model and image long edge; metrics over rows without error)",
-             f"{'model':<30}{'edge':>6}{'photos':>8}{'errors':>8}{'recall':>8}{'invented':>10}{'p50 ms':>9}{'cost':>10}"]
+             f"{'model':<30}{'edge':>6}{'photos':>8}{'errors':>8}{'recall':>8}{'invented':>10}{'p50 ms':>9}{'cost':>10}{'failover':>10}"]
     for s in ex:
         lines.append(f"{s.model:<30}{s.long_edge:>6}{s.photos:>8}{s.errors:>8}{_f(s.median_recall, '.2f'):>8}"
-                     f"{_f(s.mean_invented, '.1f'):>10}{_f(s.p50_latency_ms, '.0f'):>9}{_f(s.mean_cost_usd, '.4f'):>10}")
+                     f"{_f(s.mean_invented, '.1f'):>10}{_f(s.p50_latency_ms, '.0f'):>9}{_f(s.mean_cost_usd, '.4f'):>10}{s.failovers:>10}")
     if not ex:
         lines.append("  (no rows)")
     lines += ["", "RECOMMENDATION  (per model; validity shares are over all recommended titles; specificity over scored rows)",
-              f"{'model':<30}{'runs':>6}{'errors':>8}{'vs extr':>9}{'vs truth':>10}{'specif':>8}{'scored':>8}{'p50 ms':>9}{'cost':>10}"]
+              f"{'model':<30}{'runs':>6}{'errors':>8}{'vs extr':>9}{'vs truth':>10}{'specif':>8}{'scored':>8}{'p50 ms':>9}{'cost':>10}{'failover':>10}"]
     for s in rec:
         lines.append(f"{s.model:<30}{s.runs:>6}{s.errors:>8}{_f(s.share_valid_vs_extraction, '.2f'):>9}"
                      f"{_f(s.share_valid_vs_ground_truth, '.2f'):>10}{_f(s.mean_specificity, '.2f'):>8}{s.scored_runs:>8}"
-                     f"{_f(s.p50_latency_ms, '.0f'):>9}{_f(s.mean_cost_usd, '.4f'):>10}")
+                     f"{_f(s.p50_latency_ms, '.0f'):>9}{_f(s.mean_cost_usd, '.4f'):>10}{s.failovers:>10}")
     if not rec:
         lines.append("  (no rows)")
     return "\n".join(lines)
@@ -131,9 +135,9 @@ def render(ex: list[ExtractionStats], rec: list[RecommendationStats]) -> str:
 def fetch_and_render() -> str:
     c = get_client()
     ex = c.table("extractions").select(
-        "id, photo_id, model, image_long_edge, error, found_count, missed_count, invented_count, latency_ms, cost_usd").execute().data
+        "id, photo_id, model, image_long_edge, error, found_count, missed_count, invented_count, latency_ms, cost_usd, failover_from").execute().data
     rec = c.table("recommendations").select(
-        "id, extraction_id, model, error, parsed_recommendations, valid_vs_extraction, valid_vs_ground_truth, specificity_scores, latency_ms, cost_usd"
+        "id, extraction_id, model, error, parsed_recommendations, valid_vs_extraction, valid_vs_ground_truth, specificity_scores, latency_ms, cost_usd, failover_from"
     ).execute().data
     return render(extraction_stats(ex), recommendation_stats(rec))
 

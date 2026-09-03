@@ -101,7 +101,7 @@ def shelf_text(parsed_titles: object) -> str:
     return "\n".join(lines)
 
 
-def recommend_from_extraction(extraction: dict, model: Model, prefs: dict, prompt_name: str, *,
+def recommend_from_extraction(extraction: dict, model: Model | None, prefs: dict, prompt_name: str, *,
                               client: ModelClient | None = None, on_progress: Progress | None = None) -> RecommendationRow:
     cfg = load_config()
     prompt_version, prompt = router.load_prompt(prompt_name)
@@ -113,7 +113,12 @@ def recommend_from_extraction(extraction: dict, model: Model, prefs: dict, promp
     text = f"Books on the shelf:\n{shelf_text(extraction['parsed_titles'])}\n\nReading preferences:\n{prefs_text(prefs, prompt_name)}"
     if client is None:  # a fake client spends nothing
         spend.check_spend()
-    res = router.text(model, prompt, text, client=client, on_progress=on_progress, schema=RECOMMENDATIONS_SCHEMA)
+    sr = router.with_failover(
+        "choosing", model,
+        lambda m: router.text(m, prompt, text, client=client, on_progress=on_progress, schema=RECOMMENDATIONS_SCHEMA),
+        on_progress=on_progress,
+    )
+    res, model = sr.result, sr.model
 
     recs = recs_from(res.parsed) if res.ok else []
     validity = check(recs, extracted, labels, cfg.match_threshold) if res.ok else None
@@ -127,6 +132,8 @@ def recommend_from_extraction(extraction: dict, model: Model, prefs: dict, promp
         "adapter": res.adapter,
         "request_id": res.request_id,
         "model": model.slug,
+        "failover_from": sr.failover_from,
+        "failover_error": sr.failover_error,
         "prompt_version": prompt_version,
         "preferences": prefs,
         "raw_output": res.raw_text,
@@ -163,10 +170,10 @@ def set_specificity(recommendation_id: int, scores: list[int]) -> dict:
     return c.table("recommendations").update({"specificity_scores": scores}).eq("id", recommendation_id).execute().data[0]
 
 
-def run_recommend(extraction_id: int, model_name: str, prefs_ref: str | Path, prompt_name: str) -> RecommendationRow:
+def run_recommend(extraction_id: int, model_name: str | None, prefs_ref: str | Path, prompt_name: str) -> RecommendationRow:
     from shelfscanner import preferences  # local import: preferences imports this module's helpers
 
-    model = load_config().model(model_name)
+    model = load_config().model(model_name) if model_name else None  # None: the choosing stage's primary, with failover
     return recommend_from_extraction(get_extraction(extraction_id), model, preferences.load(prefs_ref), prompt_name)
 
 

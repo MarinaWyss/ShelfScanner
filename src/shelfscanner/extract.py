@@ -52,14 +52,19 @@ def titles_from(parsed: object) -> list[str]:
     return out
 
 
-def extract_photo(photo: dict, model: Model, max_edge: int, prompt_name: str, *,
+def extract_photo(photo: dict, model: Model | None, max_edge: int, prompt_name: str, *,
                   client: ModelClient | None = None, on_progress: Progress | None = None) -> ExtractionRow:
     cfg = load_config()
     prompt_version, prompt = router.load_prompt(prompt_name)
     img = resize(storage.download_photo(photo["storage_path"]), max_edge)
     if client is None:  # a fake client spends nothing
         spend.check_spend()
-    res = router.vision(model, prompt, img.jpeg, client=client, on_progress=on_progress, schema=BOOKS_SCHEMA)
+    sr = router.with_failover(
+        "reading", model,
+        lambda m: router.vision(m, prompt, img.jpeg, client=client, on_progress=on_progress, schema=BOOKS_SCHEMA),
+        on_progress=on_progress,
+    )
+    res, model = sr.result, sr.model
 
     extracted = titles_from(res.parsed) if res.ok else []
     s = score(extracted, photo["titles"], photo["partial_titles"], cfg.match_threshold)
@@ -70,6 +75,8 @@ def extract_photo(photo: dict, model: Model, max_edge: int, prompt_name: str, *,
         "adapter": res.adapter,
         "request_id": res.request_id,
         "model": model.slug,
+        "failover_from": sr.failover_from,
+        "failover_error": sr.failover_error,
         "prompt_version": prompt_version,
         "image_long_edge": max_edge,
         "image_width": img.width,
@@ -106,9 +113,9 @@ def resolve_photos(spec: str) -> list[dict]:
     return [storage.get_photo(int(spec))]
 
 
-def run_extract(photo_spec: str, model_name: str, max_edge: int | None, prompt_name: str) -> list[ExtractionRow]:
+def run_extract(photo_spec: str, model_name: str | None, max_edge: int | None, prompt_name: str) -> list[ExtractionRow]:
     cfg = load_config()
-    model = cfg.model(model_name)
+    model = cfg.model(model_name) if model_name else None  # None: the reading stage's primary, with failover
     edge = max_edge or cfg.default_max_edge
     return [extract_photo(p, model, edge, prompt_name) for p in resolve_photos(photo_spec)]
 

@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import importlib
 from collections.abc import Callable
+from dataclasses import dataclass
 from functools import cache
 from pathlib import Path
 from typing import Protocol
@@ -90,3 +91,47 @@ def primary(name: str) -> Model:
 
 def prompt_path(name: str) -> Path:
     return PROMPTS_DIR / f"{name}.md"
+
+
+# --- failover (002 D8) ---------------------------------------------------------------------
+
+# Errors that mean the provider, not the model's answer, failed. A parse failure or a wrong
+# count is a finding about the model and is not retried elsewhere.
+FAILOVER_ERROR_PREFIXES = ("http ", "transport", "sdk", "config", "no choices", "GEMINI_API_KEY", "OPENAI_API_KEY",
+                           "ANTHROPIC_API_KEY")
+
+
+def should_fail_over(res: CallResult) -> bool:
+    if res.ok:
+        return False
+    if res.truncated:
+        return True
+    return (res.error or "").startswith(FAILOVER_ERROR_PREFIXES)
+
+
+@dataclass(frozen=True)
+class StageResult:
+    """A stage's call, possibly after one failover. `model` is the model that produced `result`."""
+
+    result: CallResult
+    model: Model
+    failover_from: str | None = None  # slug of the primary that failed first
+    failover_error: str | None = None  # its error
+
+
+def with_failover(stage_name: str, model: Model | None, call: Callable[[Model], CallResult],
+                  on_progress: Progress | None = None) -> StageResult:
+    """Run `call` on `model` (default: the stage's primary). If that is the stage's primary and it
+    fails for a provider reason, run once more on the stage's fallback and record both. An
+    explicitly chosen non-primary model never fails over, so matrix rows stay per model."""
+    cfg = load_config()
+    st = cfg.stage(stage_name)
+    chosen = model or cfg.model(st.primary)
+    res = call(chosen)
+    if res.ok or st.fallback is None or chosen.alias != st.primary or not should_fail_over(res):
+        return StageResult(res, chosen)
+    fallback = cfg.model(st.fallback)
+    if on_progress:
+        on_progress(f"{stage_name}: {chosen.alias} failed ({(res.error or '')[:60]}), trying {fallback.alias}")
+    res2 = call(fallback)
+    return StageResult(res2, fallback, failover_from=chosen.slug, failover_error=res.error)
