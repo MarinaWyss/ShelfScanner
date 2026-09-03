@@ -10,9 +10,13 @@ enabled on all three with no policies; only `service_role` has data
 privileges, and the script uses the service key from `.env`.
 
 Every extraction and recommendation row records the model slug, the
-prompt filename, the upstream provider OpenRouter routed to, tokens,
-OpenRouter's reported cost, latency and any error. Rows are never deleted
-by the tooling; a rerun adds a row.
+adapter and provider that served it, the provider's request id, any
+failover, the prompt filename, tokens, cost (as reported by OpenRouter, or
+computed from tokens and config prices for direct adapters), latency and
+any error. Rows are never deleted by the tooling; a rerun adds a row.
+
+A spend guard and a regression check sit around the calls; both are
+described in `model-router.md`.
 
 Reporting is research tooling, not part of the pipeline; it lives in the
 top-level `research/` package and is run as a module from the repo root.
@@ -32,13 +36,15 @@ pipeline as usual.
 
 Two tables from whatever rows exist.
 
-- Extraction, per model and image long edge: distinct photos with a
-  successful row (the latest row per photo wins), error rows, median
-  recall, mean invented per photo, p50 latency, mean cost.
-- Recommendation, per model: distinct extractions with a successful row
-  (latest wins), error rows, share of picks valid against the extraction,
-  share valid against ground truth, mean specificity over scored rows and
-  how many rows are scored, p50 latency, mean cost.
+- Extraction, per model, adapter and image long edge: distinct photos
+  with a successful row (the latest row per photo wins), error rows,
+  median recall, mean invented per photo, p50 latency, mean cost, rows
+  answered after a failover.
+- Recommendation, per model and adapter: distinct extractions with a
+  successful row (latest wins), error rows, share of picks valid against
+  the extraction, share valid against ground truth, mean specificity over
+  scored rows and how many rows are scored, p50 latency, mean cost,
+  failovers.
 
 ## Visual report
 
@@ -58,5 +64,8 @@ published as a private artifact.
 ## Environment
 
 `.env` (see `.env.example`): `SUPABASE_URL`, `SUPABASE_SECRET_KEY`,
-`OPENROUTER_API_KEY`. Missing keys stop the command with a message naming
-them.
+`OPENROUTER_API_KEY`, and per direct adapter `GEMINI_API_KEY`,
+`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`; `SHELFSCANNER_SPEND_CAP_USD`. A
+missing Supabase key stops the command with a message naming it; a
+missing provider key is an error on that call, which failover can catch.
+Provider keys already present in the shell environment are used as well.

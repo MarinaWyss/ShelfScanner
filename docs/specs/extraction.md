@@ -5,7 +5,10 @@ labels and logged.
 
 ## Command
 
-`uv run shelfscanner extract --photo <id|all> --model <alias|slug> [--max-dim N] [--prompt name]`
+`uv run shelfscanner extract --photo <id|all> [--model <alias|slug>] [--max-dim N] [--prompt name]`
+
+`--model` unset means the reading stage's primary from config, with
+failover to its fallback (see `model-router.md`).
 
 For each photo:
 
@@ -13,8 +16,9 @@ For each photo:
    most `--max-dim` pixels (default from `config/models.toml`, 1568). Never
    upscales. The dimensions actually sent are logged.
 2. Send the image and the prompt file `prompts/<name>.md` (default
-   `extract_v1`) to the model through the OpenRouter adapter. The prompt
-   asks for `{"books": [{"title", "author"}]}`; the reply is parsed in code.
+   `extract_v1`) to the model through the router, with the books schema
+   for adapters that support structured output. The prompt asks for
+   `{"books": [{"title", "author"}]}`; the reply is parsed in code.
 3. Score the returned titles against the labels.
 4. Insert one `extractions` row. A transport error, HTTP error, truncated
    reply or unparseable reply still produces a row, with `error` set and
@@ -66,7 +70,7 @@ accounting on and cost as OpenRouter reports it. Nothing is retried.
 
 ## Logged row
 
-`extractions`: `photo_id`, `provider`, `adapter`, `request_id`, `model` (slug), `prompt_version`
+`extractions`: `photo_id`, `provider`, `adapter`, `request_id`, `model` (slug of the model that answered), `failover_from`, `failover_error`, `prompt_version`
 (prompt filename), `image_long_edge`, `image_width`, `image_height`,
 `raw_output`, `parsed_titles`, the four lists above, `found_count`,
 `missed_count`, `invented_count`, `latency_ms`, `input_tokens`,

@@ -5,9 +5,13 @@ file. Every pick is checked and the run is logged.
 
 ## Commands
 
-`uv run shelfscanner recommend --extraction <id> --model <alias|slug> --prefs <file> [--prompt name]`
+`uv run shelfscanner recommend --extraction <id> [--model <alias|slug>] --prefs <file|session id> [--prompt name]`
 
-`uv run shelfscanner run --photo <id|all> --vision-model <m> --llm-model <m> --prefs <file> [--max-dim N] [--extract-prompt name] [--recommend-prompt name]`
+`uv run shelfscanner run --photo <id|all> [--vision-model <m>] [--llm-model <m>] --prefs <file|session id> [--max-dim N] [--extract-prompt name] [--recommend-prompt name]`
+
+A model flag unset means the stage's primary from config, with failover
+(see `model-router.md`). `--prefs` is a JSON file or a session id whose
+preferences row is read (see `preferences.md`).
 
 `run` extracts, then recommends from that extraction, and prints both. If
 the extraction failed the recommendation is skipped.
@@ -21,7 +25,9 @@ the extraction failed the recommendation is skipped.
 - The extraction's books as a list, with the author where the extraction
   supplied one. Invented titles are included: the model sees what the
   vision stage produced.
-- The preferences file as JSON. A top-level `_note` key is removed first.
+- The preferences, laid out as text: the flat shape as JSON for
+  `recommend_v1`, the structured object as labelled lists otherwise (see
+  `preferences.md`). A top-level `_note` key is removed first.
 
 `data/prefs/marina.json` holds `genres`, `likes`, `loved_books`, `avoid`.
 
@@ -58,7 +64,7 @@ column and command exist but the spike's quality measure is overlap.
 
 ## Logged row
 
-`recommendations`: `extraction_id`, `provider`, `adapter`, `request_id`, `model`, `prompt_version`,
+`recommendations`: `extraction_id`, `provider`, `adapter`, `request_id`, `model` (the model that answered), `failover_from`, `failover_error`, `prompt_version`,
 `preferences` (as sent), `raw_output`, `parsed_recommendations`,
 `valid_vs_extraction`, `valid_vs_ground_truth`, `specificity_scores`,
 `latency_ms`, `input_tokens`, `output_tokens`, `cost_usd`, `error`,
