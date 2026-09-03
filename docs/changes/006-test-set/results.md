@@ -45,6 +45,8 @@ Findings:
   two bays; about 200 more spines are readable). It is excluded from the
   invented-title count for the lookup decision; a model's extra titles
   there are not inventions.
+- `wm_bookshelf_unsplash` (a 500-book Japanese library wall) is labelled in
+  three of twelve bays and is likewise excluded from the invented count.
 - `wm_bookstore_shelf` carries six titles that are cover images printed on
   the section signs, not books on the shelf. Kept as labels: a model
   reporting them is reading, not inventing.
