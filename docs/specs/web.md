@@ -48,8 +48,10 @@ Server-rendered pages with htmx (vendored in `web/static/`; no CDN),
 laid out and worded as the earlier ShelfScanner (v1) was (014): a sticky
 top bar with a menu button, the brand and a Contact mail link; a drawer
 with Home, Book Scanner and Reading List; a favicon (`static/favicon.svg`)
-and an iPhone home-screen icon (`static/apple-touch-icon.png`); white
-with violet buttons, black with gray cards when the system is dark.
+and an iPhone home-screen icon (`static/apple-touch-icon.png`); the
+"ShelfScanner Warm Redesign" look (015): paper and olive, Domine for
+headings and Karla for the rest, hatched paper-deep cards, a derived dark
+set when the system is dark.
 
 - `GET /` — the homepage: the v1 hero, the "AI Book Discovery" card,
   "How It Works", "Start Using ShelfScanner Today", the copyright footer.
