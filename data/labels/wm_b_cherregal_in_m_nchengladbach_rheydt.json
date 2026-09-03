@@ -1,7 +1,34 @@
 {
-  "titles": [],
-  "partial": [],
-  "notes": "",
+  "titles": [
+    "Der grüne See",
+    "Bluff!",
+    "Wir fangen gerade erst an",
+    "Das ewige Leben",
+    "In der ersten Reihe sieht man Meer",
+    "Ich will schlafen!",
+    "Kains Opfer",
+    "Das richtige Leben",
+    "Shades of Grey",
+    "Deutschland",
+    "Backideen",
+    "Neues Kochen",
+    "Trennkost",
+    "So kocht Frau Antje heute",
+    "Hobbythek",
+    "Die neue leichte Küche für jeden Tag",
+    "Gesammelte Werke",
+    "Sound Body Sound Mind",
+    "1001 Cocktails",
+    "Träume verstehen",
+    "Die Rote Couch"
+  ],
+  "partial": [
+    "Bob, der Streuner",
+    "Häschen in der Grube",
+    "Der Inquisitor",
+    "Einmachen"
+  ],
+  "notes": "Portrait, straight-on, a tall veneer bookcase against a white wall in even daylight, no glare; a second photo of a smaller shelf is pasted into the lower right corner (photo collage). German throughout. Spines are small (1268x1852 for six shelves) so only the larger lettering reads: the cookbook shelf and a dozen novels on the second and third shelves. Neues Kochen stands twice (two copies, one title). Partial: Bob, der Streuner (only 'BOB,' and the author read), Häschen in der Grube (start of the title hidden by the neighbouring spine), Der Inquisitor (Mark Allen Smith, blue title under the author, small), Einmachen (red spine, rest of the title too small). Left out: most of the top shelf and the second shelf (paperback spines with small type, Piper and dtv marks only), the author-only spines (Alfred Biolek, Susan Andersen, Paulo Coelho, Tobias Keller, Tanja Kinkel, Manfred Lütz), the tall red spine with 'ORLEANS' in large letters whose full title I could not settle, the tilted and stacked slim books on the fourth shelf, the childrens picture books lying flat on the bottom shelf, and everything in the inset photo (children's books too small, plus board games: Scrabble, Torres, Piratenbucht, Nobody is Perfect, which are not books). Drafted by claude-sonnet-5 (extraction 87), verified by an agent.",
   "set": "sourced",
   "provisional": true,
   "source": {
