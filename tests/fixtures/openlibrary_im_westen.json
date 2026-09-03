@@ -1,0 +1,65 @@
+{
+  "request": {
+    "url": "https://openlibrary.org/search.json",
+    "params": {
+      "title": "Im Westen nichts Neues",
+      "fields": "key,title,author_name,first_publish_year,cover_i",
+      "limit": 5
+    }
+  },
+  "status": 200,
+  "recorded": "2026-09-02",
+  "response": {
+    "numFound": 41,
+    "start": 0,
+    "numFoundExact": true,
+    "num_found": 41,
+    "documentation_url": "https://openlibrary.org/dev/docs/api/search",
+    "q": "",
+    "offset": null,
+    "docs": [
+      {
+        "author_name": [
+          "Erich Maria Remarque"
+        ],
+        "cover_i": 12706822,
+        "first_publish_year": 1928,
+        "key": "/works/OL1209288W",
+        "title": "Im Westen nichts Neues"
+      },
+      {
+        "author_name": [
+          "Thomas F. Schneider"
+        ],
+        "first_publish_year": 1992,
+        "key": "/works/OL2492444W",
+        "title": "Erich Maria Remarque, Im Westen nichts Neues"
+      },
+      {
+        "author_name": [
+          "Wolfhard Keiser"
+        ],
+        "cover_i": 9566679,
+        "first_publish_year": 2009,
+        "key": "/works/OL16917331W",
+        "title": "Interpretation zu Remarque. Im Westen nichts Neues"
+      },
+      {
+        "author_name": [
+          "Erich Maria Remarque"
+        ],
+        "first_publish_year": 1928,
+        "key": "/works/OL43230844W",
+        "title": "Im Westen Nichts Neues"
+      },
+      {
+        "author_name": [
+          "Wilhelm Müller Scheld"
+        ],
+        "first_publish_year": 1929,
+        "key": "/works/OL12808216W",
+        "title": "\"Im Westen nichts Neues\""
+      }
+    ]
+  }
+}

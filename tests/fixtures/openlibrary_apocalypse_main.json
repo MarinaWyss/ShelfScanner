@@ -1,0 +1,75 @@
+{
+  "request": {
+    "url": "https://openlibrary.org/search.json",
+    "params": {
+      "title": "Apocalypse Never",
+      "fields": "key,title,author_name,first_publish_year,cover_i",
+      "limit": 5
+    }
+  },
+  "status": 200,
+  "recorded": "2026-09-02",
+  "response": {
+    "numFound": 7,
+    "start": 0,
+    "numFoundExact": true,
+    "num_found": 7,
+    "documentation_url": "https://openlibrary.org/dev/docs/api/search",
+    "q": "",
+    "offset": null,
+    "docs": [
+      {
+        "author_name": [
+          "Michael Shellenberger"
+        ],
+        "cover_i": 10226321,
+        "first_publish_year": 2020,
+        "key": "/works/OL20893703W",
+        "title": "Apocalypse Never"
+      },
+      {
+        "author_name": [
+          "Tad Daley"
+        ],
+        "cover_i": 6305505,
+        "first_publish_year": 2010,
+        "key": "/works/OL3821375W",
+        "title": "Apocalypse never"
+      },
+      {
+        "author_name": [
+          "Irb Media"
+        ],
+        "first_publish_year": 2022,
+        "key": "/works/OL27871828W",
+        "title": "Summary of Michael Shellenberger's Apocalypse Never"
+      },
+      {
+        "author_name": [
+          "Johan Modi Sandell"
+        ],
+        "first_publish_year": 2001,
+        "key": "/works/OL13021241W",
+        "title": "Apocalypse now or never"
+      },
+      {
+        "author_name": [
+          "William F Nolan",
+          "Matthew Costello",
+          "F. Paul Wilson",
+          "Heather Graham",
+          "Tim Waggoner",
+          "Thomas F. Monteleone",
+          "Brendan Deneen",
+          "Jason V Brock",
+          "Patrick Freivald",
+          "Lisa Mannetti"
+        ],
+        "cover_i": 8687705,
+        "first_publish_year": 2017,
+        "key": "/works/OL19883729W",
+        "title": "Never Fear - The Apocalypse: The End is Near"
+      }
+    ]
+  }
+}
