@@ -10,7 +10,7 @@ Production: https://shelfscanner-nu.vercel.app (Vercel project
 |---|---|---|
 | Live | Five picks under 15 s p50 over three scans on mobile data | pending the phone; one scan from the laptop over the internet: picks 28 s after the upload (below) |
 | Streams | Progress events arrive stage by stage on the deployed URL | yes: `uploaded`, `reading`, `checking`, `choosing`, `done`, `close` as separate events on the production URL, and a second connection to the same scan got `done` at once |
-| Automatic | A merge to main is live within ten minutes; a branch gets a preview URL | pending: the first push after connecting |
+| Automatic | A merge to main is live within ten minutes; a branch gets a preview URL | a push to main (1fdb06f) started a production build within ten seconds and was live in about a minute, no step taken; the preview URL is pending the first branch |
 | Secrets | No key in the repo; preview and production both resolve them | no key in the repo; production resolves them (the scan ran on Sonnet and GPT-5.4 mini, the admin page opens with the secret); preview pending its first deploy |
 
 ## The first scan through the deployed app (photo 145, core shelf 1, 344 KB)
