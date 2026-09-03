@@ -9,6 +9,7 @@ from shelfscanner.config import Model, load_config
 from shelfscanner.db import get_client
 from shelfscanner.images import resize
 from shelfscanner.matching import score
+from shelfscanner.adapters.base import BOOKS_SCHEMA
 from shelfscanner.router import ModelClient, Progress
 
 DEFAULT_PROMPT = "extract_v1"
@@ -56,7 +57,7 @@ def extract_photo(photo: dict, model: Model, max_edge: int, prompt_name: str, *,
     cfg = load_config()
     prompt_version, prompt = router.load_prompt(prompt_name)
     img = resize(storage.download_photo(photo["storage_path"]), max_edge)
-    res = router.vision(model, prompt, img.jpeg, client=client, on_progress=on_progress)
+    res = router.vision(model, prompt, img.jpeg, client=client, on_progress=on_progress, schema=BOOKS_SCHEMA)
 
     extracted = titles_from(res.parsed) if res.ok else []
     s = score(extracted, photo["titles"], photo["partial_titles"], cfg.match_threshold)

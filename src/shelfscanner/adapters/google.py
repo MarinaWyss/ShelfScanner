@@ -126,13 +126,14 @@ class GoogleClient:
         self._client = client
 
     def vision(self, model: Model, prompt: str, image_jpeg: bytes, *, max_tokens: int = DEFAULT_MAX_TOKENS,
-               on_progress: Callable[[str], None] | None = None) -> CallResult:
+               on_progress: Callable[[str], None] | None = None, schema: dict[str, Any] | None = None) -> CallResult:
         contents = [types.Part.from_bytes(data=image_jpeg, mime_type="image/jpeg"), prompt]
-        return self._call(model, contents, max_tokens=max_tokens, on_progress=on_progress)
+        return self._call(model, contents, max_tokens=max_tokens, on_progress=on_progress, schema=schema)
 
     def text(self, model: Model, prompt: str, input_text: str, *, max_tokens: int = DEFAULT_MAX_TOKENS,
-             on_progress: Callable[[str], None] | None = None) -> CallResult:
-        return self._call(model, f"{prompt}\n\n{input_text}", max_tokens=max_tokens, on_progress=on_progress)
+             on_progress: Callable[[str], None] | None = None, schema: dict[str, Any] | None = None) -> CallResult:
+        return self._call(model, f"{prompt}\n\n{input_text}", max_tokens=max_tokens, on_progress=on_progress,
+                          schema=schema)
 
     def _sdk(self) -> Any:
         if self._client is None:
@@ -147,18 +148,18 @@ class GoogleClient:
             )
         return self._client
 
-    def _config(self, model: Model, max_tokens: int) -> types.GenerateContentConfig:
+    def _config(self, model: Model, max_tokens: int, schema: dict[str, Any] | None = None) -> types.GenerateContentConfig:
         return types.GenerateContentConfig(
             max_output_tokens=max_tokens,
             response_mime_type="application/json",
-            response_json_schema=self.schema,
+            response_json_schema=schema if schema is not None else self.schema,
             thinking_config=thinking_config(model.reasoning_effort),
         )
 
     def _call(self, model: Model, contents: Any, *, max_tokens: int,
-              on_progress: Callable[[str], None] | None) -> CallResult:
+              on_progress: Callable[[str], None] | None, schema: dict[str, Any] | None = None) -> CallResult:
         model_id = model.id_for_adapter
-        config = self._config(model, max_tokens)
+        config = self._config(model, max_tokens, schema)
         if on_progress:
             on_progress(f"{NAME}: {model_id}")
 

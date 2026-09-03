@@ -164,13 +164,14 @@ class AnthropicClient:
         self._schemas = schemas or {}
 
     def vision(self, model: Model, prompt: str, image_jpeg: bytes, *, max_tokens: int = DEFAULT_MAX_TOKENS,
-               on_progress: Callable[[str], None] | None = None) -> CallResult:
+               on_progress: Callable[[str], None] | None = None, schema: dict[str, Any] | None = None) -> CallResult:
         return self._call(model, prompt, "vision", image_jpeg=image_jpeg, max_tokens=max_tokens,
-                          on_progress=on_progress)
+                          on_progress=on_progress, schema=schema)
 
     def text(self, model: Model, prompt: str, input_text: str, *, max_tokens: int = DEFAULT_MAX_TOKENS,
-             on_progress: Callable[[str], None] | None = None) -> CallResult:
-        return self._call(model, prompt, "text", text=input_text, max_tokens=max_tokens, on_progress=on_progress)
+             on_progress: Callable[[str], None] | None = None, schema: dict[str, Any] | None = None) -> CallResult:
+        return self._call(model, prompt, "text", text=input_text, max_tokens=max_tokens, on_progress=on_progress,
+                          schema=schema)
 
     def _sdk(self) -> Any:
         """The SDK client, built on first use so a missing key is reported per call, never at import."""
@@ -182,7 +183,7 @@ class AnthropicClient:
         return self._client
 
     def build_request(self, model: Model, prompt: str, op: str, *, image_jpeg: bytes | None, text: str | None,
-                      max_tokens: int) -> dict[str, Any]:
+                      max_tokens: int, schema: dict[str, Any] | None = None) -> dict[str, Any]:
         content: list[dict[str, Any]] = []
         if image_jpeg is not None:
             content.append({"type": "image", "source": {
@@ -196,18 +197,20 @@ class AnthropicClient:
             "messages": [{"role": "user", "content": content}],
         }
         request.update(reasoning_params(model, max_tokens))
-        schema = self._schemas.get(op)
+        schema = schema if schema is not None else self._schemas.get(op)
         if schema is not None:
             request.setdefault("output_config", {})["format"] = {"type": "json_schema", "schema": schema}
         return request
 
     def _call(self, model: Model, prompt: str, op: str, *, image_jpeg: bytes | None = None,
-              text: str | None = None, max_tokens: int, on_progress: Callable[[str], None] | None) -> CallResult:
+              text: str | None = None, max_tokens: int, on_progress: Callable[[str], None] | None,
+              schema: dict[str, Any] | None = None) -> CallResult:
         model_id = model.id_for_adapter
         started = time.perf_counter()
         try:
             sdk = self._sdk()
-            request = self.build_request(model, prompt, op, image_jpeg=image_jpeg, text=text, max_tokens=max_tokens)
+            request = self.build_request(model, prompt, op, image_jpeg=image_jpeg, text=text, max_tokens=max_tokens,
+                                     schema=schema)
         except (LookupError, ValueError) as e:
             return failed(model_id, NAME, started, f"config: {e}")
 

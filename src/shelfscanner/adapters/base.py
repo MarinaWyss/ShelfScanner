@@ -11,6 +11,42 @@ from typing import Any
 from shelfscanner.config import Model
 
 DEFAULT_MAX_TOKENS = 4096
+
+# The two reply shapes the prompts ask for, as JSON Schema, passed to adapters that support
+# native structured output (002 D3). Strict everywhere: no extra keys, every key required, so
+# the same schema is accepted by OpenAI strict mode, Anthropic and Gemini.
+BOOKS_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "books": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {"title": {"type": "string"}, "author": {"type": ["string", "null"]}},
+                "required": ["title", "author"],
+                "additionalProperties": False,
+            },
+        }
+    },
+    "required": ["books"],
+    "additionalProperties": False,
+}
+RECOMMENDATIONS_SCHEMA: dict[str, Any] = {
+    "type": "object",
+    "properties": {
+        "recommendations": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {"title": {"type": "string"}, "reason": {"type": "string"}},
+                "required": ["title", "reason"],
+                "additionalProperties": False,
+            },
+        }
+    },
+    "required": ["recommendations"],
+    "additionalProperties": False,
+}
 _FENCE = re.compile(r"^\s*```(?:json)?\s*(.*?)\s*```\s*$", re.DOTALL)
 
 

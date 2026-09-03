@@ -23,12 +23,14 @@ NAME = "openrouter"
 
 
 class OpenRouterClient:
+    # `schema` is accepted and ignored: structured output is not uniformly exposed through
+    # OpenRouter (001 D9), so the prompt alone describes the JSON here.
     def vision(self, model: Model, prompt: str, image_jpeg: bytes, *, max_tokens: int = DEFAULT_MAX_TOKENS,
-               on_progress: Callable[[str], None] | None = None) -> CallResult:
+               on_progress: Callable[[str], None] | None = None, schema: dict | None = None) -> CallResult:
         return self._call(model, prompt, image_jpeg=image_jpeg, max_tokens=max_tokens)
 
     def text(self, model: Model, prompt: str, input_text: str, *, max_tokens: int = DEFAULT_MAX_TOKENS,
-             on_progress: Callable[[str], None] | None = None) -> CallResult:
+             on_progress: Callable[[str], None] | None = None, schema: dict | None = None) -> CallResult:
         return self._call(model, prompt, text=input_text, max_tokens=max_tokens)
 
     def _call(self, model: Model, prompt: str, *, image_jpeg: bytes | None = None, text: str | None = None,

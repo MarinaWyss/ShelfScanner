@@ -10,13 +10,14 @@ class FakeClient:
         self.parsed = parsed
         self.calls = []
 
-    def vision(self, model, prompt, image_jpeg, *, max_tokens=4096, on_progress=None):
+    def vision(self, model, prompt, image_jpeg, *, max_tokens=4096, on_progress=None, schema=None):
         self.calls.append(("vision", model.alias, len(image_jpeg)))
+        self.schema = schema
         if on_progress:
             on_progress("reading")
         return CallResult(model.slug, "fake", "{}", self.parsed, 10, 5, 0.0, 1, None, "stop", adapter="fake")
 
-    def text(self, model, prompt, input_text, *, max_tokens=4096, on_progress=None):
+    def text(self, model, prompt, input_text, *, max_tokens=4096, on_progress=None, schema=None):
         self.calls.append(("text", model.alias, input_text))
         return CallResult(model.slug, "fake", "{}", self.parsed, 10, 5, 0.0, 1, None, "stop", adapter="fake")
 
@@ -25,8 +26,8 @@ def test_vision_and_text_dispatch_to_a_passed_client():
     fake = FakeClient({"books": []})
     m = load_config().model("gemini-flash")
     seen = []
-    r = router.vision(m, "p", b"jpeg", client=fake, on_progress=seen.append)
-    assert r.ok and r.parsed == {"books": []} and seen == ["reading"]
+    r = router.vision(m, "p", b"jpeg", client=fake, on_progress=seen.append, schema={"type": "object"})
+    assert r.ok and r.parsed == {"books": []} and seen == ["reading"] and fake.schema == {"type": "object"}
     r = router.text(m, "p", "shelf", client=fake)
     assert r.ok and fake.calls[-1] == ("text", "gemini-flash", "shelf")
 

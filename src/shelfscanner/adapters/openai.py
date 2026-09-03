@@ -80,17 +80,19 @@ class OpenAIClient:
     # -- the protocol ---------------------------------------------------------------------
 
     def vision(self, model: Model, prompt: str, image_jpeg: bytes, *, max_tokens: int = DEFAULT_MAX_TOKENS,
-               on_progress: Callable[[str], None] | None = None) -> CallResult:
-        return self._call(model, prompt, image_jpeg=image_jpeg, max_tokens=max_tokens, on_progress=on_progress)
+               on_progress: Callable[[str], None] | None = None, schema: dict[str, Any] | None = None) -> CallResult:
+        return self._call(model, prompt, image_jpeg=image_jpeg, max_tokens=max_tokens, on_progress=on_progress,
+                          schema=schema)
 
     def text(self, model: Model, prompt: str, input_text: str, *, max_tokens: int = DEFAULT_MAX_TOKENS,
-             on_progress: Callable[[str], None] | None = None) -> CallResult:
-        return self._call(model, prompt, text=input_text, max_tokens=max_tokens, on_progress=on_progress)
+             on_progress: Callable[[str], None] | None = None, schema: dict[str, Any] | None = None) -> CallResult:
+        return self._call(model, prompt, text=input_text, max_tokens=max_tokens, on_progress=on_progress,
+                          schema=schema)
 
     # -- request ---------------------------------------------------------------------------
 
     def build_request(self, model: Model, prompt: str, *, image_jpeg: bytes | None = None,
-                      text: str | None = None, max_tokens: int) -> dict[str, Any]:
+                      text: str | None = None, max_tokens: int, schema: dict[str, Any] | None = None) -> dict[str, Any]:
         """The keyword arguments for `responses.create`. Separate so tests can check them."""
         content: list[dict[str, Any]] = []
         if image_jpeg is not None:
@@ -103,17 +105,18 @@ class OpenAIClient:
             "model": model.id_for_adapter,
             "input": [{"role": "user", "content": content}],
             "max_output_tokens": max_tokens,
-            "text": {"format": self._text_format()},
+            "text": {"format": self._text_format(schema)},
             "store": False,
         }
         if model.reasoning_effort:
             request["reasoning"] = {"effort": model.reasoning_effort}
         return request
 
-    def _text_format(self) -> dict[str, Any]:
-        if self._schema is None:
+    def _text_format(self, schema: dict[str, Any] | None = None) -> dict[str, Any]:
+        schema = schema if schema is not None else self._schema
+        if schema is None:
             return {"type": "json_object"}
-        return {"type": "json_schema", "name": self._schema_name, "schema": self._schema, "strict": True}
+        return {"type": "json_schema", "name": self._schema_name, "schema": schema, "strict": True}
 
     # -- call and response -----------------------------------------------------------------
 
@@ -128,14 +131,16 @@ class OpenAIClient:
         return self._client
 
     def _call(self, model: Model, prompt: str, *, image_jpeg: bytes | None = None, text: str | None = None,
-              max_tokens: int, on_progress: Callable[[str], None] | None) -> CallResult:
+              max_tokens: int, on_progress: Callable[[str], None] | None,
+              schema: dict[str, Any] | None = None) -> CallResult:
         model_id = model.id_for_adapter
         started = time.perf_counter()
         client = self._sdk_client()
         if client is None:
             return failed(model_id, NAME, started,
                           f"config: {KEY_ENV} is not set; add it to .env (see .env.example)")
-        request = self.build_request(model, prompt, image_jpeg=image_jpeg, text=text, max_tokens=max_tokens)
+        request = self.build_request(model, prompt, image_jpeg=image_jpeg, text=text, max_tokens=max_tokens,
+                                     schema=schema)
 
         if on_progress:
             on_progress(f"{NAME}: calling {model_id}")

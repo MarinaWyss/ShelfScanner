@@ -84,8 +84,11 @@ Workers implement these; a worker that finds one wrong stops and says so.
 
 **Model calls** (`src/shelfscanner/router.py`, `adapters/base.py`). An
 adapter is a class with `vision(model, prompt, image_jpeg, *, max_tokens,
-on_progress)` and `text(model, prompt, input_text, *, max_tokens,
-on_progress)`, both returning `CallResult`. `model` is the `Model` from
+on_progress, schema)` and `text(model, prompt, input_text, *, max_tokens,
+on_progress, schema)`, both returning `CallResult`. `schema` is the
+reply's JSON Schema (`BOOKS_SCHEMA`, `RECOMMENDATIONS_SCHEMA` in
+`adapters/base.py`); adapters with native structured output attach it,
+OpenRouter ignores it. A fake client must accept the keyword. `model` is the `Model` from
 config: use `model.id_for_adapter` as the id, `model.reasoning_effort` for
 the reasoning control, `cost_from_tokens(model, in, out)` for cost with
 reasoning tokens counted in output. Never raise for a model or transport

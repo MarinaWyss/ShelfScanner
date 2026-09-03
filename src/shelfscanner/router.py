@@ -33,10 +33,10 @@ class ModelClient(Protocol):
     """What every adapter implements. `model` carries the id, prices and reasoning setting."""
 
     def vision(self, model: Model, prompt: str, image_jpeg: bytes, *, max_tokens: int = DEFAULT_MAX_TOKENS,
-               on_progress: Progress | None = None) -> CallResult: ...
+               on_progress: Progress | None = None, schema: dict | None = None) -> CallResult: ...
 
     def text(self, model: Model, prompt: str, input_text: str, *, max_tokens: int = DEFAULT_MAX_TOKENS,
-             on_progress: Progress | None = None) -> CallResult: ...
+             on_progress: Progress | None = None, schema: dict | None = None) -> CallResult: ...
 
 
 def load_prompt(name: str) -> tuple[str, str]:
@@ -64,15 +64,18 @@ def client_for(adapter: str) -> ModelClient:
 
 
 def vision(model: Model, prompt: str, image_jpeg: bytes, *, client: ModelClient | None = None,
-           max_tokens: int = DEFAULT_MAX_TOKENS, on_progress: Progress | None = None) -> CallResult:
+           max_tokens: int = DEFAULT_MAX_TOKENS, on_progress: Progress | None = None,
+           schema: dict | None = None) -> CallResult:
+    """`schema` is the reply's JSON Schema; adapters with native structured output attach it."""
     return (client or client_for(model.adapter)).vision(model, prompt, image_jpeg, max_tokens=max_tokens,
-                                                        on_progress=on_progress)
+                                                        on_progress=on_progress, schema=schema)
 
 
 def text(model: Model, prompt: str, input_text: str, *, client: ModelClient | None = None,
-         max_tokens: int = DEFAULT_MAX_TOKENS, on_progress: Progress | None = None) -> CallResult:
+         max_tokens: int = DEFAULT_MAX_TOKENS, on_progress: Progress | None = None,
+         schema: dict | None = None) -> CallResult:
     return (client or client_for(model.adapter)).text(model, prompt, input_text, max_tokens=max_tokens,
-                                                      on_progress=on_progress)
+                                                      on_progress=on_progress, schema=schema)
 
 
 def stage(name: str) -> Stage:
