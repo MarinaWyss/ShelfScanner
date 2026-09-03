@@ -33,10 +33,15 @@ def best_extractions() -> list[dict]:
     return [v[1] for _, v in sorted(best.items())]
 
 
-def run_vision(aliases: list[str], max_dim: int | None) -> None:
+def run_vision(aliases: list[str], max_dim: int | None, set_name: str = "core") -> None:
+    """`set_name` is core, sourced or derived (006), or `all` for every labelled photo. Photos
+    without labels (uploads from the app) are never part of a matrix run."""
     cfg = load_config()
     edge = max_dim or cfg.default_max_edge
-    photos = storage.list_photos()
+    photos = [p for p in storage.list_photos()
+              if p.get("titles") and (set_name == "all" or (p.get("set") or "core") == set_name)]
+    if not photos:
+        raise SystemExit(f"No labelled photos in set {set_name!r}")
 
     def one(alias: str) -> list:
         m = cfg.model(alias)
@@ -82,6 +87,7 @@ def main() -> None:
     v = sub.add_parser("vision", help="every named model over every photo")
     v.add_argument("models", help="comma-separated aliases from config/models.toml")
     v.add_argument("--max-dim", type=int, default=None)
+    v.add_argument("--set", default="core", help="core, sourced, derived, or all labelled photos (006)")
     t = sub.add_parser("llm", help="every named model over the best extraction of each photo")
     t.add_argument("models")
     t.add_argument("--prefs", type=Path, default=DATA_DIR / "prefs" / "marina.json")
@@ -89,7 +95,7 @@ def main() -> None:
     args = ap.parse_args()
     aliases = args.models.split(",")
     if args.stage == "vision":
-        run_vision(aliases, args.max_dim)
+        run_vision(aliases, args.max_dim, args.set)
     else:
         run_llm(aliases, args.prefs, args.prompt)
 
