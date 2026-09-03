@@ -274,3 +274,32 @@ def _import_command(args: argparse.Namespace) -> None:
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(prefs, indent=2, ensure_ascii=False) + "\n")
     print(f"{out}: {counts(prefs)}")
+
+
+# --- change 005 ---
+# The web preferences page (docs/specs/web.md) parses the upload in memory, so the export is read
+# from an iterable of lines and `read_export` becomes the file-opening wrapper.
+
+from collections.abc import Iterable  # noqa: E402
+
+
+def rows_from_export(lines: Iterable[str], *, name: str = "the upload") -> list[Row]:
+    """Parse Goodreads export lines (the file's text, already decoded). Only the columns the object
+    needs are read; a file without them is refused with SystemExit."""
+    reader = csv.DictReader(lines)
+    missing = [c for c in _REQUIRED_COLUMNS if c not in (reader.fieldnames or [])]
+    if missing:
+        raise SystemExit(f"{name} is not a Goodreads export: missing columns {', '.join(missing)}")
+    rows = []
+    for rec in reader:
+        title = _clean(rec["Title"])
+        if not title:
+            continue
+        rows.append(Row(title, _clean(rec["Author"]), _rating(rec["My Rating"]), _clean(rec["Exclusive Shelf"]),
+                        _date(rec["Date Read"]), _date(rec["Date Added"])))
+    return rows
+
+
+def read_export(path: Path) -> list[Row]:  # noqa: F811 - the 005 version replaces the original on import
+    with path.open(newline="", encoding="utf-8-sig") as f:
+        return rows_from_export(f, name=str(path))

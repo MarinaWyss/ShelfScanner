@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% set page = 'preferences' %}
+{% block title %}Preferences · ShelfScanner{% endblock %}
+{% block content %}
+  <h1>What do you like to read?</h1>
+  <p class="lede">{% if first %}A few picks make the recommendations yours. You can skip this and set it later.{% else %}Change these any time; the next scan uses them.{% endif %}</p>
+
+  {% if error %}<div class="error" role="alert" id="prefs-error">{{ error }}</div>{% endif %}
+
+  <form method="post" action="/preferences" enctype="multipart/form-data" id="prefs-form">
+    <fieldset>
+      <legend>Genres</legend>
+      <div class="chips">
+        {% for genre in genres %}
+        <label class="chip"><input type="checkbox" name="genres" value="{{ genre }}"{% if genre in chosen %} checked{% endif %}> {{ genre }}</label>
+        {% endfor %}
+      </div>
+    </fieldset>
+    <label class="field">Anything else? Authors, moods, what you are avoiding.
+      <textarea name="free_text" rows="3" placeholder="Short novels with a strong voice; no grimdark right now.">{{ free_text }}</textarea>
+    </label>
+    <label class="picker">
+      Goodreads export (optional)
+      <input type="file" name="goodreads" accept=".csv,text/csv">
+    </label>
+    <p class="hint" id="import-note">{% if import_note %}{{ import_note }}{% else %}Your ratings and to-read list make the picks much better. The file is read once and not kept.{% endif %}</p>
+    <button type="submit" id="prefs-save">Save preferences</button>
+  </form>
+  {% if first %}
+  <form method="post" action="/preferences" id="prefs-skip">
+    <input type="hidden" name="action" value="skip">
+    <button type="submit" class="secondary">Skip for now</button>
+  </form>
+  {% endif %}
+{% endblock %}

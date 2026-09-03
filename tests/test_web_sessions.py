@@ -1,4 +1,8 @@
-"""Device sessions (003 task 1): a cookie on first visit, a row per device, only the hash stored."""
+"""Device sessions (003 task 1): a cookie on first visit, a row per device, only the hash stored.
+
+A first visit to `/` is redirected to the preferences page (005); the cookie is
+set on that redirect, so the tests look at it with redirects off.
+"""
 
 import hashlib
 
@@ -16,8 +20,8 @@ def make_client(store: MemorySessions | None = None) -> tuple[TestClient, Memory
 
 def test_first_visit_sets_a_cookie_and_creates_a_row():
     client, store = make_client()
-    res = client.get("/")
-    assert res.status_code == 200
+    res = client.get("/", follow_redirects=False)
+    assert res.status_code == 302 and res.headers["location"] == "/preferences"
     token = res.cookies[COOKIE]
     assert len(store.rows) == 1
     assert token not in store.rows, "the raw token must not be stored"
@@ -28,8 +32,8 @@ def test_first_visit_sets_a_cookie_and_creates_a_row():
 
 def test_second_request_reuses_the_session():
     client, store = make_client()
-    first = client.get("/")
-    second = client.get("/")
+    first = client.get("/", follow_redirects=False)
+    second = client.get("/", follow_redirects=False)
     assert "set-cookie" not in second.headers
     assert client.cookies[COOKIE] == first.cookies[COOKIE]
     assert len(store.rows) == 1
@@ -49,7 +53,7 @@ def test_two_devices_get_two_sessions():
 def test_unknown_token_gets_a_fresh_session():
     client, store = make_client()
     client.cookies.set(COOKIE, "stale-token-from-a-wiped-table")
-    res = client.get("/")
+    res = client.get("/", follow_redirects=False)
     assert COOKIE in res.cookies
     assert res.cookies[COOKIE] != "stale-token-from-a-wiped-table"
     assert len(store.rows) == 1

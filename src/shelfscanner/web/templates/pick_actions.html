@@ -1,0 +1,14 @@
+{#- The save and not-for-me controls of one pick; every post to /picks/... swaps this whole element. -#}
+<div class="pick-actions" id="pick-actions-{{ recommendation_id }}-{{ index }}" hx-target="this" hx-swap="outerHTML"
+     data-saved="{{ 'true' if state.saved else 'false' }}" data-not-for-me="{{ 'true' if state.not_for_me else 'false' }}">
+  {% if state.saved %}
+  <button type="button" class="saved" hx-post="/picks/{{ recommendation_id }}/{{ index }}/unsave">Saved &#10003;</button>
+  {% else %}
+  <button type="button" hx-post="/picks/{{ recommendation_id }}/{{ index }}/save">Save</button>
+  {% endif %}
+  {% if state.not_for_me %}
+  <span class="marked">Marked not for me</span>
+  {% else %}
+  <button type="button" class="secondary" hx-post="/picks/{{ recommendation_id }}/{{ index }}/not-for-me">Not for me</button>
+  {% endif %}
+</div>
