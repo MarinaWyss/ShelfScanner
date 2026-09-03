@@ -170,7 +170,7 @@ Events, in order:
 
 Each event's data is the rendered progress panel (HTML): five rows (photo
 uploaded, reading the shelf, checking the titles, choosing five for you,
-picks ready) with done, active, failed or pending marks, then the result.
+picks ready) with `todo`, `active`, `done` or `failed` marks, then the result.
 A comment line is sent every 15 s while a model is working so proxies keep
 the connection open.
 

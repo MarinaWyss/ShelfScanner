@@ -49,8 +49,8 @@ For each population over the window:
 - Model failures over model rows, application failures over scans, and
   the failover count (rows with `failover_from`, both stages).
 - Lookup: titles looked up (`hits + misses`), hit rate, catalogue errors
-  (titles), and the cache hit rate when `lookups` has a `cache_hits`
-  column; until then the page says "not recorded".
+  (titles), and the cache hit rate from `lookups.cache_hits` (008); over
+  rows from before that column the page says "not recorded".
 - The price check (002 D5): `prices_checked` from `config/models.toml`
   and its age; stale when older than 90 days or missing, shown in the
   accent colour.

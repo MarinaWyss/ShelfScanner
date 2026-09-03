@@ -28,9 +28,10 @@ controls to bring latency down. It does not add features.
 
 ## What changes
 
-- A `ModelClient` interface with two operations, `vision(image, prompt)`
-  and `text(prompt, input)`, returning the same result shape the spike logs
-  today: raw text, parsed JSON, input, output and reasoning tokens, cost,
+- A `ModelClient` interface with two operations, `vision(model, prompt,
+  image_jpeg, *, max_tokens, on_progress, schema)` and `text(model, prompt,
+  input_text, *, ...)` (the wave 1 contract in `docs/changes/README.md`),
+  returning the same result shape the spike logs today: raw text, parsed JSON, input, output and reasoning tokens, cost,
   latency, finish reason, provider, model.
 - One adapter per provider implementing it: Google (Gemini) and OpenAI
   first, Anthropic third as the reading fallback. Each uses the provider's
@@ -146,7 +147,9 @@ Task 3, the OpenAI adapter (2026-09-02):
   dict, which switches to strict `json_schema`. The router instantiates
   adapters with no arguments, so the pipeline runs in JSON mode today;
   passing schemas per stage needs a small router change and is left for the
-  lead so the three adapter workers do not each invent one.
+  lead so the three adapter workers do not each invent one. Closed on
+  2026-09-02: the router takes `schema=` and the pipeline passes
+  `BOOKS_SCHEMA` / `RECOMMENDATIONS_SCHEMA` per stage (results.md).
 - **A missing `OPENAI_API_KEY` is a result, not a crash.** The adapter returns
   a `CallResult` whose error names the key rather than raising `SystemExit`
   like `settings.py` does, so task 5's failover can treat it as a provider
@@ -187,7 +190,8 @@ Task 3, the OpenAI adapter (2026-09-02):
   `application/json` only. `BOOKS_SCHEMA` and `RECOMMENDATIONS_SCHEMA` are
   exported from the adapter for whoever wires them. Because
   `router.client_for` constructs adapters with no arguments, pipeline calls
-  are mime-type-only until the router or the stage passes a schema. Open.
+  are mime-type-only until the router or the stage passes a schema. Closed
+  on 2026-09-02, as above: the stage passes the schema.
 - **`output_tokens` includes thinking tokens**; `reasoning_tokens` carries
   them separately. Gemini reports `candidates_token_count` without thoughts,
   so the adapter adds `thoughts_token_count` before pricing (D5).

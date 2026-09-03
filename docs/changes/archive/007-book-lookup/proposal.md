@@ -2,7 +2,7 @@
 
 Status: approved 2026-09-02; scope set by 006 on 2026-09-03: verification
 Date: 2026-09-02
-Deadline: 2026-09-30
+Deadline: 2026-09-23 (the roadmap's date; 2026-09-30 was written here first)
 Spend cap: $5
 Track: quality
 

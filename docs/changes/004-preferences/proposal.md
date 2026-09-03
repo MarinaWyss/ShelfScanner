@@ -87,7 +87,7 @@ silent. Each is behaviour in `docs/specs/preferences.md`; this records why.
   5-star books and discard every 1 and 2, losing the avoid signal; sorting
   purely by recency would discard older 5s. Chosen: dislikes (1, 2) always
   survive, then 5s, then 4s, then 3s, most recent first within a rating.
-  On the real export this keeps all 8 dislikes and the 52 most recent 5s.
+  On the real export this keeps all 7 dislikes and the 53 most recent 5s (results.md; the 8 and 52 first written here were a miscount).
   Task 4 may move it; the caps are flags on the command.
 - **Titles verbatim, series suffix kept.** "Reign & Ruin (Mages of the
   Wheel, #1)" stays as Goodreads wrote it: the series tells the model that

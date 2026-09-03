@@ -81,15 +81,14 @@ Out of scope for v1, deliberately:
   per-language prompt.
 * Accounts. Nothing in the primary metric needs one.
 
-Deferred, with the number that would bring it back:
+Deferred at first, both since decided by a number:
 
-* **Caching of book lookups.** Later, if lookups add more than 3 s p50 to a
-  scan or more than one cent to its cost, measured from the runs table
-  once the main flow works end to end. Change 001 showed the two model
-  calls cost about a cent, so a lookup that costs more than they do is the
-  signal. Until then every scan looks every title up.
-* **Photo retention.** Photos are kept while a session needs them; a
-  deletion window is decided in the hardening change (008), not here.
+* **Caching of book lookups.** The rule was: build it if lookups add more
+  than 3 s p50 to a scan. Change 007 measured 4.5 s, so change 008 built
+  `lookup_cache`; a repeated shelf now verifies in about 0.3 s
+  (`docs/specs/book-lookup.md`, "Cache").
+* **Photo retention.** Thirty days for session photos, never for the test
+  set (008 D2); a daily job deletes the object and keeps the row.
 
 **Constraints**
 
@@ -101,7 +100,7 @@ what each constraint means now.
 | Latency (p50 / p99) | \~15 s / \~25 s per scan | 14.8 s p50 for Gemini 3.8 Flash \+ GPT-5.4 mini through OpenRouter; 13.2 s for Sonnet 5 \+ GPT-5.4 mini. Mostly reasoning tokens. | 15 s p50 for the whole scan, including upload and lookup. Change 002 aims for under 10 s for the two model calls to leave room for the rest. This is the binding constraint. Progress per stage, not a spinner. |
 | Cost per scan | \< $0.05 | $0.0096 for the chosen pair; the whole 68-call spike cost $0.38. | Ceiling stays $0.05. Working assumption $0.02 with lookups. Cost is not what limits the design. |
 | Quality bar | Zero invented titles. | Two models: zero invented over five photos. Three others: 1.4 to 6.8 per photo on the same prompt. | Requirement E1 below. Model choice is the first defence, the book lookup the second. |
-| Privacy | No accounts, no PII. | EXIF, including the phone's GPS block, is stripped before upload; bucket is private; photos never enter the repo. | Unchanged. Retention window still to decide (deferred above). |
+| Privacy | No accounts, no PII. | EXIF, including the phone's GPS block, is stripped before upload; bucket is private; photos never enter the repo. | Unchanged. Session photos are deleted after thirty days (change 008). |
 | Availability | Best effort. No SLA. | Not measured. | Unchanged. |
 
 **Requirements**
@@ -125,7 +124,10 @@ behaviour is true today and has a spec.
   photo. Given a photo with hand-labelled titles, when extraction runs,
   then every returned title matches a label. Pass line on the test set:
   median recall at least 0.95 and zero invented titles per photo for the
-  model in use. (`docs/specs/extraction.md`)
+  model in use. (`docs/specs/extraction.md`) Ticked on change 001's rows
+  for Gemini 3.8 Flash through OpenRouter; the direct adapter has not run
+  for want of a key, and the sourced and degraded sets (006) show every
+  model inventing on hard input, which is why L1 verifies.
 - [x] E2. A truncated or unparseable reply is recorded as an error and
   never presented as an empty shelf. (`docs/specs/extraction.md`)
 
@@ -140,9 +142,9 @@ behaviour is true today and has a spec.
   nothing; the match to the read string is the check.)
 - [ ] L2. A matched record carries at least author and a canonical title;
   the pick is shown with those, not with the model's transcription.
-- [ ] Open: what happens when the lookup service is unavailable. Either
-  the scan completes with picks marked unverified, or it fails. Decided
-  in the lookup change (007) with the measured failure rate in hand.
+- [x] Decided (007 D2): when the lookup service is unavailable the scan
+  completes with every title kept as read and marked unverified; a
+  catalogue failure is never a failed scan. (`docs/specs/book-lookup.md`)
 
 *Recommendation*
 
@@ -158,24 +160,27 @@ behaviour is true today and has a spec.
   something specific about the book. Measured as overlap with the user's
   own picks on the test set: median at least 3 of 5.
   (`docs/specs/recommendation.md`)
-- [ ] R4. Preferences are at minimum a set of genre picks and at most a
+- [x] R4. Preferences are at minimum a set of genre picks and at most a
   Goodreads export. Given a Goodreads CSV, when it is imported, then the
   books the user rated become part of what the model is given, and the
-  raw file is not kept.
+  raw file is not kept. (`docs/specs/preferences.md`)
 
 *Feedback and saved list*
 
-- [ ] F1. A user can save any pick. Saved picks persist for that device
-  and survive a reload.
-- [ ] F2. A user can mark a pick bad. The mark is stored against the
-  recommendation row that produced it.
-- [ ] F3. A session is a device token, generated on first use. Nothing
-  stored links a token to a person.
+- [x] F1. A user can save any pick. Saved picks persist for that device
+  and survive a reload. (`docs/specs/feedback.md`)
+- [x] F2. A user can mark a pick bad. The mark is stored against the
+  recommendation row that produced it. (`docs/specs/feedback.md`)
+- [x] F3. A session is a device token, generated on first use. Nothing
+  stored links a token to a person. (`docs/specs/web.md`, "Sessions")
 
 *Whole scan*
 
 - [ ] S1. A scan completes in 15 s p50 and the user sees which stage is
-  running.
+  running. The stages show (`docs/specs/web.md`); the time is not yet met:
+  16.7 s p50 on the laptop on 2026-09-03 with both primaries on their
+  fallbacks and a cold catalogue check. Phone numbers on the primaries
+  pending (003 and 005 results).
 - [x] S2. Every model call is logged with model, prompt version, tokens,
   cost, latency, provider and any error, so any result can be traced to
   the exact inputs. (`docs/specs/run-logging.md`)
@@ -217,11 +222,12 @@ that is parsed in code; native structured output is not used while calls go
 through OpenRouter (change 001, D9).
 
 **Prompt Organization**   
-`prompts/extract_v1.md` and `prompts/recommend_v1.md`. The filename is the
-version and is logged on every row, so any result can be traced to the exact
-prompt text. A new version is a new file; old ones stay. The directory is
-flat because there are two prompts; the structure below is the target if
-that grows.
+`prompts/extract_v1.md`, `prompts/recommend_v1.md` and
+`prompts/recommend_v2.md` (change 004; v2 takes the rated books and is
+the default). The filename is the version and is logged on every row, so
+any result can be traced to the exact prompt text. A new version is a new
+file; old ones stay. The directory is flat because there are three
+prompts; the structure below is the target if that grows.
 
 **Example structure:**
 
@@ -243,7 +249,7 @@ prompts/
 
 | Evaluation Aspect | Approach |
 | :---- | :---- |
-| Test set size | 5 photos, 69 hand-labelled titles plus 10 partial labels (change 001). Target for a later change: 100–300 photos. |
+| Test set size | 64 photos (change 006): the 5 core photos with 69 hand-labelled titles plus 10 partial labels (change 001), 20 degraded copies of them (blur, glare, rotation, small), and 39 sourced from Wikimedia Commons with 1,677 labelled titles. Target: 100–300 photos, real phone scans replacing the sourced ones over time. |
 | Test set composition | Landscape and portrait; straight-on and angled; upright spines and horizontal stacks; Fraktur and faded cloth spines; library stickers; a plant in frame; a run of five near-identical series volumes. |
 | Metrics | Extraction: recall, missed, invented (kept separate) against labels via normalised fuzzy match at 0.85. Recommendation: valid against the extraction (hard), valid against labels, overlap with the user's own five picks for the shelf. Plus cost and latency per stage. |
 | Evaluation tooling | The CLI logs every call to Supabase; `research/` holds the matrix drivers and the text and visual reports that aggregate them. No LLM-as-judge; the set is small enough to read. |
@@ -254,8 +260,8 @@ prompts/
 - [x] Prompts are stored in separate versioned files, not hardcoded.  
 - [x] I have a structured test set with diverse cases and expected outputs/criteria.  
 - [x] I have a repeatable evaluation process for comparing prompt versions.  
-- [ ] Prompt changes are tested against the evaluation set before deployment. \<- one version so far  
-- [ ] I have documented my prompt iteration history and key learnings. \<- one version so far
+- [x] Prompt changes are tested against the evaluation set before deployment. \<- `recommend_v2` was scored against v1 on the core set before becoming the default (004 results); the nightly job and `research.check` gate the rest  
+- [x] I have documented my prompt iteration history and key learnings. \<- `prompts/` keeps every version; 001 and 004 results record what each changed and why
 
 ## 3\. Model Selection & Evaluation
 
@@ -291,7 +297,7 @@ swap is a config edit plus a rerun of the five photos through the report
 | Stage | Model | Why | Fallback |
 | :---- | :---- | :---- | :---- |
 | Reading spines | Gemini 3.8 Flash | Equal to Sonnet 5 on recall (1.00) and invented titles (0) at half the cost, $0.008 a photo. First experiment in change 002 is the same model at low reasoning effort. | Claude Sonnet 5. Same reading quality, $0.015 a photo, if Gemini's quality does not survive lower effort or direct SDK structured output. |
-| Choosing five | GPT-5.4 mini | Best overlap with the user's own picks (median 4 of 5), three seconds, a fifth of a cent a run. | Qwen 3.8 Flash. Same median overlap, cheapest of all, needs reasoning switched off. |
+| Choosing five | GPT-5.4 mini | Best overlap with the user's own picks (median 4 of 5), three seconds, a fifth of a cent a run. | Claude Haiku 4.5, direct. Qwen 3.8 Flash was the choice (same median overlap, cheapest) until 2026-09-03, when OpenRouter's shared pool rate-limited it on two real scans (002). |
 
 The models that failed reading (Haiku 4.5, GPT-5.4 mini) are fine for
 choosing; the models that read best are slower and no better at choosing.
@@ -330,7 +336,7 @@ tier in use, or quarterly, whichever comes first.
 - [x] I have compared performance, cost, and latency in a structured way.  
 - [x] I have ensured the model licenses are appropriate for my use case. \<- hosted APIs under their standard terms  
 - [x] I have documented the rationale for my final model choice(s).  
-- [ ] If using model routing, I have tested and documented the routing logic. \<- no routing
+- [x] If using model routing, I have tested and documented the routing logic. \<- `docs/specs/model-router.md`; `tests/test_router.py`, `tests/test_failover.py`
 
 ## 4\. RAG Implementation
 
@@ -361,19 +367,19 @@ The robustness questions still apply to a fixed pipeline:
 
 | Concern | Approach |
 | :---- | :---- |
-| Error handling | Every call produces a logged row even when it fails, with the error set and a truncated reply distinguished from an unparseable one. Nothing is retried today; change 002 adds the provider SDKs' retries. The scan reports which stage failed. |
+| Error handling | Every call produces a logged row even when it fails, with the error set and a truncated reply distinguished from an unparseable one. The direct SDKs retry transport and 5xx errors once or twice (Google one retry, OpenAI and Anthropic their default two); past that the router fails over once to the stage's fallback (002 D8). The OpenRouter adapter retries nothing. The scan reports which stage failed. |
 | Security | The Supabase service key never leaves the server. The photo bucket is private and nothing grants read access. Uploads are capped at 20 MiB and limited to JPEG and PNG. No PII is stored; sessions are device tokens. |
 | Runaway prevention | Fixed step count. Every call carries an explicit output cap and, per stage, an explicit reasoning setting (change 002, D4), because the spike showed a default reasoning budget can consume the whole reply. |
 | Guardrails | Model output is validated in code, never trusted: extracted titles are verified against the book database (L1), picks are checked against the list the model was given (R1), and the count is checked (R2). |
-| Cost monitoring | Cost per call is logged and reported per stage. A per-session scan limit is set in the UI change once the cost of a full scan with lookups is measured. |
+| Cost monitoring | Cost per call is logged and reported per stage, and on the dashboard (009). The app refuses scans past ten per device per hour and past $5 of app spend per UTC day (008); the CLI has its own cap. |
 
 **Checklist**: not applicable.
 
 ## 6\. Deployment & User Interface
 
-Nothing in this section exists yet; the current system is a command-line
-tool. What is decided is recorded, what is open is marked open and gets
-decided in the change that builds it (section 10).
+Built in changes 003, 005, 008 and 009; deployment (010) is the part
+still open. The tables below record what was decided; the specs in
+`docs/specs/` describe the behaviour.
 
 **API Design**
 
@@ -382,7 +388,7 @@ decided in the change that builds it (section 10).
 | Framework | FastAPI wrapping the existing pipeline package, so the CLI and the app run the same code. Laid out for Vercel's Python runtime. |
 | Streaming | Yes, progress per stage. The router interface from change 002 carries a progress callback for this. The user sees "reading the shelf", "checking titles", "choosing", not a spinner (S1). |
 | Authentication | None. A device-scoped session token, issued on first visit and stored on the device (F3). |
-| Rate limiting | Per session token, scans per hour. The number is set from the measured cost per scan. |
+| Rate limiting | Ten scans per device per rolling hour (429), and $5 of app spend per UTC day across every device (503); both from env (change 008). |
 | Error handling | A failed stage is named to the user and logged with the error on its row. A failed recommendation does not hide a successful extraction. Nothing is invented to cover a gap. |
 
 **User Interface**
@@ -402,10 +408,10 @@ Postgres next to the tables the spike already writes.
 | :---- | :---- | :---- |
 | Shelf photos | `shelf-photos` bucket, private | exists |
 | Model calls, scored | `extractions`, `recommendations` | exists |
-| Sessions | table keyed by device token | planned |
-| Preferences | one row per session, genres plus imported ratings | planned |
-| Book records | table of records the lookups returned, so a pick shows its real author and title. Whether the lookup consults this table before calling out is the deferred caching decision. | planned |
-| Saved picks, feedback | tables referencing the recommendation row | planned |
+| Sessions | `sessions`, keyed by the token's SHA-256 | exists (003) |
+| Preferences | `preferences`, one row per session, genres plus imported ratings | exists (004) |
+| Book records | `books`, the records the lookups returned; `lookups` per scan; `lookup_cache` consulted before calling out (the caching decision, above) | exists (007, 008) |
+| Saved picks, feedback | `saved`, `feedback`, referencing the recommendation row and pick index | exists (005) |
 
 **Infrastructure**
 
@@ -417,10 +423,10 @@ Postgres next to the tables the spike already writes.
 
 **Checklist**:
 
-- [ ] My API handles streaming, errors, and rate limiting.  
-- [ ] My UI is accessible and provides a way for users to give feedback.  
+- [x] My API handles streaming, errors, and rate limiting. \<- server-sent events per stage, named failures, 429 and 503 (003, 008)  
+- [x] My UI is accessible and provides a way for users to give feedback. \<- save and "not for me" (005)  
 - [ ] My application is containerized with Docker. \<- not applicable; Vercel builds from the repo  
-- [ ] I have CI/CD set up so tests run automatically on push.  
+- [x] I have CI/CD set up so tests run automatically on push. \<- GitHub Actions (002); deployment at 010  
 - [x] I have a live demo link or clear setup instructions in my README. \<- setup instructions; no demo of this codebase yet
 
 ## 7\. System Monitoring & Error Analysis
@@ -545,11 +551,11 @@ can wait" decision; the order is revised after each change lands.
 | :---- | :---- | :---- | :---- | :---- |
 | Problem scoping and design | this document | | | first draft, revised from the MVP on 2026-09-02 |
 | MVP spike: can models read a shelf and recommend from it | 001 | | | done 2026-09-02 |
-| Provider router, failover, CI and the regression gate | 002 | quality | 2026-09-09 | approved |
-| App shell: photo to titles on a phone, over the local network | 003 | app | 2026-09-16 | approved |
-| Preferences: Goodreads export, prompt v2, overlap eval | 004 | quality | 2026-09-16 | approved |
-| Recommendations in the app, saved list, feedback | 005 | app | 2026-09-23 | approved |
-| Test set: sourced shelf photos, nightly eval, the lookup decision | 006 | quality | 2026-09-16 | approved |
+| Provider router, failover, CI and the regression gate | 002 | quality | 2026-09-09 | built 2026-09-03; primaries unmeasured for want of keys |
+| App shell: photo to titles on a phone, over the local network | 003 | app | 2026-09-16 | built 2026-09-03; closes after the phone scans |
+| Preferences: Goodreads export, prompt v2, overlap eval | 004 | quality | 2026-09-16 | built 2026-09-03; eval on the primary pending a key |
+| Recommendations in the app, saved list, feedback | 005 | app | 2026-09-23 | built 2026-09-03; closes after the phone scans |
+| Test set: sourced shelf photos, nightly eval, the lookup decision | 006 | quality | 2026-09-16 | built 2026-09-03; nightly job pending the repo secrets |
 | Book lookup as verification (006 decided) | 007 | quality | 2026-09-23 | done 2026-09-03 |
 | Hardening: limits, cost cap, retention, errors; caching if measured | 008 | app | 2026-09-23 | done 2026-09-03 |
 | Monitoring: dashboard from the rows, weekly review | 009 | either | 2026-09-23 | built 2026-09-03; closes after the second weekly review |
@@ -571,8 +577,8 @@ phone reaches the laptop over the local network.
 
 **Architecture**
 
-Five boxes. The first two and the fourth exist as CLI commands; the third
-and fifth are planned (section 10).
+Five boxes, all built: the first four run as CLI commands and as stages
+of the web scan, the fifth lives in the web app (changes 003 to 008).
 
 ```
    ┌──────────┐    ┌──────────────┐    ┌──────────────┐    ┌────────────────┐    ┌──────────────────┐
@@ -620,7 +626,7 @@ recorded where it was made, so the reasoning stays next to the evidence.
 | Prompts are files versioned by filename, logged per call | 001 D8 |
 | Logging goes to Supabase tables from day one | 001 D12 |
 | OpenRouter for the spike only; provider SDKs for the pipeline | 001 D13; 002 D2 |
-| Gemini 3.8 Flash reads, GPT-5.4 mini chooses; Sonnet 5 and Qwen 3.8 Flash as fallbacks | 001 results; section 3 |
+| Gemini 3.8 Flash reads, GPT-5.4 mini chooses; Sonnet 5 and Haiku 4.5 as fallbacks (Qwen 3.8 Flash until 2026-09-03) | 001 results; section 3; 002 |
 | A router of our own, not a framework; models named in config | 002 D1; section 3 |
 | Reasoning effort set per stage in config, never a provider default | 002 D4 |
 | Cost computed from tokens and config prices with a checked-on date | 002 D5 |

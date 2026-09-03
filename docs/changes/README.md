@@ -95,6 +95,23 @@ pass.
 **Wave 4**, ends 2026-09-30. 010, once Marina has connected the repo to
 Vercel.
 
+### Carried forward
+
+Open items from archived changes, so they are not lost in the archive.
+Each becomes a task in the next change that touches its area, or its own
+proposal if a pattern in the weekly review asks for it.
+
+- From 007 (`archive/007-book-lookup/tasks.md`, follow-ups): the query
+  shape for "Author: Title" strings; title alone before title-with-author
+  when the author was glued into the title; a read author must never be
+  overwritten by the record's author for the chooser ("Smoke and Shadow"
+  → Tanya Huff); a second catalogue if the miss rate on real scans says so.
+- From 008: `lookup_cache` has no cleanup job (misses expire at read time,
+  records never); `sessions` rows have no retention.
+- From 009: the sparklines have no axis; test-set "scans per day" reads
+  oddly when matrix reruns land on one day.
+- From 003 and 005: the phone scans, then archive both.
+
 ### Contracts for wave 1
 
 Written by the lead on 2026-09-02 and merged to main before the fan-out.

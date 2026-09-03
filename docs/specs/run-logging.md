@@ -4,10 +4,12 @@ Every model call produces a row in Supabase; the report reads them back.
 
 ## Where rows live
 
-Project `ShelfScanner` (linked via the Supabase CLI). Tables `photos`,
-`extractions`, `recommendations`, defined in `supabase/migrations/`. RLS is
-enabled on all three with no policies; only `service_role` has data
-privileges, and the script uses the service key from `.env`.
+Project `ShelfScanner` (linked via the Supabase CLI). The runs tables are
+`photos`, `extractions`, `recommendations`; the others are `sessions`,
+`preferences`, `books`, `lookups`, `lookup_cache`, `saved` and `feedback`,
+each described in its own spec. All are defined in `supabase/migrations/`.
+RLS is enabled on every table with no policies; only `service_role` has
+data privileges, and the code uses the service key from `.env`.
 
 Every extraction and recommendation row records the model slug, the
 adapter and provider that served it, the provider's request id, any
@@ -69,7 +71,10 @@ published as a private artifact.
 
 `.env` (see `.env.example`): `SUPABASE_URL`, `SUPABASE_SECRET_KEY`,
 `OPENROUTER_API_KEY`, and per direct adapter `GEMINI_API_KEY`,
-`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`; `SHELFSCANNER_SPEND_CAP_USD`. A
+`OPENAI_API_KEY`, `ANTHROPIC_API_KEY`; `SHELFSCANNER_SPEND_CAP_USD`. The
+app's own: `SHELFSCANNER_SCANS_PER_HOUR`, `SHELFSCANNER_APP_DAILY_CAP_USD`,
+`SHELFSCANNER_ADMIN_SECRET`, `SHELFSCANNER_RETENTION_DAYS`,
+`SHELFSCANNER_FAKE_PIPELINE` (`web.md`, `monitoring.md`, `photo-storage.md`). A
 missing Supabase key stops the command with a message naming it; a
 missing provider key is an error on that call, which failover can catch.
 Provider keys already present in the shell environment are used as well.

@@ -7,7 +7,7 @@ file. Every pick is checked and the run is logged.
 
 `uv run shelfscanner recommend --extraction <id> [--model <alias|slug>] --prefs <file|session id> [--prompt name]`
 
-`uv run shelfscanner run --photo <id|all> [--vision-model <m>] [--llm-model <m>] --prefs <file|session id> [--max-dim N] [--extract-prompt name] [--recommend-prompt name]`
+`uv run shelfscanner run --photo <id|all> [--vision-model <m>] [--llm-model <m>] --prefs <file|session id> [--max-dim N] [--extract-prompt name] [--recommend-prompt name] [--no-verify]`
 
 A model flag unset means the stage's primary from config, with failover
 (see `model-router.md`). `--prefs` is a JSON file or a session id whose

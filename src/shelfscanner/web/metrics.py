@@ -33,7 +33,7 @@ WINDOWS: dict[str, int | None] = {"7": 7, "30": 30, "all": None}
 DEFAULT_WINDOW = "7"
 STAGES = ("reading", "checking", "choosing")
 PRICE_STALE_DAYS = 90  # 002 D5
-CACHE_COLUMN = "cache_hits"  # on `lookups`, once 008's caching lands; absent means "not recorded"
+CACHE_COLUMN = "cache_hits"  # on lookups since 008; rows from before have none
 PAGE = 1000  # PostgREST's default max rows per request
 
 

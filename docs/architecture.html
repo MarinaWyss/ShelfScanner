@@ -27,11 +27,11 @@ td.mono { font-family: "IBM Plex Mono", ui-monospace, Menlo, monospace; font-siz
 <div class="wrap">
   <div class="eyebrow">ShelfScanner · target architecture for v1</div>
   <h1>ShelfScanner Architecture</h1>
-  <p class="lede">Five boxes between a phone and a database. Three of them exist today as command-line steps; two are planned. Model names are the current config entries, not part of the shape.</p>
+  <p class="lede">Five boxes between a phone and a database, all built as of 2026-09-03: four run as command-line steps and as stages of the web scan, the fifth lives in the web app. Model names are the current config entries, not part of the shape.</p>
 
   <figure>
     <div class="scroll">
-    <svg viewBox="0 0 1168 486" role="img" aria-label="A phone with no account sends a shelf photo through upload, spine extraction, book lookup and recommendation, then saves picks or marks them not for me. Each step writes to Supabase: the photo to a private bucket, every model call to a logged table, records, sessions, preferences, saved picks and feedback to tables. Upload, extraction and recommendation exist; lookup and feedback are planned." style="color: var(--ink);">
+    <svg viewBox="0 0 1168 486" role="img" aria-label="A phone with no account sends a shelf photo through upload, spine extraction, book lookup and recommendation, then saves picks or marks them not for me. Each step writes to Supabase: the photo to a private bucket, every model call to a logged table, records, sessions, preferences, saved picks and feedback to tables. All five boxes are built; the two green ones are the model calls." style="color: var(--ink);">
       <defs>
         <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
           <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
@@ -74,8 +74,8 @@ td.mono { font-family: "IBM Plex Mono", ui-monospace, Menlo, monospace; font-siz
         <text x="332" y="187" fill="var(--ink-2)" font-size="11">vision model reads titles</text>
         <text x="332" y="204" fill="var(--ink-3)" font-size="10">Gemini 3.8 Flash, via router</text>
 
-        <!-- Book lookup (planned) -->
-        <rect x="464" y="142" width="200" height="78" rx="3" fill="none" stroke="currentColor" stroke-width="1.4" stroke-dasharray="6 4"/>
+        <!-- Book lookup (change 007) -->
+        <rect x="464" y="142" width="200" height="78" rx="3" fill="none" stroke="currentColor" stroke-width="1.4"/>
         <text x="564" y="169" fill="currentColor">Book lookup</text>
         <text x="564" y="187" fill="var(--ink-2)" font-size="11">verify against a catalogue</text>
         <text x="564" y="204" fill="var(--ink-3)" font-size="10">drops what isn't a real book</text>
@@ -86,8 +86,8 @@ td.mono { font-family: "IBM Plex Mono", ui-monospace, Menlo, monospace; font-siz
         <text x="796" y="187" fill="var(--ink-2)" font-size="11">language model picks five</text>
         <text x="796" y="204" fill="var(--ink-3)" font-size="10">GPT-5.4 mini, via router</text>
 
-        <!-- Feedback and saved list (planned) -->
-        <rect x="928" y="142" width="220" height="78" rx="3" fill="none" stroke="currentColor" stroke-width="1.4" stroke-dasharray="6 4"/>
+        <!-- Feedback and saved list (change 005) -->
+        <rect x="928" y="142" width="220" height="78" rx="3" fill="none" stroke="currentColor" stroke-width="1.4"/>
         <text x="1038" y="169" fill="currentColor">Feedback and saved list</text>
         <text x="1038" y="187" fill="var(--ink-2)" font-size="11">save, or mark not for me</text>
         <text x="1038" y="204" fill="var(--ink-3)" font-size="10">per device session</text>
@@ -155,13 +155,11 @@ td.mono { font-family: "IBM Plex Mono", ui-monospace, Menlo, monospace; font-siz
         <rect x="22" y="452" width="26" height="14" rx="2" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.4"/>
         <text x="56" y="463">model call, swappable in config/models.toml</text>
         <rect x="400" y="452" width="26" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.2"/>
-        <text x="434" y="463">exists today as a CLI step</text>
-        <rect x="660" y="452" width="26" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.2" stroke-dasharray="5 3"/>
-        <text x="694" y="463">planned (changes 005 and 007)</text>
+        <text x="434" y="463">code of our own, no model call</text>
       </g>
     </svg>
     </div>
-    <figcaption>A scan runs left to right in about fifteen seconds. The two green boxes are the only model calls; each goes through a router of our own, so the model behind a stage is a config entry with a fallback (Sonnet 5 for reading, Qwen 3.8 Flash for choosing). The lookup sits between them as the second defence against invented titles: model choice is the first. Preferences are stored per session and sent with every recommendation. Nothing is shown to the user that was not read from the photo and checked in code.</figcaption>
+    <figcaption>A scan runs left to right in about fifteen seconds. The two green boxes are the only model calls; each goes through a router of our own, so the model behind a stage is a config entry with a fallback (Sonnet 5 for reading, Haiku 4.5 for choosing). The lookup sits between them as the second defence against invented titles: model choice is the first. Preferences are stored per session and sent with every recommendation. Nothing is shown to the user that was not read from the photo and checked in code.</figcaption>
   </figure>
 
   <h2>Box by box</h2>
@@ -173,10 +171,10 @@ td.mono { font-family: "IBM Plex Mono", ui-monospace, Menlo, monospace; font-siz
     <tbody>
       <tr><td>Upload</td><td>U1 no metadata leaves the device; U2 image sent at 1568 px</td><td><span class="pill">exists</span></td><td class="mono">specs/photo-storage.md</td></tr>
       <tr><td>Spine extraction</td><td>E1 no title that is not in the photo; E2 a bad reply is an error, not an empty shelf</td><td><span class="pill">exists</span></td><td class="mono">specs/extraction.md</td></tr>
-      <tr><td>Book lookup</td><td>L1 every shown title is a real record, or dropped; L2 shown with the record's author and title</td><td><span class="pill planned">planned</span></td><td class="mono">change 007</td></tr>
-      <tr><td>Recommendation</td><td>R1 every pick is on the list, checked in code; R2 exactly five; R3 a reason tied to a stated preference; R4 genres plus Goodreads export</td><td><span class="pill">exists</span> R4 planned</td><td class="mono">specs/recommendation.md · change 004</td></tr>
-      <tr><td>Feedback and saved list</td><td>F1 save persists on the device; F2 not-for-me stored against the pick; F3 a device token, nothing linking it to a person</td><td><span class="pill planned">planned</span></td><td class="mono">change 005</td></tr>
-      <tr><td>Whole scan</td><td>S1 15 s p50 with progress per stage; S2 every model call logged</td><td><span class="pill">S2 exists</span> S1 planned</td><td class="mono">specs/run-logging.md · change 003</td></tr>
+      <tr><td>Book lookup</td><td>L1 every shown title is a real record, or dropped; L2 shown with the record's author and title</td><td><span class="pill">exists</span></td><td class="mono">specs/book-lookup.md</td></tr>
+      <tr><td>Recommendation</td><td>R1 every pick is on the list, checked in code; R2 exactly five; R3 a reason tied to a stated preference; R4 genres plus Goodreads export</td><td><span class="pill">exists</span></td><td class="mono">specs/recommendation.md · specs/preferences.md</td></tr>
+      <tr><td>Feedback and saved list</td><td>F1 save persists on the device; F2 not-for-me stored against the pick; F3 a device token, nothing linking it to a person</td><td><span class="pill">exists</span></td><td class="mono">specs/feedback.md</td></tr>
+      <tr><td>Whole scan</td><td>S1 15 s p50 with progress per stage; S2 every model call logged</td><td><span class="pill">S2 exists</span> S1 stages shown; 16.7 s p50 on the laptop on the fallbacks, phone pending</td><td class="mono">specs/run-logging.md · specs/web.md</td></tr>
     </tbody>
   </table>
   </div>

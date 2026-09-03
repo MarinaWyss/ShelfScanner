@@ -2,7 +2,7 @@
 
 Status: approved 2026-09-02
 Date: 2026-09-02
-Deadline: 2026-10-07
+Deadline: 2026-09-23 (the roadmap's date; 2026-10-07 was written here first)
 Spend cap: $5
 Track: either (after 005)
 

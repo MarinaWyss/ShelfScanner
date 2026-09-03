@@ -22,8 +22,11 @@ Work in order. ∥ marks tasks that can run in parallel worktrees.
 
 ## 3. Nightly eval ∥
 
-- Workflow on a schedule: sync, `research.check --set all`, cap from
-  `.env`, numbers in the job summary, failure on regression.
+- Workflow on a schedule: the primaries over every labelled photo, then
+  `research.check` on the core set (the one with a baseline entry; a
+  check on `sourced` or `derived` needs its own entry in
+  `research/baseline.json` first), cap from `.env`, numbers in the job
+  summary, failure on regression.
 
 ## 4. Run the sets
 

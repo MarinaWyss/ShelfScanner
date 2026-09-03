@@ -6,13 +6,19 @@ constraints, `docs/specs/` for what the code does today, and
 `docs/changes/` for proposals and their results.
 
 `docs/mvp-diagram.html` is a one-figure diagram of the pipeline as built;
-`docs/architecture.html` is the five-box target for v1 with what exists
-and what is planned.
+`docs/architecture.html` is the five-box architecture with the status of
+each box.
 
-Current state: a command-line spike that answers two questions, whether an
-affordable vision model can read spines and whether an affordable language
-model can recommend specifically from the result. Both are yes; the numbers
-and the model choice are in `docs/changes/archive/001-mvp/results.md`.
+Current state (2026-09-03): the whole scan runs, on the command line and
+as a phone-first web app served locally: upload with metadata stripped,
+spines read by a vision model, titles verified against Open Library,
+five picks with reasons, save and "not for me", a device session with no
+account. Model calls go through a router of our own with per-stage
+failover, a spend guard, a dashboard and a weekly review. Deployment to
+Vercel is the remaining change (010). The MVP that started it, and the
+numbers behind the model choice, are in
+`docs/changes/archive/001-mvp/results.md`; the roadmap and its status are
+in `docs/changes/README.md`.
 
 ## Setup
 

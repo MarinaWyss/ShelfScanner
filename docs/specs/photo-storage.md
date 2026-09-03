@@ -74,7 +74,7 @@ object is deleted and the row stays for the metrics.
    `.env`, default 30; `--days` overrides it. Rows are aged by `created_at`.
 2. A row is a candidate when it still has a `storage_path`, is older than
    the window, and is not exempt. A row is exempt, and never touched, when
-   its `titles` array is non-empty or its `set` column (once it exists) is
+   its `titles` array is non-empty or its `set` column (006) is
    anything other than the default `core`. The exemption is asked of the
    server and re-checked on every returned row before deletion.
 3. For each candidate the object is removed from `shelf-photos`, then the

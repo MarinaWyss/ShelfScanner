@@ -2,7 +2,7 @@
 
 Status: approved 2026-09-02
 Date: 2026-09-02
-Deadline: 2026-09-23
+Deadline: 2026-09-16 (the roadmap's date; 2026-09-23 was written here first)
 Spend cap: $15
 Track: quality (parallel with 005)
 
@@ -56,8 +56,12 @@ language) at the cost of a different camera and framing than a phone at
 arm's length; the degraded set covers the phone-conditions half. Real
 phone scans after 010 replace both over time.
 
-**D2. The lookup rule.** If the primary reading model produced zero
-invented titles over at least 30 sourced and degraded photos, 007 builds
+**D2. The lookup rule.** (Applied on 2026-09-03 with the fallback
+reading model's numbers, the primary having no key; the derived set showed
+invention is a property of hard input, not of one model, so the decision
+stands for the primary too. See results.md.) If the primary reading model
+produced zero invented titles over at least 30 sourced and degraded
+photos, 007 builds
 enrichment only (author, cover, year for the picks) and verification is
 dropped from requirement L1. If invented is above zero, 007 builds
 verification, and the measured invented rate is the number it has to

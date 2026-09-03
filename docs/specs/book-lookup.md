@@ -6,7 +6,7 @@ title read off a shelf to an Open Library work record;
 `src/shelfscanner/verify.py` runs it over a whole extraction and decides
 what the chooser sees. Measured numbers are in
 `docs/changes/archive/007-book-lookup/results.md`; the cache's (change
-008, task 4) in `docs/changes/008-hardening/results.md`.
+008, task 4) in `docs/changes/archive/008-hardening/results.md`.
 
 ## Where it runs
 
@@ -53,8 +53,10 @@ looked up with `lookup_batch`. Then, in the extraction's order:
 `Verified` holds `photo_id`, `extraction_id`, `kept` (list of `Kept`:
 `title`, `author`, `read_title`, `read_author`, `record`, `score`,
 `verified`), `dropped` (list of `Dropped`: `title`, `author`, `reason`,
-`nearest`), the batch's `hits`, `misses` (errors included), `errors`,
-`latency_ms`, and `lookup_id`. `line()` is the one-line summary the CLI
+`nearest`: the nearest candidate under the threshold, or for a duplicate
+the earlier kept title and the match's score), the batch's `hits`,
+`misses` (errors included), `errors`, `latency_ms`, `lookup_id`, and
+`cache_hits` (008). `line()` is the one-line summary the CLI
 prints; `lines()` adds one line per drop.
 
 Author-only strings (a name in the title field) are not resolved by an
