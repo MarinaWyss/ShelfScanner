@@ -15,3 +15,6 @@ __pycache__/
 
 # Personal exports; never committed
 data/prefs/goodreads*.csv
+
+# Agent worktrees
+.claude/worktrees/
