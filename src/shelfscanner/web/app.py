@@ -74,13 +74,18 @@ def create_app(*, pipeline: Pipeline | None = None, sessions: SessionStore | Non
     app.add_middleware(SessionMiddleware, store=sessions, routes=app.router.routes)
 
     @app.get("/")
-    async def index(request: Request):
+    async def home(request: Request):
+        # 012: what the app does, for a visitor. Unsessioned (sessions.UNSESSIONED_PATHS): no row, no cookie.
+        return app.state.templates.TemplateResponse(request, "home.html")
+
+    @app.get("/scan")
+    async def scan_page(request: Request):
         # First visit: no preferences row yet, so the preferences page comes first (005). It can be
         # skipped, which stores an empty object, and a scan with none still runs (D2).
         stored = await to_thread.run_sync(pipeline.preferences, request.state.session_id)
         if stored is None:
             return RedirectResponse("/preferences", status_code=302)
-        return app.state.templates.TemplateResponse(request, "index.html")
+        return app.state.templates.TemplateResponse(request, "scan.html")
 
     return app
 

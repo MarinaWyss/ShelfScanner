@@ -1,0 +1,24 @@
+{
+  "genres": [
+    "science fiction",
+    "fantasy",
+    "psychology",
+    "self-help"
+  ],
+  "likes": "Big-idea non-fiction that changes how I see everyday things. Science fiction with real characters and political stakes rather than hardware. Books with a strong narrative voice. I read in English and German.",
+  "loved_books": [
+    "Three Body Problem",
+    "Leviathan Wakes",
+    "The Psychology of Money",
+    "How to Know a Person"
+  ],
+  "avoid": [
+    "self-help with a twelve-step feel",
+    "anything over 800 pages right now",
+    "fantasy that is childish or overly-imaginitive"
+  ],
+  "authors": [
+    "Neil Gaiman",
+    "Kim Stanley Robinson"
+  ]
+}

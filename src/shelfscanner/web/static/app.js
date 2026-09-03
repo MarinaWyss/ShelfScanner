@@ -64,6 +64,18 @@
     });
   });
 
+  // 012: iOS Safari enforces `required` on a file input without showing anything, so the input has no
+  // `required` and this runs first (capture phase, before htmx's own submit listener): with no photo,
+  // say so and open the picker instead of sending an empty request.
+  var hint = document.getElementById('scan-hint');
+  form.addEventListener('submit', function (evt) {
+    if (input.files && input.files.length) { hint.hidden = true; return; }
+    evt.preventDefault();
+    evt.stopImmediatePropagation();
+    hint.hidden = false;
+    input.click();
+  }, true);
+
   form.addEventListener('htmx:configRequest', function (evt) {
     if (prepared) {
       evt.detail.parameters.photo = prepared.file;
@@ -85,8 +97,7 @@
   });
 
   // "Try again" after a failed stage (008): submit the form again, which starts a new scan of the
-  // photo still in the picker. requestSubmit runs the browser's validation, so with no photo chosen
-  // the picker is flagged instead of an empty request being sent.
+  // photo still in the picker; with no photo chosen the submit listener above opens the picker.
   document.body.addEventListener('click', function (evt) {
     if (evt.target && evt.target.id === 'scan-retry') {
       if (form.requestSubmit) { form.requestSubmit(); } else { htmx.trigger(form, 'submit'); }

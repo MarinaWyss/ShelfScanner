@@ -15,18 +15,20 @@ FIXTURE = Path("tests/fixtures/goodreads_sample.csv")
 
 def test_preferences_scan_save_unsave_mark_and_the_saved_list(server: Server, page: Page):
     # First visit: the preferences page. Two genres, a line, the export.
-    page.goto(server.url)
+    page.goto(f"{server.url}/scan")
     expect(page).to_have_url(f"{server.url}/preferences")
-    page.check("input[name=genres][value='Science fiction']")
+    page.check("input[name=genres][value='Science Fiction']")
     page.check("input[name=genres][value='Horror']")
+    page.fill("input[name=authors]", "Ursula K. Le Guin, Shirley Jackson")
     page.fill("textarea[name=free_text]", "Short and strange.")
     page.set_input_files("input[name=goodreads]", {"name": "goodreads_library_export.csv", "mimeType": "text/csv",
                                                    "buffer": FIXTURE.read_bytes()})
     page.click("#prefs-save")
-    expect(page).to_have_url(f"{server.url}/")
+    expect(page).to_have_url(f"{server.url}/scan")
 
     (prefs,) = server.pipeline.prefs.values()
-    assert prefs["genres"] == ["Science fiction", "Horror"] and prefs["free_text"] == "Short and strange."
+    assert prefs["genres"] == ["Science Fiction", "Horror"] and prefs["free_text"] == "Short and strange."
+    assert prefs["authors"] == ["Ursula K. Le Guin", "Shirley Jackson"]
     assert len(prefs["rated_books"]) == 18 and len(prefs["to_read"]) == 7
 
     # The scan, through reading and choosing, to five picks.
@@ -38,7 +40,7 @@ def test_preferences_scan_save_unsave_mark_and_the_saved_list(server: Server, pa
     expect(page.locator("#picks .pick")).to_have_count(5)
     expect(page.locator("#picks .pick-title")).to_have_text([p["title"] for p in DEFAULT_PICKS])
     (text,) = server.pipeline.client.inputs
-    assert "Genres: Science fiction, Horror" in text and "The Salt Road" in text, "the model saw the preferences"
+    assert "Genres: Science Fiction, Horror" in text and "Favourite authors: Ursula K. Le Guin, Shirley Jackson" in text and "The Salt Road" in text, "the model saw the preferences"
     rid = int(page.locator("#picks").get_attribute("data-recommendation-id"))
 
     # Save two, unsave one, mark one.
@@ -76,9 +78,9 @@ def test_preferences_scan_save_unsave_mark_and_the_saved_list(server: Server, pa
 
 
 def test_a_skipped_first_visit_still_gets_five_picks(server: Server, page: Page):
-    page.goto(server.url)
+    page.goto(f"{server.url}/scan")
     page.click("#prefs-skip button")
-    expect(page).to_have_url(f"{server.url}/")
+    expect(page).to_have_url(f"{server.url}/scan")
     pick(page, small_jpeg())
     expect(page.locator("#scan-button")).to_be_enabled()
     page.click("#scan-button")

@@ -16,6 +16,16 @@ from tests.e2e.conftest import Server, open_scan_page, pick
 from tests.web_images import GPS_IFD, phone_jpeg_with_gps, small_jpeg
 
 
+def test_homepage_explains_and_leads_to_the_scan_page(server: Server, page: Page):
+    page.goto(server.url)
+    expect(page.locator("h1")).to_contain_text("Find your next book")
+    expect(page.locator(".steps li")).to_have_count(3)
+    assert page.locator('link[rel="icon"]').get_attribute("href") == "/static/favicon.svg"
+    assert page.request.get(f"{server.url}/static/favicon.svg").ok and page.request.get(f"{server.url}/static/apple-touch-icon.png").ok
+    page.get_by_role("link", name="Scan a shelf").first.click()
+    expect(page).to_have_url(f"{server.url}/preferences")  # first visit: preferences, then the scan page
+
+
 def test_photo_to_picks_with_progress(server: Server, page: Page):
     open_scan_page(page, server.url)
     pick(page, small_jpeg())
@@ -33,6 +43,24 @@ def test_photo_to_picks_with_progress(server: Server, page: Page):
 
     assert list(server.pipeline.readings.values())[0].titles == DEFAULT_TITLES
     assert len(list(server.pipeline.choosings.values())[0].picks) == 5
+
+
+def test_a_click_with_no_photo_says_so_and_sends_nothing(server: Server, page: Page):
+    # 012: no `required` on the input (iOS Safari enforces it silently); the script says so and opens the picker.
+    posts = []
+    page.on("request", lambda req: posts.append(req) if req.method == "POST" and req.url.endswith("/scan") else None)
+    open_scan_page(page, server.url)
+    expect(page.locator("#scan-hint")).to_be_hidden()
+    with page.expect_file_chooser() as chooser:
+        page.click("#scan-button")
+    assert chooser.value.is_multiple() is False
+    expect(page.locator("#scan-hint")).to_have_text("Choose a photo first.")
+    assert posts == [] and page.locator("#scan").inner_html().strip() == ""
+    pick(page, small_jpeg())
+    expect(page.locator("#scan-button")).to_be_enabled()
+    page.click("#scan-button")
+    expect(page.locator("#scan-hint")).to_be_hidden()
+    expect(page.locator("#stage-uploaded")).to_have_class("done")
 
 
 def test_browser_resize_keeps_metadata_off_the_wire(server: Server, page: Page):
@@ -88,8 +116,8 @@ def test_two_browsers_two_sessions_and_a_reload_keeps_one(server: Server, browse
     first, second = browser.new_context(), browser.new_context()
     try:
         a, b = first.new_page(), second.new_page()
-        a.goto(server.url)
-        b.goto(server.url)
+        a.goto(f"{server.url}/scan")
+        b.goto(f"{server.url}/scan")
         token_a = next(c["value"] for c in first.cookies() if c["name"] == COOKIE)
         token_b = next(c["value"] for c in second.cookies() if c["name"] == COOKIE)
         assert token_a != token_b

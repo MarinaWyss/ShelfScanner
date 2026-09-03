@@ -38,6 +38,7 @@ ALLOWED_TYPES = {"image/jpeg", "image/png"}  # declared content types
 ALLOWED_FORMATS = {"JPEG": "JPEG", "MPO": "JPEG", "PNG": "PNG"}
 KEEPALIVE_S = 15.0
 POLL_S = 1.0  # how often a connection that did not get the stage lock looks again
+NO_PHOTO = "Choose a photo first."
 CLOSE_EVENT = "close"  # sent after done or failed so the browser stops reconnecting
 
 TOO_BIG = ("That photo is over 4 MB. The page shrinks photos before sending when the browser can; "
@@ -160,10 +161,13 @@ def inspect_upload(content_type: str | None, data: bytes) -> str | None:
 
 
 @router.post("/scan")
-async def create_scan(request: Request, photo: Annotated[UploadFile, File()],
+async def create_scan(request: Request, photo: Annotated[UploadFile | None, File()] = None,
                       resized: Annotated[str, Form()] = "0"):
     session_id = request.state.session_id
     pipeline = _pipeline(request)
+    if photo is None or not photo.filename:
+        # 012: iOS Safari submits a form with an empty `required` file input without a word; say one.
+        return _refuse(request, 400, NO_PHOTO, "uploading")
     length = request.headers.get("content-length", "")
     if length.isdigit() and int(length) > MAX_BODY_BYTES:
         return _refuse(request, 413, TOO_BIG, "uploading")

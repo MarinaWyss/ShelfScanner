@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="ShelfScanner">
+  <rect width="64" height="64" rx="14" fill="#fbf8f3"/>
+  <rect x="8" y="46" width="48" height="4" rx="2" fill="#6b645c"/>
+  <rect x="11" y="16" width="9" height="30" rx="2" fill="#b3492e"/>
+  <rect x="22" y="10" width="9" height="36" rx="2" fill="#d9903a"/>
+  <rect x="33" y="19" width="9" height="27" rx="2" fill="#2d7a4f"/>
+  <g transform="rotate(12 48 30)"><rect x="43.5" y="12" width="9" height="34" rx="2" fill="#4a6fa5"/></g>
+  <rect x="13.5" y="21" width="4" height="2" rx="1" fill="#fbf8f3"/>
+  <rect x="24.5" y="15" width="4" height="2" rx="1" fill="#fbf8f3"/>
+  <rect x="35.5" y="24" width="4" height="2" rx="1" fill="#fbf8f3"/>
+  <circle cx="53" cy="12" r="2.2" fill="#d9903a"/>
+  <circle cx="58" cy="19" r="1.4" fill="#d9903a"/>
+</svg>

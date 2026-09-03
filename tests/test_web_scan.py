@@ -227,14 +227,24 @@ def test_htmx_requests_get_fragments():
     assert "sse-connect" not in done.text and "Piranesi" in done.text and done.text.count('class="pick"') == 5
 
 
-def test_index_page_has_the_picker_the_scripts_and_the_links():
+def test_scan_page_has_the_picker_the_scripts_and_the_links():
     client, _ = make_client()
-    assert client.get("/", follow_redirects=False).status_code == 302, "first visit goes to preferences"
+    assert client.get("/scan", follow_redirects=False).status_code == 302, "first visit goes to preferences"
     client.post("/preferences", data={"action": "skip"})
-    res = client.get("/")
+    res = client.get("/scan")
     assert res.status_code == 200
     assert 'name="photo"' in res.text and 'hx-post="/scan"' in res.text and "/static/app.js" in res.text
-    assert 'href="/saved"' in res.text and 'href="/preferences"' in res.text
+    assert 'href="/saved"' in res.text and 'href="/preferences"' in res.text and 'href="/"' in res.text
+    assert "required" not in res.text and 'id="scan-hint"' in res.text  # 012: iOS enforces `required` silently
+
+
+def test_a_submit_with_no_photo_is_refused_with_the_message_not_a_422():
+    # 012: iOS Safari sends the form with an empty file input; the page must say something.
+    client, _ = make_client()
+    res = client.post("/scan", data={"resized": "0"})
+    assert res.status_code == 400 and res.json() == {"error": "Choose a photo first.", "stage": "uploading"}
+    res = client.post("/scan", files={"photo": ("", b"", "application/octet-stream")}, headers={"HX-Request": "true"})
+    assert res.status_code == 400 and "Choose a photo first." in res.text and 'data-stage="uploading"' in res.text
 
 
 # --- change 008: the stage lock, the failover message, the checking step, validation ------------------

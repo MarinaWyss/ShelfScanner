@@ -17,7 +17,7 @@ from pathlib import Path
 
 MAX_RATED = 60  # D2
 MAX_TO_READ = 20  # D2
-KEYS = ("genres", "free_text", "rated_books", "to_read", "avoid")
+KEYS = ("genres", "free_text", "rated_books", "to_read", "avoid", "authors")  # authors: 012
 PREFS_DIR = Path("data/prefs")
 
 _REQUIRED_COLUMNS = ("Title", "Author", "My Rating", "Exclusive Shelf", "Date Read", "Date Added")
@@ -45,7 +45,7 @@ class Row:
 
 
 def empty() -> dict:
-    return {"genres": [], "free_text": "", "rated_books": [], "to_read": [], "avoid": []}
+    return {"genres": [], "free_text": "", "rated_books": [], "to_read": [], "avoid": [], "authors": []}
 
 
 def is_v2(prefs: dict) -> bool:
@@ -67,6 +67,7 @@ def upgrade(prefs: dict) -> dict:
     out["free_text"] = str(prefs.get("likes", "") or "")
     out["rated_books"] = [{"title": str(t), "author": None, "rating": 5} for t in prefs.get("loved_books", [])]
     out["avoid"] = [str(a) for a in prefs.get("avoid", [])]
+    out["authors"] = [str(a) for a in prefs.get("authors", [])]  # 012: a flat file may name them too
     return out
 
 
@@ -97,6 +98,8 @@ def as_text(prefs: dict) -> str:
         parts.append("Genres: " + ", ".join(prefs["genres"]))
     if prefs.get("free_text"):
         parts.append("About the reader: " + prefs["free_text"].strip())
+    if prefs.get("authors"):
+        parts.append("Favourite authors: " + ", ".join(prefs["authors"]))
     if prefs.get("rated_books"):
         parts.append("Rated books, 1 (disliked) to 5 (loved):")
         parts += [f"- {_book_line(b)} ({b['rating']}/5)" for b in prefs["rated_books"]]
@@ -135,7 +138,7 @@ def read_export(path: Path) -> list[Row]:
 
 
 def build(rows: list[Row], *, genres: list[str] | None = None, free_text: str = "", avoid: list[str] | None = None,
-          max_rated: int = MAX_RATED, max_to_read: int = MAX_TO_READ) -> dict:
+          max_rated: int = MAX_RATED, max_to_read: int = MAX_TO_READ, authors: list[str] | None = None) -> dict:
     """The preferences object from export rows plus whatever the user said in words (D1, D2).
 
     - `read` with a rating 1 to 5 -> `rated_books`; unrated read books carry no signal and are dropped.
@@ -149,6 +152,7 @@ def build(rows: list[Row], *, genres: list[str] | None = None, free_text: str = 
     prefs = empty()
     prefs["genres"] = list(genres or [])
     prefs["free_text"] = free_text
+    prefs["authors"] = list(authors or [])
     prefs["rated_books"] = [{"title": r.title, "author": r.author or None, "rating": r.rating} for r in rated_rows]
     to_read = sorted((r for r in rows if r.shelf == "to-read"), key=lambda r: (r.date_added or date.min).toordinal() * -1)
     prefs["to_read"] = [{"title": r.title, "author": r.author or None} for r in to_read]
@@ -162,13 +166,15 @@ def build(rows: list[Row], *, genres: list[str] | None = None, free_text: str = 
 
 
 def import_export(path: Path, *, base: dict | None = None, genres: list[str] | None = None, free_text: str | None = None,
-                  avoid: list[str] | None = None, max_rated: int = MAX_RATED, max_to_read: int = MAX_TO_READ) -> dict:
+                  avoid: list[str] | None = None, max_rated: int = MAX_RATED, max_to_read: int = MAX_TO_READ,
+                  authors: list[str] | None = None) -> dict:
     """Read an export and build the object. `base` (an existing file, either shape) supplies genres, free
-    text and avoid entries; the explicit arguments extend or replace them."""
+    text, avoid entries and authors; the explicit arguments extend or replace them."""
     b = upgrade(base) if base else empty()
     return build(read_export(path), genres=(b["genres"] + list(genres or [])) or None,
                  free_text=free_text if free_text is not None else b["free_text"],
-                 avoid=b["avoid"] + list(avoid or []), max_rated=max_rated, max_to_read=max_to_read)
+                 avoid=b["avoid"] + list(avoid or []), max_rated=max_rated, max_to_read=max_to_read,
+                 authors=b["authors"] + list(authors or []))
 
 
 def _clean(s: str | None) -> str:
@@ -253,6 +259,7 @@ def add_parser(subparsers: argparse._SubParsersAction) -> None:
     imp.add_argument("--genres", nargs="*", default=None, help="genres, added to any from --base")
     imp.add_argument("--free-text", default=None, help="what the reader likes, in their words; replaces --base's")
     imp.add_argument("--avoid", nargs="*", default=None, help="things to avoid, added to any from --base")
+    imp.add_argument("--authors", nargs="*", default=None, help="favourite authors, added to any from --base (012)")
     imp.add_argument("--max-rated", type=int, default=MAX_RATED, help=f"cap on rated books (default {MAX_RATED}, D2)")
     imp.add_argument("--max-to-read", type=int, default=MAX_TO_READ, help=f"cap on to-read titles (default {MAX_TO_READ}, D2)")
     target = imp.add_mutually_exclusive_group()
@@ -265,7 +272,7 @@ def add_parser(subparsers: argparse._SubParsersAction) -> None:
 def _import_command(args: argparse.Namespace) -> None:
     base = load_file(args.base) if args.base else None
     prefs = import_export(args.csv, base=base, genres=args.genres, free_text=args.free_text, avoid=args.avoid,
-                          max_rated=args.max_rated, max_to_read=args.max_to_read)
+                          max_rated=args.max_rated, max_to_read=args.max_to_read, authors=args.authors)
     if args.session is not None:
         save_for_session(args.session, prefs)
         print(f"session {args.session}: {counts(prefs)}")

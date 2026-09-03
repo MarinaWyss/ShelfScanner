@@ -104,7 +104,7 @@ def test_default_caps_are_d2():
 
 def test_upgrade_converts_the_flat_shape():
     up = p.upgrade(FLAT)
-    assert up == {"genres": ["science fiction"], "free_text": "Big ideas.",
+    assert up == {"genres": ["science fiction"], "free_text": "Big ideas.", "authors": [],
                   "rated_books": [{"title": "Three Body Problem", "author": None, "rating": 5}], "to_read": [], "avoid": ["doorstops"]}
     assert p.upgrade(up) == up
     assert p.upgrade({"genres": ["x"], "to_read": []})["rated_books"] == []  # partial v2 object gets the missing keys
@@ -132,6 +132,7 @@ def test_as_text_is_compact_and_omits_empty_sections():
     assert txt == ("Genres: sf\nAbout the reader: Voice matters.\nRated books, 1 (disliked) to 5 (loved):\n"
                    "- A — X (5/5)\n- B (1/5)\nWants to read:\n- C — Y")
     assert p.as_text(p.empty()) == "(no preferences given)"
+    assert "Favourite authors: A, B" in p.as_text({**p.empty(), "authors": ["A", "B"]})  # 012
 
 
 def test_prefs_text_keeps_v1_behaviour_for_the_flat_shape():

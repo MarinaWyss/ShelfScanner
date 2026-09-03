@@ -16,7 +16,10 @@
         {% endfor %}
       </div>
     </fieldset>
-    <label class="field">Anything else? Authors, moods, what you are avoiding.
+    <label class="field">Favourite authors, separated by commas
+      <input type="text" name="authors" id="prefs-authors" value="{{ authors }}" placeholder="Ursula K. Le Guin, Hilary Mantel" autocomplete="off">
+    </label>
+    <label class="field">Anything else? Moods, what you are avoiding.
       <textarea name="free_text" rows="3" placeholder="Short novels with a strong voice; no grimdark right now.">{{ free_text }}</textarea>
     </label>
     <label class="picker">

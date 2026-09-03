@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{% block title %}ShelfScanner{% endblock %}</title>
+<link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
 <style>
   :root { color-scheme: light dark; --ink: #1d1a17; --paper: #fbf8f3; --muted: #6b645c; --line: #ddd5ca;
           --accent: #b3492e; --ok: #2d7a4f; --card: #f3eee6; }
@@ -72,6 +74,22 @@
   .saved-pick { padding: .9rem 1rem; border-radius: .75rem; background: var(--card); }
   .saved-pick .scanned { display: block; font-size: .85rem; color: var(--muted); margin-bottom: .5rem; }
   .saved-pick button { padding: .55rem .9rem; font-size: .95rem; }
+  /* 012: the homepage */
+  .hero { padding: 1rem 0 1.5rem; }
+  .hero h1 { font-size: 1.85rem; line-height: 1.2; letter-spacing: -.01em; text-wrap: balance; margin-bottom: .75rem; }
+  .hero .lede { font-size: 1.05rem; }
+  .cta { display: inline-block; padding: .9rem 1.4rem; }
+  .steps { list-style: none; padding: 0; margin: 0; counter-reset: step; display: grid; gap: .75rem; }
+  .steps li { counter-increment: step; display: grid; grid-template-columns: 2rem 1fr; gap: .25rem .75rem;
+              padding: .9rem 1rem; border-radius: .75rem; background: var(--card); }
+  .steps li::before { content: counter(step); grid-row: 1 / span 2; font-weight: 700; color: var(--accent);
+                      font-size: 1.4rem; line-height: 1; }
+  .steps strong { display: block; }
+  .steps span { color: var(--muted); font-size: .95rem; }
+  .kept { padding-left: 1.2rem; margin: 0; color: var(--muted); display: grid; gap: .4rem; }
+  .kept li::marker { color: var(--accent); }
+  .hero-foot { margin: 1.75rem 0 0; }
+  nav .brand img { width: 1.35rem; height: 1.35rem; vertical-align: -.25rem; margin-right: .35rem; }
 </style>
 <script src="/static/htmx.min.js"></script>
 <script src="/static/sse.js"></script>
@@ -79,8 +97,8 @@
 <body>
 <main>
   <nav>
-    <a class="brand" href="/">ShelfScanner</a>
-    <a href="/" {% if page == 'scan' %}aria-current="page"{% endif %}>Scan</a>
+    <a class="brand" href="/"><img src="/static/favicon.svg" alt="">ShelfScanner</a>
+    <a href="/scan" {% if page == 'scan' %}aria-current="page"{% endif %}>Scan</a>
     <a href="/saved" {% if page == 'saved' %}aria-current="page"{% endif %}>Saved</a>
     <a href="/preferences" {% if page == 'preferences' %}aria-current="page"{% endif %}>Preferences</a>
   </nav>

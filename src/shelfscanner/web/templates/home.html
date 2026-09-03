@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% set page = 'home' %}
+{% block content %}
+  <section class="hero">
+    <h1>Find your next book on a shelf that is already in front of you.</h1>
+    <p class="lede">Photograph a bookshelf at a shop, a library or a friend's place. ShelfScanner reads the spines, checks the titles, and picks five books from that shelf for you, with a reason for each.</p>
+    <a class="button cta" href="/scan">Scan a shelf</a>
+  </section>
+
+  <h2>How it works</h2>
+  <ol class="steps">
+    <li>
+      <strong>Photograph the shelf.</strong>
+      <span>One photo of the whole shelf, spines facing you. It is resized on your phone before it is sent.</span>
+    </li>
+    <li>
+      <strong>The books are read and checked.</strong>
+      <span>A vision model reads the titles off the spines, and each one is checked against a book catalogue so nothing gets made up.</span>
+    </li>
+    <li>
+      <strong>Five are picked for you.</strong>
+      <span>Your genres, favourite authors and, if you upload it, your Goodreads history choose five from that shelf, with a reason for each. Save the ones you want; mark the ones you don't.</span>
+    </li>
+  </ol>
+
+  <h2>What is kept, and what is not</h2>
+  <ul class="kept">
+    <li>No account. This device is remembered with a cookie, and your saved books live with it.</li>
+    <li>The photo is stored privately for the scan and deleted after thirty days. Its location and camera data are stripped before it leaves your phone.</li>
+    <li>A Goodreads export is read once to build your preferences and is not stored.</li>
+    <li>Ten scans per device per hour, so the service stays up for everyone.</li>
+  </ul>
+
+  <p class="hero-foot"><a class="button cta" href="/scan">Scan a shelf</a></p>
+{% endblock %}

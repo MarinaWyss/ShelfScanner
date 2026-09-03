@@ -86,7 +86,7 @@ def limited_server():
 
 def open_scan_page(page: Page, url: str) -> None:
     """Go to the app; a first visit lands on the preferences page, which is skipped here."""
-    page.goto(url)
+    page.goto(f"{url}/scan")
     if page.url.endswith("/preferences"):
         page.click("#prefs-skip button")
     expect(page.locator("#scan-form")).to_be_visible()

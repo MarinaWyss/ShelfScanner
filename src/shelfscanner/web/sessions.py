@@ -20,6 +20,7 @@ from starlette.types import ASGIApp, Message, Receive, Scope, Send
 COOKIE = "shelfscanner_session"
 COOKIE_MAX_AGE = 365 * 24 * 3600
 UNSESSIONED_PREFIXES = ("/static/", "/admin")  # /admin (009) has its own cookie
+UNSESSIONED_PATHS = ("/",)  # 012 D1: the homepage makes no session row; a visitor becomes a session at /scan
 LAST_SEEN_THROTTLE_S = 600  # 008: `last_seen_at` is written at most once per ten minutes per session
 
 
@@ -106,7 +107,8 @@ class SessionMiddleware:
         return any(route.matches(scope)[0] == Match.FULL for route in self.routes)
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
-        if scope["type"] != "http" or scope["path"].startswith(UNSESSIONED_PREFIXES) or not self.routed(scope):
+        if (scope["type"] != "http" or scope["path"] in UNSESSIONED_PATHS or scope["path"].startswith(UNSESSIONED_PREFIXES)
+                or not self.routed(scope)):
             await self.app(scope, receive, send)
             return
 
