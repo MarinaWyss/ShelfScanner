@@ -44,46 +44,59 @@ them: another device gets 404 for their ids and an empty saved list.
 
 ## Pages
 
-Four server-rendered pages, phone widths first, with htmx (vendored in
-`web/static/`; no CDN), sharing a layout with a brand link home and a Scan
-/ Saved / Preferences nav, a favicon (`static/favicon.svg`, drawn in the
-palette) and an iPhone home-screen icon (`static/apple-touch-icon.png`):
+Server-rendered pages with htmx (vendored in `web/static/`; no CDN),
+laid out and worded as the earlier ShelfScanner (v1) was (014): a sticky
+top bar with a menu button, the brand and a Contact mail link; a drawer
+with Home, Book Scanner and Reading List; a favicon (`static/favicon.svg`)
+and an iPhone home-screen icon (`static/apple-touch-icon.png`); white
+with violet buttons, black with gray cards when the system is dark.
 
-- `GET /` — the homepage (012): what the app does in a line, the three
-  "How It Works" steps in the original ShelfScanner's words, and a "Scan
-  a shelf" link to `/scan`. It
-  is unsessioned (012 D1): no `sessions` row and no cookie until the
+- `GET /` — the homepage: the v1 hero, the "AI Book Discovery" card,
+  "How It Works", "Start Using ShelfScanner Today", the copyright footer.
+  It is unsessioned (012 D1): no `sessions` row and no cookie until the
   visitor opens a page that needs one.
-- `GET /scan` — the scan page. On a session with no preferences row it
-  redirects (302) to `/preferences` instead: the first visit sees the
-  preferences page. Once a row exists, even an empty one, `/scan` is the
-  scan page. The file input has no `required` attribute (iOS Safari
+- `GET /books` — the Book Scanner, step 1 of three: the preferences form
+  (see Preferences), prefilled from the session's row when there is one.
+  The stepper above it shows Preferences · Book Upload · Recommendations.
+- `GET /books/upload` — step 2: the upload box. With no preferences row
+  it redirects (302) to `/books`: the first visit sees the preferences
+  first (005 D2). The file input has no `required` attribute (iOS Safari
   enforces it without a word): a submit with no photo is caught by
-  `app.js`, which shows "Choose a photo first." under the button and opens
-  the picker, and `POST /scan` without a file answers 400 with the same
-  message and stage `uploading`.
-- `GET /preferences`, `POST /preferences` — see Preferences.
-- `GET /saved` — see `feedback.md`.
+  `app.js`, which shows "Choose a photo first." and opens the picker, and
+  `POST /scan` without a file answers 400 with the same message and stage
+  `uploading`. Choosing a photo shows it in the box; Get Recommendations
+  posts it. The result (step 3) replaces the upload step in place and
+  moves the stepper to 3; Scan More Books returns to step 2; a refusal
+  before any stage ran puts the form back.
+- `GET /preferences`, `POST /preferences` — the same step 1 page and the
+  form's action; see Preferences.
+- `GET /reading-list` — see `feedback.md`.
+- `GET /scan` → `/books/upload` and `GET /saved` → `/reading-list`, both
+  301: the addresses from 003 to 012.
 
 ## Preferences
 
-`GET /preferences` shows eighteen genre checkboxes (`web/prefs.py:GENRES`,
-the original ShelfScanner's list, 012 D4; a stored genre that is not on the
-list is rendered as its own checked chip so nothing saved is lost), a
-"Favorite authors, separated by commas" text field, a free-text line, and
-a Goodreads block in the original ShelfScanner's words ("Import your
-Goodreads library (Optional)", the download link to goodreads.com/review/import
-and the desktop-only note) with the file field, filled in from the session's stored
-object; when an export has been imported it says how many rated books and
-to-read titles are on file. On a first visit (no row) it also offers "Skip
-for now".
+Step 1 of `/books` (also `GET /preferences`) is v1's preferences step:
+"Tell us about your reading preferences", eighteen genre buttons
+(`web/prefs.py:GENRES`, the original's list, 012 D4; a stored genre that
+is not on the list is rendered as its own chosen button so nothing saved
+is lost), "Add favorite authors (optional)" with a box, an Add button and
+a chip per author with a remove ×, and the Goodreads card ("Import your
+Goodreads library (Optional)", the download link to
+goodreads.com/review/import, the desktop-only note, the file field), all
+filled in from the session's stored object; when an export has been
+imported the card says how many rated books and to-read titles are on
+file. The page has no free-text field (v1 had none); the object keeps
+`free_text` for the CLI. Continue is never disabled (014 D3).
 
 `POST /preferences` is a multipart form with `genres` (repeated), `authors`
-(one string, split on commas and newlines, trimmed, empties dropped, a
-repeat kept once in its first spelling: `prefs.split_authors`), `free_text`,
-optional `goodreads` (the CSV) and optional `action=skip`. It builds the
-preferences object of `preferences.md` and stores it as the session's row
-through the importer's functions, then redirects (303) to `/scan`:
+(the chip list as one string, split on commas and newlines, trimmed,
+empties dropped, a repeat kept once in its first spelling:
+`prefs.split_authors`), `authors_extra` (what is still typed in the box;
+appended to `authors`), optional `free_text`, optional `goodreads` (the
+CSV) and optional `action=skip`. It builds the preferences object of
+`preferences.md` and stores it as the session's row through the
+importer's functions, then redirects (303) to `/books/upload`:
 
 - With an export: the CSV is decoded from the request body and parsed in
   memory (`preferences.rows_from_export`); `preferences.build` turns it

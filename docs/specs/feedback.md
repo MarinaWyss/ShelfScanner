@@ -27,7 +27,7 @@ HTML fragment, which the page swaps in place. A pick is saved while it has
 a `saved` row with `removed_at` null; it is not-for-me once any feedback
 row of that kind exists. The two are independent: a pick can be both.
 
-`GET /saved` lists the session's live saves, newest first: title, reason,
+`GET /reading-list` (v1's address, 014; `/saved` redirects to it) lists the session's live saves, newest first: title, reason,
 the date the shelf was scanned (the photo's `created_at`), and a Remove
 control that posts an unsave and drops the item from the list. Empty until
 something is saved. With `Accept: application/json` it returns

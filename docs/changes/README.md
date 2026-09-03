@@ -25,7 +25,8 @@ out-of-scope list.
 | 010 | Deployment: Vercel from GitHub | app | 2026-09-30 | 008; Marina connects the repo |
 | 011 | Eval tooling: compare prompts, one eval command, promote a real scan | quality | before the S8 recording | approved and done 2026-09-03; archived |
 | 012 | Homepage, the original's genres and favorite authors, the iOS scan button, a favicon | app | before the design segment | done 2026-09-03; archived |
-| 013 | Donations, legal pages, contact | app | after 012 | proposed 2026-09-03; detailed after 012 |
+| 014 | The v1 look and flow, copied from ShelfScanner-v1 | app | 2026-09-03 | asked for and done 2026-09-03; archived |
+| 013 | Donations, legal pages, contact | app | after 014 | proposed 2026-09-03; detailed after 014 |
 
 Where this departs from the earlier plan: CI and the regression gate are
 part of 002, not a testing phase; the test set gets its own phase (006)
