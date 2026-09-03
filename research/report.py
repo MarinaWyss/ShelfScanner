@@ -9,9 +9,10 @@ from __future__ import annotations
 
 from collections import defaultdict
 from dataclasses import dataclass
-from statistics import mean, median
+from statistics import mean
 
 from shelfscanner.db import get_client
+from shelfscanner.web import metrics  # change 009 D1: one set of numbers for the report and the page
 
 
 @dataclass(frozen=True)
@@ -55,16 +56,14 @@ def extraction_stats(rows: list[dict]) -> list[ExtractionStats]:
     out = []
     for (model, adapter, edge), rs in sorted(groups.items()):
         ok = latest_per_key([r for r in rs if not r.get("error")], "photo_id")
-        errors = sum(1 for r in rs if r.get("error"))
+        stage = metrics.stage_stats("reading", ok + [r for r in rs if r.get("error")])
         recalls = [r["found_count"] / (r["found_count"] + r["missed_count"])
                    for r in ok if r["found_count"] + r["missed_count"]]
         out.append(ExtractionStats(
-            model=model, long_edge=edge, adapter=adapter, photos=len(ok), errors=errors,
-            median_recall=_opt(median, recalls),
+            model=model, long_edge=edge, adapter=adapter, photos=len(ok), errors=stage.errors,
+            median_recall=metrics.percentile(recalls, 50),
             mean_invented=_opt(mean, [r["invented_count"] for r in ok]),
-            p50_latency_ms=_opt(median, [r["latency_ms"] for r in ok]),
-            mean_cost_usd=_opt(mean, [r["cost_usd"] for r in ok]),
-            failovers=sum(1 for r in rs if r.get("failover_from")),
+            p50_latency_ms=stage.p50_ms, mean_cost_usd=stage.cost_per_scan, failovers=stage.failovers,
         ))
     return out
 
@@ -76,20 +75,18 @@ def recommendation_stats(rows: list[dict]) -> list[RecommendationStats]:
     out = []
     for (model, adapter), rs in sorted(groups.items()):
         ok = latest_per_key([r for r in rs if not r.get("error")], "extraction_id")
-        errors = sum(1 for r in rs if r.get("error"))
+        stage = metrics.stage_stats("choosing", ok + [r for r in rs if r.get("error")])
         n_recs = [_count_recs(r) for r in ok]
         total = sum(n_recs)
         scored = [r for r in ok if r.get("specificity_scores")]
         all_scores = [s for r in scored for s in r["specificity_scores"]]
         out.append(RecommendationStats(
-            model=model, adapter=adapter, runs=len(ok), errors=errors,
+            model=model, adapter=adapter, runs=len(ok), errors=stage.errors,
             share_valid_vs_extraction=(sum(r["valid_vs_extraction"] or 0 for r in ok) / total) if total else None,
             share_valid_vs_ground_truth=(sum(r["valid_vs_ground_truth"] or 0 for r in ok) / total) if total else None,
             mean_specificity=_opt(mean, all_scores),
             scored_runs=len(scored),
-            p50_latency_ms=_opt(median, [r["latency_ms"] for r in ok]),
-            mean_cost_usd=_opt(mean, [r["cost_usd"] for r in ok]),
-            failovers=sum(1 for r in rs if r.get("failover_from")),
+            p50_latency_ms=stage.p50_ms, mean_cost_usd=stage.cost_per_scan, failovers=stage.failovers,
         ))
     return out
 
