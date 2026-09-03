@@ -25,6 +25,18 @@ the extraction failed the recommendation is skipped.
 - The extraction's books as a list, with the author where the extraction
   supplied one. Invented titles are included: the model sees what the
   vision stage produced.
+- **With a verified list (change 007).** `recommend_from_extraction` takes
+  an optional `verified` (`verify.Verified`, see `book-lookup.md`). When
+  given, the list above is replaced by the kept titles under their
+  catalogue title and author; dropped titles are not shown to the model,
+  and a title whose lookup failed appears as read. The hard validity check
+  runs against that list, so a pick that names a dropped title is off the
+  list. Each pick stored in `parsed_recommendations` gains `verified`
+  (true when it matches a kept title whose record was found; false for an
+  unverified or off-list pick), `catalogue_id` and `cover_id` (from the
+  record, or null). `run` passes the verified list unless `--no-verify`;
+  `recommend` on its own, and `research.matrix llm` without `--verify`,
+  pass none, and then nothing here changes.
 - The preferences, laid out as text: the flat shape as JSON for
   `recommend_v1`, the structured object as labelled lists otherwise (see
   `preferences.md`). A top-level `_note` key is removed first.

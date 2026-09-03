@@ -14,7 +14,7 @@ from __future__ import annotations
 import logging
 import time
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from difflib import SequenceMatcher
 from functools import lru_cache
 from typing import Any, Protocol
@@ -63,6 +63,11 @@ class Batch:
     misses: int  # includes errors
     errors: int  # transport failure, timeout, non-200 or unparseable reply
     latency_ms: int
+    # --- change 007 (task 3) --- per-item detail, so verification can keep a title whose lookup
+    # failed (unverified, D2) while dropping one the catalogue answered for, and name the nearest
+    # candidate under the threshold in the drop log. Same order as `matches`.
+    item_errors: list[str | None] = field(default_factory=list)
+    nearest: list[tuple[str, float] | None] = field(default_factory=list)
 
 
 class Transport(Protocol):
@@ -101,11 +106,12 @@ def lookup_batch(items: list[tuple[str, str | None]], *, concurrency: int = 6,
     if not items:
         return Batch([], 0, 0, 0, 0)
     with ThreadPoolExecutor(max_workers=max(1, concurrency)) as pool:
-        attempts = list(pool.map(lambda it: _attempt(it[0], it[1], client=client, timeout_s=timeout_s), items))
-    matches = [m for m, _ in attempts]
+        attempts = list(pool.map(lambda it: _attempt_detail(it[0], it[1], client=client, timeout_s=timeout_s), items))
+    matches = [a.match for a in attempts]
     hits = sum(m is not None for m in matches)
-    errors = sum(e is not None for _, e in attempts)
-    return Batch(matches, hits, len(items) - hits, errors, int((time.perf_counter() - started) * 1000))
+    errors = sum(a.error is not None for a in attempts)
+    return Batch(matches, hits, len(items) - hits, errors, int((time.perf_counter() - started) * 1000),
+                 item_errors=[a.error for a in attempts], nearest=[a.nearest for a in attempts])  # change 007 (task 3)
 
 
 def lookup_many(items: list[tuple[str, str | None]], *, concurrency: int = 6,
@@ -140,17 +146,37 @@ def query_variants(title: str, author: str | None) -> list[tuple[str, str | None
 def _attempt(title: str, author: str | None, *, client: Transport | None,
              timeout_s: float) -> tuple[Match | None, str | None]:
     """Returns (match, error). error is set only when the catalogue failed."""
+    a = _attempt_detail(title, author, client=client, timeout_s=timeout_s)
+    return a.match, a.error
+
+
+# --- change 007 (task 3) --- the attempt with what verification needs beyond the match.
+@dataclass(frozen=True)
+class Attempt:
+    match: Match | None
+    error: str | None  # set only when the catalogue failed
+    nearest: tuple[str, float] | None  # best candidate under the threshold (catalogue title, score); None on a hit
+
+
+def _attempt_detail(title: str, author: str | None, *, client: Transport | None, timeout_s: float) -> Attempt:
     if not title or not title.strip():
-        return None, None
+        return Attempt(None, None, None)
     threshold = load_config().match_threshold
+    nearest: tuple[str, float] | None = None
     for q_title, q_author in query_variants(title, author):
         docs, error = _search(q_title, q_author, client=client, timeout_s=timeout_s)
         if error is not None:
-            return None, error
+            return Attempt(None, error, nearest)
         match = best_match(title, author, docs, threshold)
         if match is not None:
-            return match, None
-    return None, None
+            return Attempt(match, None, None)
+        for doc in docs:
+            record = to_record(doc)
+            if record is not None:
+                s = score(title, author, doc)
+                if nearest is None or s > nearest[1]:
+                    nearest = (record.title, s)
+    return Attempt(None, None, nearest)
 
 
 def _search(title: str, author: str | None, *, client: Transport | None,

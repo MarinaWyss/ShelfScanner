@@ -56,6 +56,8 @@ def build_parser() -> argparse.ArgumentParser:
     run.add_argument("--max-dim", type=int, default=None)
     run.add_argument("--extract-prompt", default=extract.DEFAULT_PROMPT)
     run.add_argument("--recommend-prompt", default=recommend.DEFAULT_PROMPT)
+    run.add_argument("--no-verify", action="store_true",
+                     help="skip the catalogue check between extraction and recommendation (change 007)")
     run.set_defaults(func=_run)
 
     sc = sub.add_parser("score", help="enter hand specificity scores (1-3) for a recommendation row")
@@ -77,6 +79,8 @@ def _recommend(args: argparse.Namespace) -> None:
 
 
 def _run(args: argparse.Namespace) -> None:
+    from shelfscanner import verify  # change 007; local so the shared import block above stays untouched
+
     prefs = preferences.load(args.prefs)
     llm = load_config().model(args.llm_model) if args.llm_model else None
     for ex_row in extract.run_extract(args.photo, args.vision_model, args.max_dim, args.extract_prompt):
@@ -84,7 +88,15 @@ def _run(args: argparse.Namespace) -> None:
         if ex_row.error:
             print("  skipping recommendation: extraction failed")
             continue
-        rec_row = recommend.recommend_from_extraction(extract.get_extraction(ex_row.id), llm, prefs, args.recommend_prompt)
+        ex = extract.get_extraction(ex_row.id)
+        # --- change 007 --- the catalogue check sits between the two model calls unless --no-verify
+        ver = None
+        if not args.no_verify:
+            ver = verify.verify_extraction(ex)
+            for line in ver.lines():
+                print(line)
+        # --- end change 007 ---
+        rec_row = recommend.recommend_from_extraction(ex, llm, prefs, args.recommend_prompt, verified=ver)
         for line in rec_row.lines():
             print(line)
 
