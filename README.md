@@ -5,7 +5,9 @@ actually like, each with a reason. See `docs/scoping.md` for the problem and
 constraints, `docs/specs/` for what the code does today, and
 `docs/changes/` for proposals and their results.
 
-`docs/mvp-diagram.html` is a one-figure diagram of the pipeline as built.
+`docs/mvp-diagram.html` is a one-figure diagram of the pipeline as built;
+`docs/architecture.html` is the five-box target for v1 with what exists
+and what is planned.
 
 Current state: a command-line spike that answers two questions, whether an
 affordable vision model can read spines and whether an affordable language

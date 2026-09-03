@@ -1,0 +1,183 @@
+<title>ShelfScanner Architecture</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,700&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+:root { color-scheme: light; --paper: #f3f4f1; --paper-2: #e9ebe6; --ink: #181b19; --ink-2: #565d59; --ink-3: #8b928e; --accent: #23694f; --accent-soft: #dcebe3; --rule: #cfd3ce; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { color-scheme: dark; --paper: #171917; --paper-2: #202321; --ink: #eceeea; --ink-2: #b3bab5; --ink-3: #7d857f; --accent: #5fb894; --accent-soft: #1d3a2e; --rule: #343936; } }
+:root[data-theme="dark"] { color-scheme: dark; --paper: #171917; --paper-2: #202321; --ink: #eceeea; --ink-2: #b3bab5; --ink-3: #7d857f; --accent: #5fb894; --accent-soft: #1d3a2e; --rule: #343936; }
+body { margin: 0; background: var(--paper); color: var(--ink); font-family: "Source Serif 4", Georgia, serif; font-size: 17px; line-height: 1.5; }
+.wrap { max-width: 1040px; margin: 0 auto; padding: 40px 24px 64px; }
+.eyebrow { font-family: "IBM Plex Mono", ui-monospace, Menlo, monospace; font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-2); }
+h1 { font-family: "Bricolage Grotesque", "Helvetica Neue", Arial, sans-serif; font-size: clamp(30px, 4.5vw, 44px); line-height: 1.05; margin: 6px 0 8px; letter-spacing: -0.01em; text-wrap: balance; }
+.lede { max-width: 66ch; color: var(--ink-2); margin: 0 0 28px; }
+figure { margin: 0; }
+.scroll { overflow-x: auto; }
+figure svg { width: 100%; min-width: 820px; height: auto; display: block; font-family: "IBM Plex Mono", ui-monospace, Menlo, monospace; }
+figcaption { font-size: 15px; color: var(--ink-2); max-width: 72ch; margin-top: 20px; }
+h2 { font-family: "Bricolage Grotesque", "Helvetica Neue", Arial, sans-serif; font-size: 22px; margin: 44px 0 12px; letter-spacing: -0.01em; }
+.tablewrap { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 15px; }
+th, td { text-align: left; vertical-align: top; padding: 9px 12px 9px 0; border-bottom: 1px solid var(--rule); }
+th { font-family: "IBM Plex Mono", ui-monospace, Menlo, monospace; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; font-weight: 500; color: var(--ink-2); }
+td.mono { font-family: "IBM Plex Mono", ui-monospace, Menlo, monospace; font-size: 13px; white-space: nowrap; }
+.pill { display: inline-block; font-family: "IBM Plex Mono", ui-monospace, Menlo, monospace; font-size: 11px; letter-spacing: .06em; padding: 2px 8px; border-radius: 2px; border: 1px solid var(--accent); color: var(--accent); }
+.pill.planned { border-style: dashed; border-color: var(--ink-3); color: var(--ink-2); }
+</style>
+
+<div class="wrap">
+  <div class="eyebrow">ShelfScanner · target architecture for v1</div>
+  <h1>ShelfScanner Architecture</h1>
+  <p class="lede">Five boxes between a phone and a database. Three of them exist today as command-line steps; two are planned. Model names are the current config entries, not part of the shape.</p>
+
+  <figure>
+    <div class="scroll">
+    <svg viewBox="0 0 1168 486" role="img" aria-label="A phone with no account sends a shelf photo through upload, spine extraction, book lookup and recommendation, then saves picks or marks them not for me. Each step writes to Supabase: the photo to a private bucket, every model call to a logged table, records, sessions, preferences, saved picks and feedback to tables. Upload, extraction and recommendation exist; lookup and feedback are planned." style="color: var(--ink);">
+      <defs>
+        <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="8" markerHeight="8" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+        </marker>
+      </defs>
+
+      <!-- Row A: the phone -->
+      <rect x="20" y="14" width="1128" height="66" rx="3" fill="none" stroke="currentColor" stroke-width="1" stroke-dasharray="3 4" opacity=".7"/>
+      <text x="32" y="33" font-size="11" letter-spacing=".1em" fill="var(--ink-2)">ON THE PHONE · NO ACCOUNT · A DEVICE TOKEN IS THE SESSION</text>
+      <g font-size="13" text-anchor="middle" fill="currentColor">
+        <text x="110" y="61">Shelf photo</text>
+        <text x="796" y="61">Genres, optional Goodreads export</text>
+        <text x="1028" y="61">Five picks shown</text>
+      </g>
+
+      <!-- Phone to flow -->
+      <g fill="none" stroke="currentColor" stroke-width="1.5">
+        <line x1="110" y1="82" x2="110" y2="140" marker-end="url(#arrow)"/>
+        <line x1="796" y1="82" x2="796" y2="140" marker-end="url(#arrow)"/>
+        <line x1="1028" y1="82" x2="1028" y2="140" marker-start="url(#arrow)" marker-end="url(#arrow)"/>
+      </g>
+      <g font-size="11" fill="var(--ink-2)">
+        <text x="118" y="114">photo</text>
+        <text x="804" y="114">preferences</text>
+        <text x="1036" y="108">save ·</text>
+        <text x="1036" y="121">not for me</text>
+      </g>
+
+      <!-- Row B: the five boxes -->
+      <g font-size="14" text-anchor="middle">
+        <!-- Upload -->
+        <rect x="20" y="142" width="180" height="78" rx="3" fill="none" stroke="currentColor" stroke-width="1.4"/>
+        <text x="110" y="169" fill="currentColor">Upload</text>
+        <text x="110" y="187" fill="var(--ink-2)" font-size="11">strip metadata, resize</text>
+        <text x="110" y="204" fill="var(--ink-3)" font-size="10">1568 px long edge</text>
+
+        <!-- Spine extraction -->
+        <rect x="232" y="142" width="200" height="78" rx="3" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.8"/>
+        <text x="332" y="169" fill="currentColor" font-weight="500">Spine extraction</text>
+        <text x="332" y="187" fill="var(--ink-2)" font-size="11">vision model reads titles</text>
+        <text x="332" y="204" fill="var(--ink-3)" font-size="10">Gemini 3.8 Flash, via router</text>
+
+        <!-- Book lookup (planned) -->
+        <rect x="464" y="142" width="200" height="78" rx="3" fill="none" stroke="currentColor" stroke-width="1.4" stroke-dasharray="6 4"/>
+        <text x="564" y="169" fill="currentColor">Book lookup</text>
+        <text x="564" y="187" fill="var(--ink-2)" font-size="11">verify against a catalogue</text>
+        <text x="564" y="204" fill="var(--ink-3)" font-size="10">drops what isn't a real book</text>
+
+        <!-- Recommendation -->
+        <rect x="696" y="142" width="200" height="78" rx="3" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.8"/>
+        <text x="796" y="169" fill="currentColor" font-weight="500">Recommendation</text>
+        <text x="796" y="187" fill="var(--ink-2)" font-size="11">language model picks five</text>
+        <text x="796" y="204" fill="var(--ink-3)" font-size="10">GPT-5.4 mini, via router</text>
+
+        <!-- Feedback and saved list (planned) -->
+        <rect x="928" y="142" width="220" height="78" rx="3" fill="none" stroke="currentColor" stroke-width="1.4" stroke-dasharray="6 4"/>
+        <text x="1038" y="169" fill="currentColor">Feedback and saved list</text>
+        <text x="1038" y="187" fill="var(--ink-2)" font-size="11">save, or mark not for me</text>
+        <text x="1038" y="204" fill="var(--ink-3)" font-size="10">per device session</text>
+      </g>
+
+      <!-- Flow arrows -->
+      <g fill="none" stroke="currentColor" stroke-width="1.5" marker-end="url(#arrow)">
+        <line x1="200" y1="181" x2="230" y2="181"/>
+        <line x1="432" y1="181" x2="462" y2="181"/>
+        <line x1="664" y1="181" x2="694" y2="181"/>
+        <line x1="896" y1="181" x2="926" y2="181"/>
+      </g>
+      <g font-size="11" text-anchor="middle" fill="var(--ink-2)">
+        <text x="216" y="236">image</text>
+        <text x="448" y="236">titles</text>
+        <text x="680" y="236">records</text>
+        <text x="912" y="236">five picks,</text>
+        <text x="912" y="249">reasons</text>
+      </g>
+
+      <!-- Flow to Supabase -->
+      <g fill="none" stroke="currentColor" stroke-width="1.3" stroke-dasharray="5 4" marker-end="url(#arrow)">
+        <line x1="110" y1="221" x2="110" y2="333"/>
+        <line x1="332" y1="221" x2="332" y2="333"/>
+        <line x1="564" y1="221" x2="564" y2="333"/>
+        <line x1="796" y1="221" x2="796" y2="333"/>
+        <line x1="1038" y1="221" x2="1038" y2="333"/>
+      </g>
+      <g font-size="11" fill="var(--ink-2)">
+        <text x="118" y="280">photo</text>
+        <text x="340" y="280">every call</text>
+        <text x="572" y="280">records</text>
+        <text x="804" y="280">every call</text>
+        <text x="1046" y="280">saves, marks</text>
+      </g>
+
+      <!-- Row C: Supabase -->
+      <rect x="20" y="300" width="1128" height="122" rx="3" fill="var(--paper-2)" stroke="currentColor" stroke-width="1" opacity=".95"/>
+      <text x="32" y="319" font-size="11" letter-spacing=".1em" fill="var(--ink-2)">SUPABASE · EVERY MODEL CALL IS ONE ROW: MODEL, PROMPT VERSION, TOKENS, COST, LATENCY, ERROR</text>
+      <g font-size="13" text-anchor="middle">
+        <rect x="28" y="336" width="164" height="70" rx="3" fill="var(--paper)" stroke="currentColor" stroke-width="1.2"/>
+        <text x="110" y="363" fill="currentColor">shelf-photos</text>
+        <text x="110" y="381" fill="var(--ink-2)" font-size="11">private bucket</text>
+
+        <rect x="240" y="336" width="184" height="70" rx="3" fill="var(--paper)" stroke="currentColor" stroke-width="1.2"/>
+        <text x="332" y="363" fill="currentColor">extractions</text>
+        <text x="332" y="381" fill="var(--ink-2)" font-size="11">scored against labels</text>
+
+        <rect x="472" y="336" width="184" height="70" rx="3" fill="none" stroke="currentColor" stroke-width="1.2" stroke-dasharray="6 4"/>
+        <text x="564" y="363" fill="currentColor">books</text>
+        <text x="564" y="381" fill="var(--ink-2)" font-size="11">records the lookup found</text>
+
+        <rect x="704" y="336" width="184" height="70" rx="3" fill="var(--paper)" stroke="currentColor" stroke-width="1.2"/>
+        <text x="796" y="363" fill="currentColor">recommendations</text>
+        <text x="796" y="381" fill="var(--ink-2)" font-size="11">checked against the list</text>
+
+        <rect x="936" y="336" width="204" height="70" rx="3" fill="none" stroke="currentColor" stroke-width="1.2" stroke-dasharray="6 4"/>
+        <text x="1038" y="358" fill="currentColor">sessions · preferences</text>
+        <text x="1038" y="376" fill="currentColor">saved · feedback</text>
+        <text x="1038" y="394" fill="var(--ink-2)" font-size="11">joined to the pick's run</text>
+      </g>
+
+      <!-- Legend -->
+      <g font-size="11" fill="var(--ink-2)">
+        <rect x="22" y="452" width="26" height="14" rx="2" fill="var(--accent-soft)" stroke="var(--accent)" stroke-width="1.4"/>
+        <text x="56" y="463">model call, swappable in config/models.toml</text>
+        <rect x="400" y="452" width="26" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.2"/>
+        <text x="434" y="463">exists today as a CLI step</text>
+        <rect x="660" y="452" width="26" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.2" stroke-dasharray="5 3"/>
+        <text x="694" y="463">planned (changes 005 and 006)</text>
+      </g>
+    </svg>
+    </div>
+    <figcaption>A scan runs left to right in about fifteen seconds. The two green boxes are the only model calls; each goes through a router of our own, so the model behind a stage is a config entry with a fallback (Sonnet 5 for reading, Qwen 3.8 Flash for choosing). The lookup sits between them as the second defence against invented titles: model choice is the first. Preferences are stored per session and sent with every recommendation. Nothing is shown to the user that was not read from the photo and checked in code.</figcaption>
+  </figure>
+
+  <h2>Box by box</h2>
+  <div class="tablewrap">
+  <table>
+    <thead>
+      <tr><th>Box</th><th>Requirements</th><th>Status</th><th>Where</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Upload</td><td>U1 no metadata leaves the device; U2 image sent at 1568 px</td><td><span class="pill">exists</span></td><td class="mono">specs/photo-storage.md</td></tr>
+      <tr><td>Spine extraction</td><td>E1 no title that is not in the photo; E2 a bad reply is an error, not an empty shelf</td><td><span class="pill">exists</span></td><td class="mono">specs/extraction.md</td></tr>
+      <tr><td>Book lookup</td><td>L1 every shown title is a real record, or dropped; L2 shown with the record's author and title</td><td><span class="pill planned">planned</span></td><td class="mono">change 005</td></tr>
+      <tr><td>Recommendation</td><td>R1 every pick is on the list, checked in code; R2 exactly five; R3 a reason tied to a stated preference; R4 genres plus Goodreads export</td><td><span class="pill">exists</span> R4 planned</td><td class="mono">specs/recommendation.md · change 003</td></tr>
+      <tr><td>Feedback and saved list</td><td>F1 save persists on the device; F2 not-for-me stored against the pick; F3 a device token, nothing linking it to a person</td><td><span class="pill planned">planned</span></td><td class="mono">change 006</td></tr>
+      <tr><td>Whole scan</td><td>S1 15 s p50 with progress per stage; S2 every model call logged</td><td><span class="pill">S2 exists</span> S1 planned</td><td class="mono">specs/run-logging.md · change 007</td></tr>
+    </tbody>
+  </table>
+  </div>
+</div>
