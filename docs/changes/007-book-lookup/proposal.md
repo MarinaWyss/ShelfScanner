@@ -1,6 +1,6 @@
 # 007 — Book lookup or enrichment
 
-Status: approved 2026-09-02, scope set by 006
+Status: approved 2026-09-02; scope set by 006 on 2026-09-03: verification
 Date: 2026-09-02
 Deadline: 2026-09-30
 Spend cap: $5
@@ -14,6 +14,16 @@ a real author and cover instead of a transcription. Change 001 showed
 invention is a model property and the chosen model did not invent on the
 test set. 006 measures that on sourced and degraded photos and decides
 which of the two reasons still stands.
+
+## Scope, set by 006 on 2026-09-03
+
+**Verification.** 006 counted invented titles well above zero on the
+sourced and derived sets, with the mechanism (merged or filled-in spines
+under dense, blurred or small input) independent of the model. 006's
+results also refined what verification means: a title can be a real book
+that is not on the shelf, so the check is "does a catalogue record match
+what was read closely enough", and unverified titles are dropped from
+the list the chooser sees, with the drop logged.
 
 ## What changes
 
