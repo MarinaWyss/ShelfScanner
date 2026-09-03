@@ -108,3 +108,39 @@ Tasks 1 and 2, 2026-09-02.
   query is right. Whether this matters depends on 006's decision:
   verification only needs "a real book"; enrichment would show the wrong
   cover. Left for task 4 to measure on the full test set.
+
+Tasks 3 and 4, 2026-09-03.
+
+- **Per-title degradation, not per-scan.** D2 says an unavailable
+  catalogue never fails a scan. Applied per title: a title whose lookup
+  failed is kept as read and marked unverified; a title the catalogue
+  answered for with no record is dropped. So one timeout among good
+  answers does not pass the whole list through unchecked, and a full
+  outage passes every title through with `catalogue_down` set. The
+  `lookups` row still counts errors in misses.
+- **One record, one title.** Two read strings resolving to the same record
+  ("Americn Gods" after "American Gods", "AKIRA 2" after "AKIRA") keep the
+  first and drop the rest with reason `same record as an earlier title`,
+  so the chooser's list has each book once. The `lookups` row counts both
+  as hits; the merge is verification's, not the catalogue's.
+- **No author search.** 006 suggested resolving an author-only string by
+  an author lookup. The module has no author search and none of the 329
+  strings on the core and derived sets was author-only, so it is not
+  built; such a string is looked up as a title and dropped. Open on the
+  sourced set.
+- **The pick carries the record.** Beyond `verified: true/false`, each
+  stored pick gets `catalogue_id` and `cover_id`, so the web layer can
+  show the cover without a join. Nothing else in the row changes.
+- **Per-item detail in `lookup.Batch`.** The contract's `lookup_batch`
+  gained `item_errors` and `nearest` (the best candidate under the
+  threshold), both defaulted, so verification can apply the rule above
+  and name the near miss in the drop log. `lookup` itself is unchanged.
+- **The measurement is a first-run number.** Open Library caches its own
+  searches; a repeat of the same shelf is about a third faster. The
+  results report the cold run, since that is what a user sees.
+- **Both pass lines missed, shipped anyway.** 85 % of label-matched
+  strings resolve (line: 90 %) and the check costs 4.5 s p50 (line: 2 s).
+  Both are properties of the catalogue and the query shape, not of the
+  wiring; the drops on sharp photos are real books Open Library lacks,
+  and the list left for the chooser is still eleven titles. The fixes are
+  listed in `results.md` for 008 and the next lookup change.
