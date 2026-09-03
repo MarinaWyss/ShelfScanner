@@ -1,7 +1,8 @@
 # S8 demo: the commands, in order, and what each shows
 
-Every command below was run on 2026-09-03 and its output is in
-`results.md`. Run them again before recording; the numbers move a little
+Every command below was run on 2026-09-03 (step 7 once, to open the
+first review pull request); the outputs are in `results.md` and in the
+rows. Run them again before recording; the numbers move a little
 (latency, cost), the shapes do not. Spend for the whole sequence is under
 $0.20. Terminal at 100 columns; the tables are wide.
 
@@ -45,17 +46,25 @@ invented titles, overlap with my own picks, latency, cost, each with a
 tolerance. PASS or FAIL is the last line and the exit code. This is what
 runs nightly.
 
-## 4. A regression on screen (screenshot: the FAIL line)
+## 4. A regression on screen (screenshot: the REGRESSION lines)
+
+The check measures the configured reading model at the configured image
+size, so the regression has to be a config change, which is the point:
+the gate catches what someone would actually do.
 
 ```
-uv run python -m research.matrix vision sonnet --set core --max-dim 640
+sed -i '' -e 's/^default_max_edge = 1568/default_max_edge = 640/' -e '/\[stages.reading\]/,/fallback/ s/primary = "gemini-flash"/primary = "sonnet"/' config/models.toml
+uv run python -m research.eval --set core
+git checkout config/models.toml
 uv run python -m research.check
 ```
 
-What to say: same model, the image sent at 640 px instead of 1568. Recall
-drops, the check names the metric and fails. Then run
-`uv run python -m research.matrix vision sonnet --set core` to put the
-latest rows back at 1568 and show it pass again.
+What to say: two lines of config: send the image at 640 px instead of
+1568, read with Sonnet. The eval runs the five shelves (about three cents)
+and the check fails with the numbers: median recall 0.58 against 1.00,
+1.4 invented titles per photo against 0. Revert, and the check passes
+again on the rows that are still the latest at 1568. Rehearsed on
+2026-09-03 with exactly that output.
 
 ## 5. Change the prompt, compare with a number (screenshot: the table)
 
