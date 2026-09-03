@@ -10,7 +10,10 @@ from typing import Any
 
 from shelfscanner.config import Model
 
-DEFAULT_MAX_TOKENS = 4096
+# 8192, not 4096: on a dense shelf Sonnet 5 spent 3,400 reasoning tokens inside a 4,096 cap and
+# truncated before the JSON (006, sourced photo wm_bookshelf_13). Reasoning counts against the cap
+# on every direct adapter; the cap is a ceiling on spend, not a target.
+DEFAULT_MAX_TOKENS = 8192
 
 # The two reply shapes the prompts ask for, as JSON Schema, passed to adapters that support
 # native structured output (002 D3). Strict everywhere: no extra keys, every key required, so

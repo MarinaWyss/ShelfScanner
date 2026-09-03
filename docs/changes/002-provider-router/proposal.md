@@ -279,3 +279,8 @@ Task 0 (rails), 2026-09-02, by the worker; not asked of Marina.
 - **No spec change in this task.** The spend guard and the check are
   behaviour, but task 6 owns `docs/specs/`; its `extraction.md`,
   `recommendation.md` and `run-logging.md` updates should mention both.
+
+**Lead, 2026-09-03.** `DEFAULT_MAX_TOKENS` raised from 4,096 to 8,192 after a
+dense sourced shelf truncated on Sonnet 5 direct with 3,428 reasoning tokens
+inside the old cap. Failover did not apply because the model was chosen
+explicitly for that run, which is the intended behaviour for matrix rows.
