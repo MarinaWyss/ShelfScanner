@@ -32,6 +32,11 @@ STATIC_DIR = WEB_DIR / "static"
 FAKE_ENV = "SHELFSCANNER_FAKE_PIPELINE"
 
 
+# 013 D1: v1's PayPal donate link (DonationModal.tsx), opened in a new tab from the Support links.
+DONATE_URL = ("https://www.paypal.com/donate/?business=S8Z878CBE5F3U&no_recurring=0"
+              "&item_name=Thanks+for+supporting+ShelfScanner%21&currency_code=USD")
+
+
 def use_fakes() -> bool:
     return os.environ.get(FAKE_ENV) == "1"
 
@@ -56,6 +61,7 @@ def create_app(*, pipeline: Pipeline | None = None, sessions: SessionStore | Non
     env = Environment(loader=FileSystemLoader(TEMPLATES_DIR), autoescape=select_autoescape(["html"]),
                       trim_blocks=True, lstrip_blocks=True)
     env.globals["year"] = datetime.now(UTC).year  # the footer's copyright line (014)
+    env.globals["donate_url"] = DONATE_URL  # 013 D1: the Support links
     app.state.templates = Jinja2Templates(env=env)
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
     app.include_router(scan.router)
@@ -93,6 +99,19 @@ def create_app(*, pipeline: Pipeline | None = None, sessions: SessionStore | Non
         if stored is None:
             return RedirectResponse("/books", status_code=302)
         return app.state.templates.TemplateResponse(request, "upload.html", {"step": 2})
+
+    # 013 D3: static pages, unsessioned like the homepage; the contact form posts nothing here (D6).
+    @app.get("/privacy-policy")
+    async def privacy_page(request: Request):
+        return app.state.templates.TemplateResponse(request, "privacy.html")
+
+    @app.get("/terms-conditions")
+    async def terms_page(request: Request):
+        return app.state.templates.TemplateResponse(request, "terms.html")
+
+    @app.get("/contact")
+    async def contact_page(request: Request):
+        return app.state.templates.TemplateResponse(request, "contact.html")
 
     @app.get("/scan")
     async def scan_page():

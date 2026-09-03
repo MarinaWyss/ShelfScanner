@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+{% set page = 'privacy' %}
+{% block title %}Privacy Policy - ShelfScanner{% endblock %}
+{% block content %}
+<article class="prose">
+  <h1 class="page-title">Privacy Policy</h1>
+  <p class="updated">Last updated: September 3, 2026</p>
+
+  <p>ShelfScanner takes a photo of a bookshelf and recommends books from it. This page says what
+  the app keeps, where it goes, and for how long. There is no account, no advertising, no analytics
+  and no affiliate link anywhere in it.</p>
+
+  <h2>Your device</h2>
+  <p>ShelfScanner sets one cookie, <code>shelfscanner_session</code>, the first time you open the
+  scanner. It holds a random token that tells your scans, preferences and reading list apart from
+  everyone else's; we store only a hash of it, with the time it was made and last seen. It lasts a
+  year. Reading this page, the terms, the contact page or the homepage does not set it. Clearing
+  the cookie makes you a new visitor: your reading list and preferences stay in the database but
+  nothing links them to you any more.</p>
+
+  <h2>Your photo</h2>
+  <p>The photo you upload is resized and stripped of its metadata (location, camera, time) before
+  it is stored, in a private bucket that only the app can read. To read the
+  spines it is sent to an AI model at Google (Gemini) or, if that fails, at Anthropic (Claude),
+  under their API terms. We delete the photo itself 30 days after upload. The record of the scan
+  stays: the titles read from it, the books recommended and why, the models used, timings and
+  cost. Occasionally we label a photo by hand to test the app; a labeled photo is kept until we
+  remove it.</p>
+
+  <h2>The titles read</h2>
+  <p>Each title read from your photo is sent to Open Library to check that it is a real book and to
+  fetch its cover; Open Library sees the title, not the photo.</p>
+
+  <h2>Your preferences</h2>
+  <p>The genres and favorite authors you pick, and anything you type about what you like, are
+  stored for your device. If you upload a Goodreads export, the file is read once and not kept;
+  what we keep from it is up to 60 rated books (title, author, rating), up to 20 titles you want to
+  read, and any book you marked as not finished. To choose recommendations, the titles read from
+  your photo and your preferences are sent to an AI model at OpenAI (GPT) or, if that fails, at
+  Anthropic (Claude), under their API terms.</p>
+
+  <h2>Your reading list and feedback</h2>
+  <p>The books you save and the picks you mark "Not for me" are stored for your device. We look at
+  them, without knowing who you are, to see which models and prompts recommend well.</p>
+
+  <h2>Where it runs</h2>
+  <p>The app runs on Vercel and the database and photo bucket are on Supabase; both keep ordinary
+  server logs. The page's fonts come from Google Fonts, so your browser asks Google for them and
+  Google sees your address when it does.</p>
+
+  <h2>Your choices</h2>
+  <p>You can remove a book from your reading list at any time, and clear the cookie to start over.
+  If you want the scans, preferences or list for your device deleted, <a href="/contact">contact
+  us</a>: we cannot tell which records are yours without your help, so say roughly when you scanned
+  and what was on the shelf.</p>
+
+  <h2>Changes</h2>
+  <p>When this policy changes, the new one appears here with a new date at the top.</p>
+
+  <p><a class="back" href="/">Back to Home</a></p>
+</article>
+{% endblock %}

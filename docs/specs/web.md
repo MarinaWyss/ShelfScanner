@@ -36,8 +36,10 @@ touches `last_seen_at` when the stored value is ten minutes old or more
 (`web/sessions.py:LAST_SEEN_THROTTLE_S`), so a page of requests writes the
 row once, not once per request; an unknown or missing token gets a new row
 and a new cookie. Requests under `/static/` and `/admin` do not touch
-sessions, and neither does a request no route serves (a 404, a crawler,
-`/favicon.ico`): those get no row and no cookie.
+sessions, and neither does the homepage, the privacy policy, the terms or
+the contact page (`UNSESSIONED_PATHS`; 012 D1, 013 D3), nor a request no
+route serves (a 404, a crawler, `/favicon.ico`): those get no row and no
+cookie.
 
 Scans, preferences, saves and feedback belong to the session that made
 them: another device gets 404 for their ids and an empty saved list.
@@ -46,8 +48,10 @@ them: another device gets 404 for their ids and an empty saved list.
 
 Server-rendered pages with htmx (vendored in `web/static/`; no CDN),
 laid out and worded as the earlier ShelfScanner (v1) was (014): a sticky
-top bar with a menu button, the brand and a Contact mail link; a drawer
-with Home, Book Scanner and Reading List; a favicon (`static/favicon.svg`)
+top bar with a menu button, the brand and a Contact link; a drawer with
+Home, Book Scanner and Reading List and, at its foot, Support ShelfScanner
+(013); under every page a footer with the copyright line, Privacy Policy,
+Terms & Conditions, Contact and Support ShelfScanner; a favicon (`static/favicon.svg`)
 and an iPhone home-screen icon (`static/apple-touch-icon.png`); the
 "ShelfScanner Warm Redesign" look (015): paper and olive, Domine for
 headings and Karla for the rest, hatched paper-deep cards, and a derived
@@ -56,7 +60,7 @@ choice is kept on the device; until a choice is made the system setting
 decides, and without JavaScript the page is light.
 
 - `GET /` — the homepage: the v1 hero, the "AI Book Discovery" card,
-  "How It Works", "Start Using ShelfScanner Today", the copyright footer.
+  "How It Works", "Start Using ShelfScanner Today".
   It is unsessioned (012 D1): no `sessions` row and no cookie until the
   visitor opens a page that needs one.
 - `GET /books` — the Book Scanner, step 1 of three: the preferences form
@@ -75,6 +79,21 @@ decides, and without JavaScript the page is light.
 - `GET /preferences`, `POST /preferences` — the same step 1 page and the
   form's action; see Preferences.
 - `GET /reading-list` — see `feedback.md`.
+- `GET /privacy-policy`, `GET /terms-conditions` — static pages (013),
+  dated in the template. The policy is written from these specs: the
+  cookie, the photo and its 30-day retention, Open Library, the
+  preferences and the Goodreads file, the providers, the hosts, Google
+  Fonts; no adverts, analytics or affiliate links. The terms: what the
+  service is, that the picks are AI output, what may be uploaded, fair use
+  under the rate limit and the daily cap, as-is availability, a liability
+  limit. No governing-law clause.
+- `GET /contact` — the contact page: name, email and message; Send Message
+  opens the mail app with the subject and body filled (`app.js`; the
+  form's own `action` is the `mailto:`, so it works without JavaScript).
+  Nothing is posted to the server; the address is on the page too.
+- The Support links (the drawer, the footer, and the "Found the perfect
+  book?" card after the picks, never before them) are one PayPal donate
+  URL (`app.DONATE_URL`) opened in a new tab. No modal.
 - `GET /scan` → `/books/upload` and `GET /saved` → `/reading-list`, both
   301: the addresses from 003 to 012.
 

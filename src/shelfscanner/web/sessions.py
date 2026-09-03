@@ -20,7 +20,8 @@ from starlette.types import ASGIApp, Message, Receive, Scope, Send
 COOKIE = "shelfscanner_session"
 COOKIE_MAX_AGE = 365 * 24 * 3600
 UNSESSIONED_PREFIXES = ("/static/", "/admin")  # /admin (009) has its own cookie
-UNSESSIONED_PATHS = ("/",)  # 012 D1: the homepage makes no session row; a visitor becomes a session at /scan
+UNSESSIONED_PATHS = ("/", "/privacy-policy", "/terms-conditions", "/contact")  # 012 D1, 013 D3: no row, no cookie
+# for the homepage and the static pages; a visitor becomes a session at /books
 LAST_SEEN_THROTTLE_S = 600  # 008: `last_seen_at` is written at most once per ten minutes per session
 
 

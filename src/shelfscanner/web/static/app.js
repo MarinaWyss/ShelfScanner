@@ -27,6 +27,19 @@
   if (overlay) { overlay.addEventListener('click', function () { setDrawer(false); }); }
   document.addEventListener('keydown', function (evt) { if (evt.key === 'Escape') { setDrawer(false); } });
 
+  // --- the contact page (013 D6; ContactForm.tsx): Send Message opens the mail app with the subject
+  // and body filled. The form's own action is the mailto:, so without this it still opens it. ---
+  var contactForm = document.getElementById('contact-form');
+  if (contactForm) {
+    contactForm.addEventListener('submit', function (evt) {
+      evt.preventDefault();
+      var name = contactForm.name.value.trim(), email = contactForm.email.value.trim(), message = contactForm.message.value.trim();
+      var subject = 'ShelfScanner Contact: ' + name;
+      var body = 'Name: ' + name + '\nEmail: ' + email + '\n\n' + message;
+      window.location.href = 'mailto:shelfscannerapp@gmail.com?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body);
+    });
+  }
+
   // --- step 1: favorite authors as chips (PreferencesStep.tsx). The hidden `authors` field carries the
   // list; whatever is still typed in the box goes with the form as `authors_extra`. ---
   var authorInput = document.getElementById('author-input');
