@@ -18,10 +18,15 @@ the extraction failed the recommendation is skipped.
 
 ## Input to the model
 
-- The prompt file `prompts/<name>.md` (default `recommend_v1`), which asks
+- The prompt file `prompts/<name>.md` (default `recommend_v3`), which asks
   for exactly five ranked picks from the list, exact title strings, and a
   one-to-three-sentence reason tying a stated preference to something
-  specific about the book.
+  specific about the book. v1 and v2 put the shelf list first and the
+  preferences after it; v3 and later put the preferences first and the
+  shelf last, headed "the only books you may recommend" (change 004, task
+  4: with a Goodreads-sized preferences block after the shelf, GPT-5.4
+  mini recommended books that were not on the shelf on three of five
+  core photos; with the shelf last it did not).
 - The extraction's books as a list, with the author where the extraction
   supplied one. Invented titles are included: the model sees what the
   vision stage produced.

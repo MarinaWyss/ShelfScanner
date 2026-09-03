@@ -45,7 +45,7 @@ def build_parser() -> argparse.ArgumentParser:
     rec.add_argument("--extraction", required=True, type=int, help="extraction id")
     rec.add_argument("--model", default=None, help="model alias or slug (default: the choosing stage's primary, with failover)")
     rec.add_argument("--prefs", required=True, help="preferences JSON file, or a session id (change 004)")
-    rec.add_argument("--prompt", default=recommend.DEFAULT_PROMPT, help="prompt name under prompts/ (default recommend_v1)")
+    rec.add_argument("--prompt", default=recommend.DEFAULT_PROMPT, help=f"prompt name under prompts/ (default {recommend.DEFAULT_PROMPT})")
     rec.set_defaults(func=_recommend)
 
     run = sub.add_parser("run", help="extract then recommend for a photo")

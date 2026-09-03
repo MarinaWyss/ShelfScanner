@@ -86,6 +86,8 @@ The "Reading preferences" section of the recommendation input:
 `prompts/recommend_v2.md` explains those sections to the model: high
 ratings are what to match, low ratings what to steer away from, a to-read
 title on the shelf is a very strong pick, and the avoid list is binding. It
-keeps v1's hard rules and reply shape. The `preferences` column of the
+keeps v1's hard rules and reply shape. `recommend_v3.md`, the default, is
+v2 with the shelf list moved after the preferences and the shelf-only rule
+restated at the start and the end (`recommendation.md`). The `preferences` column of the
 recommendation row logs the object as given to the command, not the
 laid-out text.

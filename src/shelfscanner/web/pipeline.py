@@ -24,7 +24,7 @@ from shelfscanner import extract, preferences, recommend, router, spend, storage
 from shelfscanner.config import load_config
 from shelfscanner.router import ModelClient, Progress
 
-CHOOSING_PROMPT = "recommend_v2"  # the web builds structured preferences, which v2 explains to the model
+CHOOSING_PROMPT = "recommend_v3"  # structured preferences first, the shelf last (004 task 4)
 NOT_FOR_ME = "not_for_me"
 
 # 005 D2: a scan with no preferences still runs; the model is told the taste is unknown. The note

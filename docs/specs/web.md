@@ -159,7 +159,7 @@ Events, in order:
 - `checking` — the titles read are being checked against the catalogue
   (`book-lookup.md`), the first part of the pipeline's choosing.
 - `choosing` — the language model is being called through the router
-  (`stages.choosing` primary with failover, prompt `recommend_v2`,
+  (`stages.choosing` primary with failover, prompt `recommend_v3`,
   `web/pipeline.py:CHOOSING_PROMPT`) with the verified titles and the
   session's preferences, via `recommend.recommend_from_extraction`.
   Repeated with progress notes. Skipped, with `checking`, when no titles

@@ -38,3 +38,14 @@ def test_recs_from_tolerates_shapes():
 def test_shelf_text_includes_author_when_present():
     txt = shelf_text({"books": [{"title": "A", "author": "X"}, {"title": "B", "author": None}]})
     assert txt == "- A — X\n- B"
+
+
+def test_v3_puts_the_shelf_after_the_preferences():
+    """004 task 4: GPT-5.4 mini ignored the shelf-only rule when a long preferences block followed the shelf."""
+    from shelfscanner.recommend import input_text
+
+    prefs = {"genres": ["science fiction"], "free_text": "", "rated_books": [], "to_read": [], "avoid": []}
+    v2 = input_text("- Dune", prefs, "recommend_v2")
+    v3 = input_text("- Dune", prefs, "recommend_v3")
+    assert v2.startswith("Books on the shelf:") and v2.index("Reading preferences:") > v2.index("Dune")
+    assert v3.startswith("Reading preferences:") and v3.endswith("(the only books you may recommend):\n- Dune")

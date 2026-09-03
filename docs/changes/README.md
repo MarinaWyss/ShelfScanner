@@ -79,11 +79,12 @@ decision.
 - 005, 007, 008, 009 close.
 
 Waves 2 and 3 closed on 2026-09-03 for everything that does not need a
-provider key or Marina's phone: 007 and 008 archived; 009 built (dashboard,
+provider key or Marina's phone: 004, 007 and 008 archived; 009 built (dashboard,
 metrics module, weekly review seeded) and closing after its second weekly
 file; 353 tests, CI green, advisors clean. Still open in 002, 003, 004,
-005, 006: the runs on the primaries (keys), the phone scans, the nightly
-job's two green nights.
+005, 006: the reading primary's runs (the OpenAI key is in and 004 closed
+on it; the Google project needs prepaid credit), the phone scans, the
+nightly job's two green nights.
 
 A four-reviewer scan of everything built (2026-09-03, specs vs code,
 decisions vs code, core library, web and infrastructure) found five crash

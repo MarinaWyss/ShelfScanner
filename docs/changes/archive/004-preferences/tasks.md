@@ -37,6 +37,8 @@ Done when: a v2 run on photo 2 returns five valid picks.
   change noted.
 
 Done when: the table is in `results.md` and `research.check` passes.
+Done 2026-09-03: the grid is in results.md; the default is `recommend_v3`
+(new, from the eval); the baseline did not need to change.
 
 ## 5. Specs, results, archive
 

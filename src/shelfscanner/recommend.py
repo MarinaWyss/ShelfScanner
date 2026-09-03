@@ -16,7 +16,8 @@ from shelfscanner.router import ModelClient, Progress
 from shelfscanner.storage import get_photo
 from shelfscanner.verify import Verified  # change 007
 
-DEFAULT_PROMPT = "recommend_v1"
+DEFAULT_PROMPT = "recommend_v3"  # 004 task 4: v3 puts the shelf last; v1 and v2 stay for comparison rows
+FLAT_JSON_PROMPT = "recommend_v1"  # the one prompt that takes the flat file as JSON, as change 001 sent it
 EXPECTED = 5
 
 
@@ -122,7 +123,7 @@ def recommend_from_extraction(extraction: dict, model: Model | None, prefs: dict
         raise SystemExit(f"Extraction {extraction['id']} has no parsed titles (error: {extraction.get('error')})")
     labels = get_photo(extraction["photo_id"])["titles"]
 
-    text = f"Books on the shelf:\n{shelf}\n\nReading preferences:\n{prefs_text(prefs, prompt_name)}"
+    text = input_text(shelf, prefs, prompt_name)
     if client is None and guard:  # a fake client spends nothing; the web app has its own cap
         spend.check_spend()
     sr = router.with_failover(
@@ -195,6 +196,21 @@ def run_recommend(extraction_id: int, model_name: str | None, prefs_ref: str | P
 
 
 # --- change 004 ---
+SHELF_FIRST_PROMPTS = ("recommend_v1", "recommend_v2")
+
+
+def input_text(shelf: str, prefs: dict, prompt_name: str) -> str:
+    """The text after the prompt. v1 and v2 put the shelf first and the preferences after it, as change
+    001 did. From v3 the order is reversed (change 004, task 4): with a Goodreads-sized preferences block
+    after the shelf, GPT-5.4 mini recommended books that were not on the shelf on three of five core
+    photos; with the shelf last, next to the reply, it did not."""
+    prefs_block = f"Reading preferences:\n{prefs_text(prefs, prompt_name)}"
+    shelf_block = f"Books on the shelf:\n{shelf}"
+    if prompt_name in SHELF_FIRST_PROMPTS:
+        return f"{shelf_block}\n\n{prefs_block}"
+    return f"{prefs_block}\n\n{shelf_block.replace('Books on the shelf:', 'Books on the shelf (the only books you may recommend):', 1)}"
+
+
 def prefs_text(prefs: dict, prompt_name: str) -> str:
     """The "Reading preferences" section (docs/specs/preferences.md).
 
@@ -203,7 +219,7 @@ def prefs_text(prefs: dict, prompt_name: str) -> str:
     """
     from shelfscanner import preferences
 
-    if prompt_name == DEFAULT_PROMPT and not preferences.is_v2(prefs):
+    if prompt_name == FLAT_JSON_PROMPT and not preferences.is_v2(prefs):
         return json.dumps(prefs, indent=2, ensure_ascii=False)
     return preferences.as_text(preferences.upgrade(prefs))
 

@@ -67,6 +67,28 @@ decides the default in config.
 
 ## Decided during the work
 
+Task 4, the eval on the choosing primary (lead, 2026-09-03):
+
+- **A third prompt, `recommend_v3`, and the shelf list last.** On GPT-5.4
+  mini, v2 with the Goodreads object put picks that were not on the shelf
+  on three of five core photos (0, 0 and 2 of 5 valid); the flat file was
+  fine every time. The titles were not from the export either: the model
+  drifted to books it would recommend in general once a 7,000-character
+  preferences block sat between the shelf and the reply. v3 is v2 with
+  the preferences first, the shelf last under the heading "the only books
+  you may recommend", and the rule restated before the reply. On v3 every
+  pick was on the shelf, with and without the export. The input order is
+  a property of the prompt name (`recommend.input_text`): v1 and v2 keep
+  their old order so their rows stay comparable.
+- **The pass line was not met and the default changed anyway.** The line
+  was median overlap of at least 4 on photos 1 to 4 with the export; v3
+  with the export gives 4, 3, 2, 4 (median 3.5, mean 3.25). It is the best
+  cell in the grid and better than change 001's 2.25, so it becomes the
+  default; the line stays as the target for the next prompt.
+- **The fallback's count errors are left alone.** Haiku 4.5 on v3 returned
+  six picks once and none once over ten runs; R2 catches both and the
+  page shows the stage failed. Not fixed in this change.
+
 Taken by the worker on tasks 1 to 3 (2026-09-03) where the proposal was
 silent. Each is behaviour in `docs/specs/preferences.md`; this records why.
 

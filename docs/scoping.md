@@ -222,11 +222,11 @@ that is parsed in code; native structured output is not used while calls go
 through OpenRouter (change 001, D9).
 
 **Prompt Organization**   
-`prompts/extract_v1.md`, `prompts/recommend_v1.md` and
-`prompts/recommend_v2.md` (change 004; v2 takes the rated books and is
-the default). The filename is the version and is logged on every row, so
+`prompts/extract_v1.md`, `prompts/recommend_v1.md`, `recommend_v2.md`
+(change 004: takes the rated books) and `recommend_v3.md` (004 task 4:
+the shelf list after the preferences; the default). The filename is the version and is logged on every row, so
 any result can be traced to the exact prompt text. A new version is a new
-file; old ones stay. The directory is flat because there are three
+file; old ones stay. The directory is flat because there are four
 prompts; the structure below is the target if that grows.
 
 **Example structure:**
@@ -553,7 +553,7 @@ can wait" decision; the order is revised after each change lands.
 | MVP spike: can models read a shelf and recommend from it | 001 | | | done 2026-09-02 |
 | Provider router, failover, CI and the regression gate | 002 | quality | 2026-09-09 | built 2026-09-03; primaries unmeasured for want of keys |
 | App shell: photo to titles on a phone, over the local network | 003 | app | 2026-09-16 | built 2026-09-03; closes after the phone scans |
-| Preferences: Goodreads export, prompt v2, overlap eval | 004 | quality | 2026-09-16 | built 2026-09-03; eval on the primary pending a key |
+| Preferences: Goodreads export, prompt v2, overlap eval | 004 | quality | 2026-09-16 | done 2026-09-03 (prompt v3 came out of the eval) |
 | Recommendations in the app, saved list, feedback | 005 | app | 2026-09-23 | built 2026-09-03; closes after the phone scans |
 | Test set: sourced shelf photos, nightly eval, the lookup decision | 006 | quality | 2026-09-16 | built 2026-09-03; nightly job pending the repo secrets |
 | Book lookup as verification (006 decided) | 007 | quality | 2026-09-23 | done 2026-09-03 |
