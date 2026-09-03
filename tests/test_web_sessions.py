@@ -5,12 +5,13 @@ set on that redirect, so the tests look at it with redirects off.
 """
 
 import hashlib
+from datetime import UTC, datetime
 
 from fastapi.testclient import TestClient
 
 from shelfscanner.web.app import create_app
 from shelfscanner.web.fakes import FakePipeline, MemorySessions
-from shelfscanner.web.sessions import COOKIE, hash_token, new_token
+from shelfscanner.web.sessions import COOKIE, LAST_SEEN_THROTTLE_S, hash_token, new_token, should_touch
 
 
 def make_client(store: MemorySessions | None = None) -> tuple[TestClient, MemorySessions]:
@@ -37,7 +38,33 @@ def test_second_request_reuses_the_session():
     assert "set-cookie" not in second.headers
     assert client.cookies[COOKIE] == first.cookies[COOKIE]
     assert len(store.rows) == 1
-    assert store.seen[1] == 1, "the second visit touches last_seen"
+
+
+def test_last_seen_is_written_at_most_once_per_ten_minutes():
+    now = [datetime(2026, 9, 3, 12, 0, tzinfo=UTC)]
+    client, store = make_client(MemorySessions(clock=lambda: now[0]))
+    client.get("/", follow_redirects=False)
+    assert store.last_seen[1] == now[0] and store.writes == {}, "created, not yet touched"
+    for minutes in (1, 5, 9):
+        now[0] = datetime(2026, 9, 3, 12, minutes, tzinfo=UTC)
+        client.get("/", follow_redirects=False)
+    assert store.writes == {}, "three visits inside the window write nothing"
+    now[0] = datetime(2026, 9, 3, 12, 10, tzinfo=UTC)
+    client.get("/", follow_redirects=False)
+    assert store.writes == {1: 1} and store.last_seen[1] == now[0]
+    now[0] = datetime(2026, 9, 3, 12, 15, tzinfo=UTC)
+    client.get("/", follow_redirects=False)
+    assert store.writes == {1: 1}, "the window restarts from the write"
+
+
+def test_should_touch_reads_the_column_as_the_database_returns_it():
+    now = datetime(2026, 9, 3, 12, 10, tzinfo=UTC)
+    assert should_touch(None, now)
+    assert should_touch("2026-09-03T12:00:00+00:00", now)
+    assert should_touch("2026-09-03T11:59:59.123456Z", now)
+    assert not should_touch("2026-09-03T12:00:01+00:00", now)
+    assert not should_touch(datetime(2026, 9, 3, 12, 5), now), "a naive timestamp is UTC"
+    assert LAST_SEEN_THROTTLE_S == 600
 
 
 def test_two_devices_get_two_sessions():

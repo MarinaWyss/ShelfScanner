@@ -75,9 +75,21 @@
     document.getElementById('scan').innerHTML = '<p class="uploading">Uploading photo…</p>';
   });
 
-  // htmx leaves error responses alone by default; ours carry the message to show.
+  // htmx leaves error responses alone by default; ours carry the message to show
+  // (400 bad upload, 413 too big, 429 scan limit, 500 store failure, 503 daily cap).
   document.body.addEventListener('htmx:beforeSwap', function (evt) {
     var status = evt.detail.xhr.status;
-    if (status === 400 || status === 413 || status === 500) { evt.detail.shouldSwap = true; }
+    if (status === 400 || status === 413 || status === 429 || status === 500 || status === 503) {
+      evt.detail.shouldSwap = true;
+    }
+  });
+
+  // "Try again" after a failed stage (008): submit the form again, which starts a new scan of the
+  // photo still in the picker. requestSubmit runs the browser's validation, so with no photo chosen
+  // the picker is flagged instead of an empty request being sent.
+  document.body.addEventListener('click', function (evt) {
+    if (evt.target && evt.target.id === 'scan-retry') {
+      if (form.requestSubmit) { form.requestSubmit(); } else { htmx.trigger(form, 'submit'); }
+    }
   });
 })();

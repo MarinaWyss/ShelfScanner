@@ -19,10 +19,24 @@ from starlette.types import ASGIApp, Message, Receive, Scope, Send
 COOKIE = "shelfscanner_session"
 COOKIE_MAX_AGE = 365 * 24 * 3600
 UNSESSIONED_PREFIXES = ("/static/",)
+LAST_SEEN_THROTTLE_S = 600  # 008: `last_seen_at` is written at most once per ten minutes per session
+
+
+def should_touch(last_seen_at: datetime | str | None, now: datetime) -> bool:
+    """Whether `last_seen_at` is due a write: never seen, or seen `LAST_SEEN_THROTTLE_S` or more ago.
+    Accepts the column's ISO string as the database returns it."""
+    if last_seen_at is None:
+        return True
+    if isinstance(last_seen_at, str):
+        last_seen_at = datetime.fromisoformat(last_seen_at.replace("Z", "+00:00"))
+    if last_seen_at.tzinfo is None:
+        last_seen_at = last_seen_at.replace(tzinfo=UTC)
+    return (now - last_seen_at).total_seconds() >= LAST_SEEN_THROTTLE_S
 
 
 class SessionStore(Protocol):
-    """Where sessions live. `find` also records that the session was seen."""
+    """Where sessions live. `find` also records that the session was seen, throttled per
+    `should_touch`."""
 
     def find(self, token_hash: str) -> int | None: ...
 
@@ -47,12 +61,13 @@ class SupabaseSessions:
         from shelfscanner.db import get_client
 
         client = get_client()
-        res = client.table("sessions").select("id").eq("token_hash", token_hash).execute()
+        res = client.table("sessions").select("id, last_seen_at").eq("token_hash", token_hash).execute()
         if not res.data:
             return None
         session_id = res.data[0]["id"]
-        seen = datetime.now(UTC).isoformat()
-        client.table("sessions").update({"last_seen_at": seen}).eq("id", session_id).execute()
+        now = datetime.now(UTC)
+        if should_touch(res.data[0].get("last_seen_at"), now):
+            client.table("sessions").update({"last_seen_at": now.isoformat()}).eq("id", session_id).execute()
         return session_id
 
     def create(self, token_hash: str) -> int:
