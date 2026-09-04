@@ -4,7 +4,8 @@ Repo side done 2026-09-03 (`tasks.md`, task 0). The first deployment and
 its debugging the same evening; the phone rows are still to come.
 
 Production: https://shelfscanner-nu.vercel.app (Vercel project
-`shelfscanner`, Hobby, region iad1). Bundle 47 MB, build about 35 s.
+`shelfscanner`, Hobby, region iad1); since 2026-09-04 also https://shelfscanner.io,
+the custom domain Marina moved over from v1. Bundle 47 MB, build about 35 s.
 
 | Question | Pass | Result |
 |---|---|---|

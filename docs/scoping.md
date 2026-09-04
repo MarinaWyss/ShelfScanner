@@ -44,7 +44,7 @@ they'd have been annoyed to miss the book.
 Me, potentially future users.
 
 **Prior Work**   
-ShelfScanner v1 is live at shelfscanner.io, but it was made fast and kinda sloppy.
+ShelfScanner v1 (a different codebase) was live at shelfscanner.io until 2026-09-04, when the domain moved to this build; it was made fast and kinda sloppy.
 
 **Input and Output**
 
@@ -537,7 +537,7 @@ ShelfScanner/
 - [x] Key decisions and trade-offs (what you tested, what you learned). \<- by pointer to the change proposals and results  
 - [x] Setup instructions (clone → run).  
 - [x] Performance metrics and evaluation results. \<- by pointer to `docs/changes/archive/001-mvp/results.md`  
-- [ ] Live demo link (if deployed). \<- shelfscanner.io is the earlier v1, not this codebase
+- [x] Live demo link (if deployed). \<- https://shelfscanner.io, this codebase, since 2026-09-04
 
 ## 10\. Project Timeline & Milestones
 
@@ -579,7 +579,7 @@ phone reaches the laptop over the local network.
 * Changes: `docs/changes/002-provider-router/`; archive in `docs/changes/archive/`.
 * MVP results: `docs/changes/archive/001-mvp/results.md`; visual report `report.html` in the same folder.
 * MVP pipeline diagram: `docs/mvp-diagram.html`. Target architecture: `docs/architecture.html` (the five boxes below, with status).
-* Earlier v1, a different codebase: shelfscanner.io.
+* Live: https://shelfscanner.io (this codebase, since 2026-09-04; the earlier v1 that used the domain is a different codebase, github.com/MarinaWyss/ShelfScanner-v1).
 
 **Architecture**
 

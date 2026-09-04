@@ -26,7 +26,7 @@ laid the app out for Vercel's Python runtime from the start.
 
 ### Out of scope
 
-- A custom domain. Later, if shelfscanner.io is to point here.
+- A custom domain. Later, if shelfscanner.io is to point here. <- done 2026-09-04: shelfscanner.io points at this project.
 - Any change to the app. If a Vercel limit bites, that is a finding and
   a follow-up.
 
