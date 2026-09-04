@@ -24,7 +24,18 @@ from shelfscanner.extract import titles_from
 from shelfscanner.recommend import prefs_text, recs_from, shelf_text
 from shelfscanner.router import Progress
 from shelfscanner.verify import PROGRESS_MESSAGE as CHECKING_NOTE
-from shelfscanner.web.pipeline import CHOOSING_PROMPT, Choosing, Pick, PickState, Reading, SavedPick, Scan, _states, claimable
+from shelfscanner.web.pipeline import (
+    CHOOSING_PROMPT,
+    Choosing,
+    Pick,
+    PickState,
+    Reading,
+    SavedPick,
+    Scan,
+    _states,
+    claimable,
+    count_scans,
+)
 from shelfscanner.web.sessions import should_touch
 
 DEFAULT_TITLES = ["Dune", "The Left Hand of Darkness", "Piranesi", "Kindred", "Annihilation", "The Dispossessed",
@@ -222,15 +233,9 @@ class FakePipeline:
 
     # --- limits (008) ---------------------------------------------------------------------------
 
-    def _photos_since(self, column: str, value, since: datetime) -> int:
-        return sum(1 for p in self.photos.values()
-                   if p.get(column) == value and datetime.fromisoformat(p["created_at"]) >= since)
-
-    def scan_count(self, session_id: int, since: datetime) -> int:
-        return self._photos_since("session_id", session_id, since)
-
-    def address_scan_count(self, client_hash: str, since: datetime) -> int:
-        return self._photos_since("client_hash", client_hash, since)
+    def scan_counts(self, session_id: int, client_hash: str | None, since: datetime) -> tuple[int, int]:
+        rows = [p for p in self.photos.values() if datetime.fromisoformat(p["created_at"]) >= since]
+        return count_scans(rows, session_id, client_hash)
 
     def spent_since(self, since: datetime) -> float:
         return sum(float(r["cost_usd"]) for r in self.runs

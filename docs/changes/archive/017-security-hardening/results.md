@@ -33,6 +33,20 @@ merge; `supabase db advisors --linked` clean afterwards.
 - **`img-src` allows `blob:`**: the upload page previews the chosen photo
   from an object URL, which the proposal's policy would have blocked.
 
+## From the review of the first cut (2026-09-04)
+
+- **Indexes**, migration `20260904000100`: `client_hash` with `created_at`
+  (partial on non-null) for the address count, and unique indexes for one
+  live save per pick and one mark of a kind per pick. Save and mark are a
+  single insert that treats a 23505 as "already there", which is also
+  race-safe; the select-then-insert of the first cut was neither. The live
+  tables had no duplicates to clear first.
+- **One read for the two counts**: `scan_counts` returns the session's
+  and the address's rows from one window query, so the check is two round
+  trips as before, not three.
+- Reuse: one `sha256_hex`, one `render` helper for every router, the step
+  names owned by `split_step`, `error_kind` a fixed vocabulary.
+
 ## For Marina
 
 - One scan on the pull request's preview URL, to see the headers in the

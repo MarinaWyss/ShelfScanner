@@ -86,8 +86,8 @@ published as a private artifact.
 `.env` (see `.env.example`): `SUPABASE_URL`, `SUPABASE_SECRET_KEY`,
 `OPENROUTER_API_KEY`, and per direct adapter `GEMINI_API_KEY`,
 `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`; `SHELFSCANNER_SPEND_CAP_USD`. The
-app's own: `SHELFSCANNER_SCANS_PER_HOUR`, `SHELFSCANNER_APP_DAILY_CAP_USD`,
-`SHELFSCANNER_ADMIN_SECRET`, `SHELFSCANNER_RETENTION_DAYS`,
+app's own: `SHELFSCANNER_SCANS_PER_HOUR`, `SHELFSCANNER_SCANS_PER_ADDRESS_HOUR`,
+`SHELFSCANNER_APP_DAILY_CAP_USD`, `SHELFSCANNER_ADMIN_SECRET`, `SHELFSCANNER_RETENTION_DAYS`,
 `SHELFSCANNER_FAKE_PIPELINE` (`web.md`, `monitoring.md`, `photo-storage.md`). A
 missing Supabase key stops the command with a message naming it; a
 missing provider key is an error on that call, which failover can catch.

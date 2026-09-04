@@ -20,8 +20,11 @@ must be within its picks; otherwise 404 and nothing is written.
 unless a live one exists for the pick. `POST .../unsave` stamps
 `removed_at` on every live `saved` row for that pick (normally one).
 `POST .../not-for-me` inserts a `feedback` row with `kind = 'not_for_me'`
-unless one exists. Both are idempotent (017): a second click answers with
-the same state and writes nothing.
+unless one exists. Both are idempotent (017): a unique index on the live
+save (`saved_live_pick_idx`, partial on `removed_at is null`) and on the
+mark (`feedback_one_mark_idx`) turn a second insert into a 23505, which
+the app treats as "already there", so two clicks at once are still one
+row.
 
 Each responds with the pick's state: `{"recommendation_id", "pick_index",
 "saved", "not_for_me"}`, or for htmx requests the pick's controls as an
@@ -43,7 +46,10 @@ something is saved. With `Accept: application/json` it returns
 `pick_index` (smallint, 0 or more), `created_at`, `removed_at` (null while
 live). No unique constraint: the rows are a history, so a save, an unsave
 and a save again are three states of two rows (a save while live is no
-row at all, 017). Indexed on
+row at all, 017). Unique indexes: `saved_live_pick_idx` on `(session_id,
+recommendation_id, pick_index) where removed_at is null`;
+`feedback_one_mark_idx` on `(session_id, recommendation_id, pick_index,
+kind)`. Indexed on
 `(session_id, recommendation_id)`.
 
 `feedback`: `id`, `session_id`, `recommendation_id`, `pick_index`, `kind`

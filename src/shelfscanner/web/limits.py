@@ -56,11 +56,9 @@ class Refusal:
 
 
 class Counts(Protocol):
-    """The three reads the check needs; `Pipeline` provides them all."""
+    """The two reads the check needs; `Pipeline` provides both."""
 
-    def scan_count(self, session_id: int, since: datetime) -> int: ...
-
-    def address_scan_count(self, client_hash: str, since: datetime) -> int: ...
+    def scan_counts(self, session_id: int, client_hash: str | None, since: datetime) -> tuple[int, int]: ...
 
     def spent_since(self, since: datetime) -> float: ...
 
@@ -115,13 +113,11 @@ def check(counts: Counts, session_id: int, limits: Limits, now: datetime,
     """The refusal a scan gets right now, or None when it may go ahead. The session limit is checked
     first: a device at its limit is told so even when the app is also out of budget. Then the
     address (017 D1, skipped when the address is unknown), then the app's budget."""
-    scans = counts.scan_count(session_id, now - WINDOW)
+    scans, by_address = counts.scan_counts(session_id, client_hash, now - WINDOW)
     if scans >= limits.scans_per_hour:
         return Refusal("rate", rate_message(scans, limits.scans_per_hour), RATE_STATUS)
-    if client_hash is not None:
-        by_address = counts.address_scan_count(client_hash, now - WINDOW)
-        if by_address >= limits.scans_per_address_hour:
-            return Refusal("rate", address_message(by_address, limits.scans_per_address_hour), RATE_STATUS)
+    if client_hash is not None and by_address >= limits.scans_per_address_hour:
+        return Refusal("rate", address_message(by_address, limits.scans_per_address_hour), RATE_STATUS)
     spent = counts.spent_since(day_start(now))
     if spent >= limits.daily_cap_usd:
         return Refusal("cap", cap_message(spent, limits.daily_cap_usd), CAP_STATUS)

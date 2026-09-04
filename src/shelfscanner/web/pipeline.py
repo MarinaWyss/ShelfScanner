@@ -20,6 +20,8 @@ from dataclasses import dataclass, field
 from datetime import UTC, datetime, timedelta
 from typing import Protocol
 
+from postgrest.exceptions import APIError
+
 from shelfscanner import extract, preferences, recommend, router, spend, storage
 from shelfscanner.config import load_config
 from shelfscanner.errors import error_kind
@@ -224,12 +226,9 @@ class Pipeline(Protocol):
 
     # --- limits (008) ---------------------------------------------------------------------------
 
-    def scan_count(self, session_id: int, since: datetime) -> int:
-        """Photos the session stored at or after `since`."""
-        ...
-
-    def address_scan_count(self, client_hash: str, since: datetime) -> int:
-        """Photos stored from this address hash at or after `since` (017 D1), every session together."""
+    def scan_counts(self, session_id: int, client_hash: str | None, since: datetime) -> tuple[int, int]:
+        """Photos stored at or after `since`: (the session's, the address hash's across every session).
+        One read for both (017 D1); the second is 0 when the hash is None."""
         ...
 
     def spent_since(self, since: datetime) -> float:
@@ -298,6 +297,12 @@ def claimable(status: str | None, status_at: datetime | None, stage: str, now: d
     if stage == "reading":
         return status == "reading" and stale
     return status == "reading" or (status == "choosing" and stale)
+
+
+def count_scans(rows: list[dict], session_id: int, client_hash: str | None) -> tuple[int, int]:
+    """(rows of the session, rows of the address hash) over rows already inside the window."""
+    return (sum(1 for r in rows if r.get("session_id") == session_id),
+            sum(1 for r in rows if client_hash is not None and r.get("client_hash") == client_hash))
 
 
 def _stamp(now: datetime) -> str:
@@ -400,16 +405,10 @@ class SupabasePipeline:
 
     # --- limits (008) ---------------------------------------------------------------------------
 
-    def _photos_since(self, column: str, value, since: datetime) -> int:
-        res = (self._db().table("photos").select("id", count="exact").eq(column, value)
-               .gte("created_at", since.isoformat()).execute())
-        return res.count if res.count is not None else len(res.data)
-
-    def scan_count(self, session_id: int, since: datetime) -> int:
-        return self._photos_since("session_id", session_id, since)
-
-    def address_scan_count(self, client_hash: str, since: datetime) -> int:
-        return self._photos_since("client_hash", client_hash, since)
+    def scan_counts(self, session_id: int, client_hash: str | None, since: datetime) -> tuple[int, int]:
+        q = self._db().table("photos").select("session_id, client_hash").gte("created_at", since.isoformat())
+        q = q.or_(f"session_id.eq.{session_id},client_hash.eq.{client_hash}") if client_hash else q.eq("session_id", session_id)
+        return count_scans(q.execute().data, session_id, client_hash)
 
     def spent_since(self, since: datetime) -> float:
         """The app's own spend: rows joined to session photos stored since `since`. Research and nightly
@@ -465,14 +464,17 @@ class SupabasePipeline:
                          .eq("recommendation_id", recommendation_id).execute().data)
         return _states(saved_rows, feedback_rows)
 
+    def _insert_once(self, table: str, row: dict) -> None:
+        """Idempotent (017): the unique indexes of migration 20260904000100 make a second live save or a
+        second mark of a kind a 23505, which is "already there", not an error. One round trip, no race."""
+        try:
+            self._db().table(table).insert(row).execute()
+        except APIError as e:
+            if getattr(e, "code", None) != "23505":
+                raise
+
     def save(self, session_id: int, recommendation_id: int, pick_index: int) -> None:
-        # Idempotent (017): a live row for the pick means nothing to write; a second click is not a second row.
-        live = (self._db().table("saved").select("id").eq("session_id", session_id).eq("recommendation_id", recommendation_id)
-                .eq("pick_index", pick_index).is_("removed_at", "null").limit(1).execute().data)
-        if live:
-            return
-        self._db().table("saved").insert({"session_id": session_id, "recommendation_id": recommendation_id,
-                                          "pick_index": pick_index}).execute()
+        self._insert_once("saved", {"session_id": session_id, "recommendation_id": recommendation_id, "pick_index": pick_index})
 
     def unsave(self, session_id: int, recommendation_id: int, pick_index: int) -> None:
         # Stamp every live row for the pick (normally one) so the state is unambiguous afterwards.
@@ -480,13 +482,8 @@ class SupabasePipeline:
          .eq("recommendation_id", recommendation_id).eq("pick_index", pick_index).is_("removed_at", "null").execute())
 
     def mark(self, session_id: int, recommendation_id: int, pick_index: int, kind: str) -> None:
-        marked = (self._db().table("feedback").select("id").eq("session_id", session_id)
-                  .eq("recommendation_id", recommendation_id).eq("pick_index", pick_index).eq("kind", kind)
-                  .limit(1).execute().data)
-        if marked:
-            return  # idempotent (017): one mark of a kind per pick
-        self._db().table("feedback").insert({"session_id": session_id, "recommendation_id": recommendation_id,
-                                             "pick_index": pick_index, "kind": kind}).execute()
+        self._insert_once("feedback", {"session_id": session_id, "recommendation_id": recommendation_id,
+                                       "pick_index": pick_index, "kind": kind})
 
     def saved(self, session_id: int) -> list[SavedPick]:
         rows = (self._db().table("saved")

@@ -66,8 +66,9 @@ def authorised(request: Request) -> bool:
     return given is not None and _same(given, cookie_value(secret_value))
 
 
-def _login_page(request: Request, *, status: int, wrong: bool = False) -> HTMLResponse:
-    return HTMLResponse(render(request, "admin_login.html", error=WRONG_KEY if wrong else None), status_code=status)
+def _login_page(request: Request, *, wrong: bool = False) -> HTMLResponse:
+    return HTMLResponse(render(request, "admin_login.html", error=WRONG_KEY if wrong else None),
+                        status_code=403 if wrong else 200)
 
 
 @router.get("/admin")
@@ -75,7 +76,7 @@ async def admin(request: Request, window: str = metrics.DEFAULT_WINDOW):
     if not secret():
         raise HTTPException(status_code=404, detail="Not Found")
     if not authorised(request):
-        return _login_page(request, status=200)
+        return _login_page(request)
     if window not in metrics.WINDOWS:
         window = metrics.DEFAULT_WINDOW
     source: metrics.Source = request.app.state.metrics_source
@@ -92,7 +93,7 @@ async def admin_login(request: Request, key: Annotated[str, Form()] = ""):
     if not secret_value:
         raise HTTPException(status_code=404, detail="Not Found")
     if not _same(key, secret_value):
-        return _login_page(request, status=403, wrong=True)
+        return _login_page(request, wrong=True)
     response = RedirectResponse("/admin", status_code=303)
     # `Secure` over https exactly as the session cookie (010); `Strict` because nothing links into /admin.
     response.set_cookie(COOKIE, cookie_value(secret_value), max_age=COOKIE_MAX_AGE, path="/admin", httponly=True,

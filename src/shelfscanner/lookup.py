@@ -287,12 +287,9 @@ def to_record(doc: dict[str, Any]) -> BookRecord | None:
 
 
 def _digits(cover: Any) -> str | None:
-    """A cover id is a non-negative integer, as a string (017): anything else is no cover."""
-    if isinstance(cover, bool):
-        return None
-    if isinstance(cover, int) and cover >= 0:
-        return str(cover)
-    return cover if isinstance(cover, str) and cover.isdigit() else None
+    """A cover id is digits, as a string (017): anything else (a bool, a negative, text) is no cover."""
+    s = str(cover) if isinstance(cover, int | str) else ""
+    return s if s.isdigit() else None
 
 
 # ---------------------------------------------------------------------------

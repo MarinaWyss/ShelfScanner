@@ -13,9 +13,9 @@ uv run uvicorn shelfscanner.web.app:app --host 0.0.0.0 --port 8000
 Bound to `0.0.0.0`, the laptop's address on the local network (for example
 `http://192.168.1.20:8000`) opens the page on a phone on the same Wi-Fi.
 Add `--reload` while editing. The app reads `.env` for Supabase and the
-provider keys, the same way the CLI does, and for the two scan limits
-(`SHELFSCANNER_SCANS_PER_HOUR`, `SHELFSCANNER_APP_DAILY_CAP_USD`; see
-Limits).
+provider keys, the same way the CLI does, and for the three scan limits
+(`SHELFSCANNER_SCANS_PER_HOUR`, `SHELFSCANNER_SCANS_PER_ADDRESS_HOUR`,
+`SHELFSCANNER_APP_DAILY_CAP_USD`; see Limits).
 
 With `SHELFSCANNER_FAKE_PIPELINE=1` the app runs without Supabase or a
 provider: sessions, photos, preferences, saves and feedback live in memory
@@ -159,9 +159,10 @@ stored, all refused with a message that states the number (008 D1):
   first value of `x-forwarded-for` (Vercel sets it from the connection),
   else the socket peer; its SHA-256 hex is stored on the `photos` row as
   `client_hash` and the count is the rows with that hash in the last hour,
-  every session together. A session is whatever the cookie says; the
-  address is what the connection says, so dropping the cookie does not
-  reset the count. The refusal is `429` with stage `rate`: "This network
+  every session together (one read serves both counts; the column is
+  indexed with `created_at`, partial on non-null). A session is whatever
+  the cookie says; the address is what the connection says, so dropping
+  the cookie does not reset the count. The refusal is `429` with stage `rate`: "This network
   has scanned N shelves in the last hour, and the limit is N per hour for
   one network. Try again in a while." Skipped when no address is known.
   The hash is removed by retention with the photo (`photo-storage.md`) and
