@@ -18,11 +18,14 @@ the extraction failed the recommendation is skipped.
 
 ## Input to the model
 
-- The prompt file `prompts/<name>.md` (default `recommend_v5`: v3 plus one
-  line saying a shelf book by a favorite author is a strong pick; v4, the
-  same line with "and so is a book that resembles their work", put a book
-  that was not on the shelf into two of fifteen core runs and is kept only
-  as a comparison row, 012), which asks
+- The prompt file `prompts/<name>.md` (default `recommend_v6`: v5 plus one
+  rule that each reason is written to the reader in the second person,
+  "since you loved", never "they" or "the reader", asked for by Marina on
+  2026-09-03 after the picks read as third-person notes about her; v5 is
+  v3 plus one line saying a shelf book by a favorite author is a strong
+  pick; v4, the same line with "and so is a book that resembles their
+  work", put a book that was not on the shelf into two of fifteen core
+  runs and is kept only as a comparison row, 012), which asks
   for exactly five ranked picks from the list, exact title strings, and a
   one-to-three-sentence reason tying a stated preference to something
   specific about the book. v1 and v2 put the shelf list first and the

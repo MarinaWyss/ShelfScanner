@@ -90,7 +90,7 @@ ratings are what to match, low ratings what to steer away from, a to-read
 title on the shelf is a very strong pick, and the avoid list is binding. It
 keeps v1's hard rules and reply shape. `recommend_v3.md` is v2 with the
 shelf list moved after the preferences and the shelf-only rule restated at
-the start and the end; `recommend_v5.md`, the default, is v3 plus one line
+the start and the end; `recommend_v5.md` is v3 plus one line
 explaining "Favorite authors" (`recommendation.md`). The `preferences` column of the
 recommendation row logs the object as given to the command, not the
 laid-out text.
