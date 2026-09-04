@@ -22,6 +22,7 @@ from typing import Protocol
 
 from shelfscanner import extract, preferences, recommend, router, spend, storage
 from shelfscanner.config import load_config
+from shelfscanner.errors import error_kind
 from shelfscanner.router import ModelClient, Progress
 
 CHOOSING_PROMPT = "recommend_v6"  # preferences first, the shelf last (004), the favorite-authors line (012), reasons in the second person
@@ -38,15 +39,24 @@ STALE_CLAIM_S = 180  # a reading or choosing claim this old belongs to a dead co
 
 
 def failure_text(error: str | None, failover_from: str | None, failover_error: str | None,
-                 model: str | None) -> str | None:
+                 model: str | None, *, verbatim: bool = False) -> str | None:
     """The error a failed stage shows. After a failover both attempts are named, so the page never
-    shows one failure when there were two (008)."""
+    shows one failure when there were two (008). A model's error is shown as its kind, never its text
+    (017 D5): a provider's message can carry a URL or a request id, and the row keeps it anyway.
+    `verbatim` is for the app's own sentences (the catalogue check, an empty list, a raised stage)."""
     if error is None:
         return None
+    if verbatim:
+        return error
     if failover_from and failover_error:
-        return (f"Both models failed. {failover_from}: {failover_error}. "
-                f"Then {model or 'the fallback'}: {error}.")
-    return error
+        return (f"Both models failed. {failover_from}: {error_kind(failover_error)}. "
+                f"Then {model or 'the fallback'}: {error_kind(error)}.")
+    return f"{model or 'The model'} failed: {error_kind(error)}."
+
+
+def has_step_prefix(error: str) -> bool:
+    """Whether a stored choosing error is one of ours (`<step>: <message>`, see `split_step`)."""
+    return error.startswith(("checking: ", "choosing: "))
 
 
 @dataclass(frozen=True)
@@ -59,6 +69,7 @@ class Reading:
     model: str | None = None
     failover_from: str | None = None  # the primary's slug when the fallback answered (002 D8)
     failover_error: str | None = None
+    verbatim: bool = False  # 017 D5: the error is the app's own sentence, shown as is
 
     @property
     def ok(self) -> bool:
@@ -66,7 +77,7 @@ class Reading:
 
     @property
     def message(self) -> str | None:
-        return failure_text(self.error, self.failover_from, self.failover_error, self.model)
+        return failure_text(self.error, self.failover_from, self.failover_error, self.model, verbatim=self.verbatim)
 
 
 @dataclass(frozen=True)
@@ -78,7 +89,13 @@ class Pick:
 
     @property
     def cover_url(self) -> str | None:
-        return f"https://covers.openlibrary.org/b/id/{self.cover_id}-M.jpg" if self.cover_id else None
+        return cover_url(self.cover_id)
+
+
+def cover_url(cover_id: str | None) -> str | None:
+    """The catalogue's cover image, only for an id that is all digits (017): the id is stored text
+    from a parsed reply, and the image address is the one place it is used unescaped."""
+    return f"https://covers.openlibrary.org/b/id/{cover_id}-M.jpg" if cover_id and cover_id.isdigit() else None
 
 
 @dataclass(frozen=True)
@@ -96,6 +113,7 @@ class Choosing:
     model: str | None = None
     failover_from: str | None = None
     failover_error: str | None = None
+    verbatim: bool = False  # 017 D5: the error is the app's own sentence, shown as is
 
     @property
     def ok(self) -> bool:
@@ -103,7 +121,7 @@ class Choosing:
 
     @property
     def message(self) -> str | None:
-        return failure_text(self.error, self.failover_from, self.failover_error, self.model)
+        return failure_text(self.error, self.failover_from, self.failover_error, self.model, verbatim=self.verbatim)
 
 
 @dataclass(frozen=True)
@@ -164,7 +182,7 @@ class SavedPick:
 
     @property
     def cover_url(self) -> str | None:
-        return f"https://covers.openlibrary.org/b/id/{self.cover_id}-M.jpg" if self.cover_id else None
+        return cover_url(self.cover_id)
 
 
 def prefs_for_scan(prefs: dict | None) -> dict:
@@ -179,8 +197,9 @@ def prefs_for_scan(prefs: dict | None) -> dict:
 class Pipeline(Protocol):
     # --- the scan -------------------------------------------------------------------------------
 
-    def store(self, session_id: int, jpeg: bytes, *, resized_by_client: bool) -> dict:
-        """Persist stripped JPEG bytes for a session; return the `photos` row (status `pending`)."""
+    def store(self, session_id: int, jpeg: bytes, *, resized_by_client: bool, client_hash: str | None = None) -> dict:
+        """Persist stripped JPEG bytes for a session; return the `photos` row (status `pending`).
+        `client_hash` (017 D1) is the hash of the uploading address, or None when unknown."""
         ...
 
     def photo(self, photo_id: int, session_id: int) -> dict | None:
@@ -212,6 +231,10 @@ class Pipeline(Protocol):
 
     def scan_count(self, session_id: int, since: datetime) -> int:
         """Photos the session stored at or after `since`."""
+        ...
+
+    def address_scan_count(self, client_hash: str, since: datetime) -> int:
+        """Photos stored from this address hash at or after `since` (017 D1), every session together."""
         ...
 
     def spent_since(self, since: datetime) -> float:
@@ -289,8 +312,9 @@ class SupabasePipeline:
 
     # --- the scan -------------------------------------------------------------------------------
 
-    def store(self, session_id: int, jpeg: bytes, *, resized_by_client: bool) -> dict:
-        return storage.store_session_photo(session_id, jpeg, status="pending", resized_by_client=resized_by_client)
+    def store(self, session_id: int, jpeg: bytes, *, resized_by_client: bool, client_hash: str | None = None) -> dict:
+        return storage.store_session_photo(session_id, jpeg, status="pending", resized_by_client=resized_by_client,
+                                           client_hash=client_hash)
 
     def photo(self, photo_id: int, session_id: int) -> dict | None:
         return storage.get_session_photo(photo_id, session_id)
@@ -331,12 +355,13 @@ class SupabasePipeline:
         if not verified.kept:
             message = f"none of the {len(verified.dropped)} titles read matched a catalogue record"
             rid = self._record_failed_step(extraction, prefs, "checking", message)
-            return Choosing(error=message, step="checking", recommendation_id=rid)
+            return Choosing(error=message, step="checking", recommendation_id=rid, verbatim=True)
         try:
             row = recommend.recommend_from_extraction(extraction, None, prefs, CHOOSING_PROMPT, client=self.client,
                                                       on_progress=on_progress, verified=verified, guard=False)
         except SystemExit as e:  # the CLI-shaped failure for an empty list; the page names the stage instead
-            return Choosing(error=str(e), recommendation_id=self._record_failed_step(extraction, prefs, "choosing", str(e)))
+            return Choosing(error=str(e), recommendation_id=self._record_failed_step(extraction, prefs, "choosing", str(e)),
+                            verbatim=True)
         rec = (self._db().table("recommendations").select("model, failover_from, failover_error")
                .eq("id", row.id).execute().data)
         attempts = ({"model": rec[0]["model"], "failover_from": rec[0]["failover_from"],
@@ -364,7 +389,8 @@ class SupabasePipeline:
         attempts = {"model": rec["model"], "failover_from": rec["failover_from"], "failover_error": rec["failover_error"]}
         if rec["error"]:
             step, message = split_step(rec["error"])
-            return Scan(reading, Choosing(error=message, step=step, recommendation_id=rec["id"], **attempts))
+            return Scan(reading, Choosing(error=message, step=step, recommendation_id=rec["id"],
+                                          verbatim=has_step_prefix(rec["error"]), **attempts))
         picks = [Pick(r.title, r.reason, r.author, r.cover_id) for r in recommend.recs_from(rec["parsed_recommendations"])]
         return Scan(reading, Choosing(picks=picks, recommendation_id=rec["id"], **attempts))
 
@@ -372,6 +398,11 @@ class SupabasePipeline:
 
     def scan_count(self, session_id: int, since: datetime) -> int:
         res = (self._db().table("photos").select("id", count="exact").eq("session_id", session_id)
+               .gte("created_at", since.isoformat()).execute())
+        return res.count if res.count is not None else len(res.data)
+
+    def address_scan_count(self, client_hash: str, since: datetime) -> int:
+        res = (self._db().table("photos").select("id", count="exact").eq("client_hash", client_hash)
                .gte("created_at", since.isoformat()).execute())
         return res.count if res.count is not None else len(res.data)
 
@@ -430,6 +461,11 @@ class SupabasePipeline:
         return _states(saved_rows, feedback_rows)
 
     def save(self, session_id: int, recommendation_id: int, pick_index: int) -> None:
+        # Idempotent (017): a live row for the pick means nothing to write; a second click is not a second row.
+        live = (self._db().table("saved").select("id").eq("session_id", session_id).eq("recommendation_id", recommendation_id)
+                .eq("pick_index", pick_index).is_("removed_at", "null").limit(1).execute().data)
+        if live:
+            return
         self._db().table("saved").insert({"session_id": session_id, "recommendation_id": recommendation_id,
                                           "pick_index": pick_index}).execute()
 
@@ -439,6 +475,11 @@ class SupabasePipeline:
          .eq("recommendation_id", recommendation_id).eq("pick_index", pick_index).is_("removed_at", "null").execute())
 
     def mark(self, session_id: int, recommendation_id: int, pick_index: int, kind: str) -> None:
+        marked = (self._db().table("feedback").select("id").eq("session_id", session_id)
+                  .eq("recommendation_id", recommendation_id).eq("pick_index", pick_index).eq("kind", kind)
+                  .limit(1).execute().data)
+        if marked:
+            return  # idempotent (017): one mark of a kind per pick
         self._db().table("feedback").insert({"session_id": session_id, "recommendation_id": recommendation_id,
                                              "pick_index": pick_index, "kind": kind}).execute()
 

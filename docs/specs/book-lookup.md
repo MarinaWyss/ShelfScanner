@@ -79,8 +79,10 @@ for one title, or None when nothing matches or the catalogue could not be
 reached. `Match` holds `record` and `score`; `BookRecord` holds
 `catalogue` (`"openlibrary"`), `catalogue_id` (the work id, e.g.
 `OL679360W`), `title` (as the catalogue has it), `author` (up to three
-names, comma separated, or None), `first_year` and `cover_id` (or None).
-The cover image is `https://covers.openlibrary.org/b/id/<cover_id>-M.jpg`.
+names, comma separated, or None), `first_year` and `cover_id` (digits as a
+string, or None: any other `cover_i` is no cover, 017). The cover image is
+`https://covers.openlibrary.org/b/id/<cover_id>-M.jpg`, and the page builds
+it only for an id that is all digits.
 
 `lookup_many(items)` does the same for a list of `(title, author)` pairs,
 in the same order, with at most `concurrency` (default 6) requests in

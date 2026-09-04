@@ -20,7 +20,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-from shelfscanner.web import picks, prefs, scan
+from shelfscanner.web import headers, picks, prefs, scan
 from shelfscanner.web.limits import Limits
 from shelfscanner.web.limits import from_env as limits_from_env
 from shelfscanner.web.pipeline import Pipeline
@@ -62,6 +62,7 @@ def create_app(*, pipeline: Pipeline | None = None, sessions: SessionStore | Non
                       trim_blocks=True, lstrip_blocks=True)
     env.globals["year"] = datetime.now(UTC).year  # the footer's copyright line (014)
     env.globals["donate_url"] = DONATE_URL  # 013 D1: the Support links
+    env.globals["csp_nonce"] = headers.csp_nonce  # 017 D6: the inline theme script's nonce, per request
     app.state.templates = Jinja2Templates(env=env)
     app.mount("/static", StaticFiles(directory=STATIC_DIR), name="static")
     app.include_router(scan.router)
@@ -79,6 +80,7 @@ def create_app(*, pipeline: Pipeline | None = None, sessions: SessionStore | Non
     app.state.metrics_source = metrics.source_for(pipeline)  # the fake's rows in memory, or the tables
     # --- end change 009 ---
     app.add_middleware(SessionMiddleware, store=sessions, routes=app.router.routes)
+    app.add_middleware(headers.HeadersMiddleware)  # 017 D6: outermost, so every response carries them
 
     @app.get("/")
     async def home(request: Request):

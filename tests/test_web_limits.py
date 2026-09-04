@@ -7,7 +7,7 @@ from datetime import UTC, datetime, timedelta
 import pytest
 from fastapi.testclient import TestClient
 
-from shelfscanner.web import limits
+from shelfscanner.web import limits, scan, sessions
 from shelfscanner.web.app import create_app
 from shelfscanner.web.fakes import FakePipeline, MemorySessions
 from shelfscanner.web.limits import Limits
@@ -156,3 +156,81 @@ def test_the_app_reads_the_limits_from_the_environment(monkeypatch):
     client = TestClient(app)
     assert post_photo(client, small_jpeg()).status_code == 201
     assert post_photo(client, small_jpeg()).status_code == 429
+
+
+# --- change 017: the address limit (D1) and the cookieless scan (D2) --------------------------------
+
+
+def test_the_address_limit_is_read_from_the_environment():
+    assert limits.from_env({}).scans_per_address_hour == 30
+    assert limits.from_env({limits.SCANS_PER_ADDRESS_HOUR_ENV: "5"}) == Limits(10, 5.0, 5)
+    with pytest.raises(SystemExit):
+        limits.from_env({limits.SCANS_PER_ADDRESS_HOUR_ENV: "many"})
+
+
+def test_check_counts_the_address_across_sessions_after_the_device():
+    clock = Clock()
+    pipeline = FakePipeline(clock=clock)
+    lim = Limits(scans_per_hour=10, daily_cap_usd=5.0, scans_per_address_hour=2)
+    clock.now = NOON - timedelta(minutes=61)
+    pipeline.store(1, b"x", resized_by_client=True, client_hash="h1")  # too old to count
+    clock.now = NOON
+    pipeline.store(1, b"x", resized_by_client=True, client_hash="h1")
+    pipeline.store(2, b"x", resized_by_client=True, client_hash="h1")  # a second session, same address
+    pipeline.store(3, b"x", resized_by_client=True, client_hash="h2")
+    refusal = limits.check(pipeline, 4, lim, NOON, "h1")
+    assert refusal is not None and refusal.kind == "rate" and refusal.status == 429
+    assert refusal.message == limits.address_message(2, 2)
+    assert "This network has scanned 2 shelves" in refusal.message and "limit is 2 per hour for one network" in refusal.message
+    assert limits.check(pipeline, 4, lim, NOON, "h2") is None, "another address is under its own limit"
+    assert limits.check(pipeline, 4, lim, NOON, None) is None, "an unknown address is not counted"
+    assert limits.check(pipeline, 4, lim, NOON + timedelta(minutes=61), "h1") is None, "the window rolls"
+    pipeline.store(4, b"x", resized_by_client=True, client_hash="h1")
+    assert "This device" in limits.check(pipeline, 4, Limits(1, 5.0, 2), NOON, "h1").message, "the device limit first"
+
+
+def test_dropping_the_cookie_does_not_reset_the_limit():
+    """The bypass the review found: a fresh cookie per request was a fresh device per request."""
+    clock = Clock()
+    pipeline = FakePipeline(clock=clock)
+    store = MemorySessions(clock=clock)
+    app = create_app(pipeline=pipeline, sessions=store, limits=Limits(1, 5.0, 2), clock=clock)
+    a, b, c = TestClient(app), TestClient(app), TestClient(app)  # three cookie jars, one address
+    assert post_photo(a, small_jpeg()).status_code == 201
+    assert post_photo(a, small_jpeg()).status_code == 429, "the device limit"
+    assert post_photo(b, small_jpeg()).status_code == 201, "a second device on the address is under 2"
+    res = post_photo(c, small_jpeg())
+    assert res.status_code == 429 and res.json() == {"error": limits.address_message(2, 2), "stage": "rate"}
+    assert "This network" in res.json()["error"]
+    html = post_photo(c, small_jpeg(), headers={"HX-Request": "true"})
+    assert html.status_code == 429 and "Scan limit reached" in html.text and "This network" in html.text
+    assert len(pipeline.photos) == 2
+
+    d = TestClient(app)  # a different address is not affected
+    assert post_photo(d, small_jpeg(), headers={"x-forwarded-for": "203.0.113.9"}).status_code == 201
+
+
+def test_the_address_is_the_first_forwarded_value_and_is_stored_hashed():
+    client, pipeline, _ = make_client(Limits())
+    res = post_photo(client, small_jpeg(), headers={"x-forwarded-for": "203.0.113.5, 10.0.0.1"})
+    assert res.status_code == 201
+    row = pipeline.photos[res.json()["id"]]
+    assert row["client_hash"] == sessions.hash_address("203.0.113.5")
+    assert "203.0.113.5" not in str(row), "the address itself is never stored"
+    res = post_photo(client, small_jpeg())  # no proxy header: the socket peer
+    assert pipeline.photos[res.json()["id"]]["client_hash"] == sessions.hash_address("testclient")
+
+
+def test_a_cookieless_scan_is_refused_and_makes_no_session():
+    clock = Clock()
+    pipeline = FakePipeline(clock=clock)
+    store = MemorySessions(clock=clock)
+    client = TestClient(create_app(pipeline=pipeline, sessions=store, limits=Limits(), clock=clock))
+    res = client.post("/scan", files={"photo": ("shelf.jpg", small_jpeg(), "image/jpeg")})
+    assert res.status_code == 400 and res.json() == {"error": scan.NO_SESSION, "stage": "uploading"}
+    assert "set-cookie" not in res.headers and store.rows == {} and pipeline.photos == {}
+    html = client.post("/scan", files={"photo": ("shelf.jpg", small_jpeg(), "image/jpeg")}, headers={"HX-Request": "true"})
+    assert html.status_code == 400 and scan.NO_SESSION in html.text and store.rows == {}
+    client.get("/books")  # the way the form gets its session
+    assert len(store.rows) == 1
+    assert post_photo(client, small_jpeg()).status_code == 201

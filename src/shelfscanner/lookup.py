@@ -282,8 +282,17 @@ def to_record(doc: dict[str, Any]) -> BookRecord | None:
         title=title.strip(),
         author=", ".join(names[:_MAX_AUTHORS]) or None,
         first_year=year if isinstance(year, int) else None,
-        cover_id=str(cover) if isinstance(cover, int) else None,
+        cover_id=_digits(cover),
     )
+
+
+def _digits(cover: Any) -> str | None:
+    """A cover id is a non-negative integer, as a string (017): anything else is no cover."""
+    if isinstance(cover, bool):
+        return None
+    if isinstance(cover, int) and cover >= 0:
+        return str(cover)
+    return cover if isinstance(cover, str) and cover.isdigit() else None
 
 
 # ---------------------------------------------------------------------------

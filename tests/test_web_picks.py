@@ -7,6 +7,7 @@ from shelfscanner.web import metrics
 from shelfscanner.web.app import create_app
 from shelfscanner.web.fakes import DEFAULT_PICKS, FakeClient, FakePipeline, MemorySessions
 from shelfscanner.web.picks import scan_date
+from shelfscanner.web.pipeline import Pick, SavedPick
 from tests.test_web_scan import events_of, post_photo
 from tests.web_images import small_jpeg
 
@@ -146,3 +147,27 @@ def test_save_rate_ignores_failed_runs_and_is_empty_without_scans():
     failed = [{"id": 7, "parsed_recommendations": None, "error": "http 500"}]
     rate = metrics.compute(failed, [{"recommendation_id": 7, "pick_index": 0, "removed_at": None}], [])
     assert rate.scans == 0 and rate.saves == 0
+
+
+# --- change 017: a second click is not a second row ----------------------------------------------------
+
+
+def test_save_and_not_for_me_are_idempotent():
+    client, pipeline = make_client()
+    rid = scan(client)
+    assert client.post(f"/picks/{rid}/0/save").status_code == 200
+    assert client.post(f"/picks/{rid}/0/save").status_code == 200
+    assert len(pipeline.saved_rows) == 1
+    client.post(f"/picks/{rid}/0/unsave")
+    client.post(f"/picks/{rid}/0/save")
+    assert len(pipeline.saved_rows) == 2, "a save after an unsave is a new live row: the history stays"
+    assert client.post(f"/picks/{rid}/1/not-for-me").status_code == 200
+    assert client.post(f"/picks/{rid}/1/not-for-me").status_code == 200
+    assert len(pipeline.feedback_rows) == 1
+    assert client.get("/scan/1").json()["picks"][1]["not_for_me"] is True
+
+
+def test_a_cover_id_that_is_not_digits_gets_no_image():
+    assert Pick("t", "r", cover_id="12").cover_url == "https://covers.openlibrary.org/b/id/12-M.jpg"
+    assert Pick("t", "r", cover_id="../x").cover_url is None and Pick("t", "r", cover_id="").cover_url is None
+    assert SavedPick(1, 0, "t", "r", "", "", cover_id="12\"").cover_url is None

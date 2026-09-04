@@ -1,6 +1,6 @@
-"""The dashboard in a real browser (009): a scan through the app, then `/admin?key=` shows the
-seven-day table with that scan in it, the window links work off the cookie, and the page is a 404
-without the key."""
+"""The dashboard in a real browser (009, 017 D3): a scan through the app, then the key posted through
+the form at `/admin` shows the seven-day table with that scan in it, the window links work off the
+cookie, and the page is the form again once the cookie is gone."""
 
 from playwright.sync_api import Page, expect
 
@@ -20,7 +20,14 @@ def test_admin_page_shows_the_seven_day_table(server: Server, page: Page, monkey
     page.click("#scan-button")
     expect(page.locator("#picks .pick")).to_have_count(5, timeout=15_000)
 
-    page.goto(f"{server.url}/admin?key={SECRET}")
+    page.goto(f"{server.url}/admin")
+    expect(page.locator("#admin-key")).to_be_visible()
+    page.fill("#admin-key", "not it")
+    page.click("#admin-login")
+    expect(page.locator("#admin-error")).to_contain_text("not right")
+    page.fill("#admin-key", SECRET)
+    page.click("#admin-login")
+    assert page.url == f"{server.url}/admin", "no key in the address bar"
     table = page.locator("#overview")
     expect(table).to_be_visible()
     expect(table).to_have_attribute("data-window", "7")
@@ -35,5 +42,6 @@ def test_admin_page_shows_the_seven_day_table(server: Server, page: Page, monkey
     expect(page.locator("#overview")).to_have_attribute("data-window", "30")
 
     page.context.clear_cookies()
-    response = page.goto(f"{server.url}/admin")
-    assert response is not None and response.status == 404
+    page.goto(f"{server.url}/admin")
+    expect(page.locator("#admin-key")).to_be_visible()
+    expect(page.locator("#overview")).to_have_count(0)

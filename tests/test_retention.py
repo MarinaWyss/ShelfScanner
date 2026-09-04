@@ -294,8 +294,8 @@ def test_run_removes_objects_then_nulls_paths_and_stamps_the_time():
     assert [c.id for c in s.deleted] == [1, 8] and s.ok
     assert client.storage.removed == [(PHOTO_BUCKET, ["photo1.jpg"]), (PHOTO_BUCKET, ["photo8.jpg"])]
     assert client.photos.updates == [
-        ([1], {"storage_path": None, "photo_deleted_at": NOW.isoformat()}),
-        ([8], {"storage_path": None, "photo_deleted_at": NOW.isoformat()}),
+        ([1], {"storage_path": None, "photo_deleted_at": NOW.isoformat(), "client_hash": None}),
+        ([8], {"storage_path": None, "photo_deleted_at": NOW.isoformat(), "client_hash": None}),
     ]
     by_id = {r["id"]: r for r in client.photos.rows}
     assert by_id[1]["storage_path"] is None and by_id[8]["storage_path"] is None
@@ -320,7 +320,7 @@ def test_a_failed_removal_keeps_its_row_and_fails_the_run():
     assert not s.ok
     by_id = {r["id"]: r for r in client.photos.rows}
     assert by_id[1]["storage_path"] == "photo1.jpg" and "photo_deleted_at" not in by_id[1]
-    assert client.photos.updates == [([8], {"storage_path": None, "photo_deleted_at": NOW.isoformat()})]
+    assert client.photos.updates == [([8], {"storage_path": None, "photo_deleted_at": NOW.isoformat(), "client_hash": None})]
     assert any(line.startswith("FAILED") and "photo1.jpg" in line for line in s.lines())
 
 

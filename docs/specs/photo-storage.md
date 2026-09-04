@@ -78,8 +78,8 @@ object is deleted and the row stays for the metrics.
    anything other than the default `core`. The exemption is asked of the
    server and re-checked on every returned row before deletion.
 3. For each candidate the object is removed from `shelf-photos`, then the
-   row's `storage_path` is set to null and `photo_deleted_at` to the run's
-   time. Removing a key that is already gone is not an error, so a run
+   row's `storage_path` and `client_hash` (017) are set to null and
+   `photo_deleted_at` to the run's time. Removing a key that is already gone is not an error, so a run
    interrupted between the two steps is repaired by the next one.
 4. One failed deletion is reported and does not stop the others; the
    command exits non-zero if any failed. `--dry-run` lists the candidates
@@ -101,7 +101,9 @@ to Vercel cron.
   `partial_titles` (text arrays), `notes`, `set` (text, default `core`,
   checked against `core`/`sourced`/`derived`), `provisional` (boolean,
   default false), `source` (jsonb, null unless sourced), `created_at`,
-  `photo_deleted_at` (when retention removed the object), `status` (text,
+  `photo_deleted_at` (when retention removed the object), `client_hash`
+  (SHA-256 hex of the uploading network address, 017 D1; null for test-set
+  photos and once retention has run; see `web.md`, Limits), `status` (text,
   default `pending`, checked against `pending`/`reading`/`choosing`/`done`/
   `failed`: the web scan's state and stage lock, see `web.md`; test-set
   rows keep the default), `status_at` (when `status` was set),

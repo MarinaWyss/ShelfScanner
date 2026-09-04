@@ -113,7 +113,7 @@ def test_reading_failure_names_the_stage(server: Server, page: Page):
     expect(page.locator("#scan-button")).to_be_enabled()
     page.click("#scan-button")
     expect(page.locator("#scan-error")).to_contain_text("Reading the shelf failed", timeout=10_000)
-    expect(page.locator("#scan-error")).to_contain_text("provider timeout")
+    expect(page.locator("#scan-error")).to_contain_text("failed: timeout.")  # 017 D5: the kind, not the text
     expect(page.locator("#stage-reading")).to_have_class("failed")
     expect(page.locator("#stage-choosing")).to_have_class("todo")
 

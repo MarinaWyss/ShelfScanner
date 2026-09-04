@@ -16,10 +16,12 @@ must be within its picks; otherwise 404 and nothing is written.
 
 ## Routes
 
-`POST /picks/{recommendation_id}/{pick_index}/save` inserts a `saved` row.
-`POST .../unsave` stamps `removed_at` on every live `saved` row for that
-pick (normally one). `POST .../not-for-me` inserts a `feedback` row with
-`kind = 'not_for_me'`.
+`POST /picks/{recommendation_id}/{pick_index}/save` inserts a `saved` row
+unless a live one exists for the pick. `POST .../unsave` stamps
+`removed_at` on every live `saved` row for that pick (normally one).
+`POST .../not-for-me` inserts a `feedback` row with `kind = 'not_for_me'`
+unless one exists. Both are idempotent (017): a second click answers with
+the same state and writes nothing.
 
 Each responds with the pick's state: `{"recommendation_id", "pick_index",
 "saved", "not_for_me"}`, or for htmx requests the pick's controls as an
@@ -40,7 +42,8 @@ something is saved. With `Accept: application/json` it returns
 `recommendation_id` (references `recommendations`, deleted with it),
 `pick_index` (smallint, 0 or more), `created_at`, `removed_at` (null while
 live). No unique constraint: the rows are a history, so a save, an unsave
-and a save again are three states of two rows. Indexed on
+and a save again are three states of two rows (a save while live is no
+row at all, 017). Indexed on
 `(session_id, recommendation_id)`.
 
 `feedback`: `id`, `session_id`, `recommendation_id`, `pick_index`, `kind`

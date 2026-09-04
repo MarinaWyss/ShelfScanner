@@ -98,7 +98,9 @@ def test_catalogue_reply_that_is_a_list_is_a_malformed_reply_not_a_raise():
 
 def make_client(pipeline_: FakePipeline | None = None) -> tuple[TestClient, FakePipeline]:
     pipeline_ = pipeline_ or FakePipeline()
-    return TestClient(create_app(pipeline=pipeline_, sessions=MemorySessions())), pipeline_
+    client = TestClient(create_app(pipeline=pipeline_, sessions=MemorySessions()))
+    client.get("/books")  # 017 D2: a scan needs the session the form always has
+    return client, pipeline_
 
 
 def events_of(client: TestClient, scan_id: int) -> list[str]:
@@ -244,13 +246,14 @@ def test_a_404_creates_no_session_row_and_sets_no_cookie():
     assert r.status_code == 302 and len(store.rows) == 1
 
 
-def test_non_ascii_admin_key_is_a_404_not_a_500(monkeypatch):
-    """`secrets.compare_digest` raises TypeError on non-ASCII text, and a 500 reveals the route."""
+def test_non_ascii_admin_key_is_a_403_not_a_500(monkeypatch):
+    """`secrets.compare_digest` raises TypeError on non-ASCII text; a 500 would be a wrong answer. The key
+    is posted since 017 D3; a wrong one is the form again, 403."""
     monkeypatch.setenv(admin.SECRET_ENV, "correct-horse")
     monkeypatch.setattr(admin, "load_dotenv", lambda *a, **k: None)
     client, _ = make_client()
-    assert client.get("/admin", params={"key": "é"}).status_code == 404
-    assert client.get("/admin", params={"key": "correct-horse"}).status_code == 200
+    assert client.post("/admin", data={"key": "é"}).status_code == 403
+    assert client.post("/admin", data={"key": "correct-horse"}, follow_redirects=False).status_code == 303
 
 
 def png_header(width: int, height: int) -> bytes:

@@ -566,6 +566,7 @@ can wait" decision; the order is revised after each change lands.
 | The warm look on the v1 structure | 015 | app | 2026-09-03 | done 2026-09-03 |
 | Dark/light toggle | 016 | app | 2026-09-03 | done 2026-09-03 |
 | Donations, legal pages, contact | 013 | app | after 014 | done 2026-09-03 |
+| Security review follow-ups: address limit, admin login, headers, error text | 017 | app | 2026-09-04 | done 2026-09-04 |
 
 Fine-tuning and agents: not on the list (sections 5 and 8). Deployment is
 last because it is the only phase that needs an account; until then the
