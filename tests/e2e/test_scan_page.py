@@ -107,7 +107,7 @@ def test_browser_resize_keeps_metadata_off_the_wire(server: Server, page: Page):
 
 
 def test_reading_failure_names_the_stage(server: Server, page: Page):
-    server.pipeline.client.error = "provider timeout after 180s"
+    server.pipeline.client.error = "timeout: no answer after 180s"
     open_scan_page(page, server.url)
     pick(page, small_jpeg())
     expect(page.locator("#scan-button")).to_be_enabled()

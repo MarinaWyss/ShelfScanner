@@ -56,5 +56,6 @@ def test_the_policy_allows_what_the_pages_use():
     assert "https://fonts.googleapis.com" in directives["style-src"] and "'unsafe-inline'" in directives["style-src"]
     assert directives["font-src"] == "https://fonts.gstatic.com"
     assert "blob:" in directives["img-src"] and "https://covers.openlibrary.org" in directives["img-src"]
-    assert directives["connect-src"] == "'self'" and directives["form-action"] == "'self'"
+    assert directives["connect-src"] == "'self'"
+    assert directives["form-action"] == "'self' mailto:", "the contact form posts to a mailto: address"
     assert "'unsafe-eval'" not in csp and "'unsafe-inline'" not in directives["script-src"]

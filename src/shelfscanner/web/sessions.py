@@ -23,9 +23,11 @@ UNSESSIONED_PREFIXES = ("/static/", "/admin")  # /admin (009) has its own cookie
 UNSESSIONED_PATHS = ("/", "/privacy-policy", "/terms-conditions", "/contact")  # 012 D1, 013 D3: no row, no cookie
 # for the homepage and the static pages; a visitor becomes a session at /books
 LAST_SEEN_THROTTLE_S = 600  # 008: `last_seen_at` is written at most once per ten minutes per session
-# 017 D2: a request that must already carry a session. The upload form cannot be reached without one
-# (the page redirects to /books, which sets it), so a cookieless POST /scan is a script: no row is
-# created for it and `session_id` is left unset; the route refuses it.
+# 017 D2: a request that must already carry a cookie. The upload form cannot be reached without one
+# (the page redirects to /books, which sets it), so a POST /scan with no cookie at all is a script: no
+# row is created for it and `session_id` is left unset; the route refuses it. A cookie whose token is
+# unknown (a row deleted, a laptop server restarted on the in-memory store) still gets a fresh session,
+# as any request does: that browser did come through the form.
 NO_FRESH_SESSION = (("POST", "/scan"),)
 
 
@@ -83,13 +85,16 @@ def is_https(scope: Scope) -> bool:
 
 
 def client_address(scope: Scope) -> str | None:
-    """The address the request came from: the first value of `x-forwarded-for` (Vercel sets it from
-    the connection in front of the function), else the socket peer (uvicorn on the laptop). None
-    when neither is known, so the limit is skipped rather than counted against an empty string."""
+    """The address the request came from: the last value of `x-forwarded-for` (the one the nearest
+    proxy appended; Vercel overwrites the header with the connection's address, so there it is the
+    only value), else the socket peer (uvicorn on the laptop). None when neither is known, so the
+    limit is skipped rather than counted against an empty string. With no proxy in front, the header
+    is the client's to write; the laptop and the local network are not public, and the daily cap
+    stands under this limit anyway."""
     forwarded = Headers(scope=scope).get("x-forwarded-for", "")
-    first = forwarded.split(",")[0].strip()
-    if first:
-        return first
+    last = forwarded.rsplit(",", 1)[-1].strip()
+    if last:
+        return last
     client = scope.get("client")
     return client[0] if client and client[0] else None
 
@@ -152,7 +157,7 @@ class SessionMiddleware:
         token = cookies.get(COOKIE)
         session_id = await to_thread.run_sync(self.store.find, hash_token(token)) if token else None
         fresh_token: str | None = None
-        if session_id is None and (scope["method"], scope["path"]) not in NO_FRESH_SESSION:
+        if session_id is None and (token or (scope["method"], scope["path"]) not in NO_FRESH_SESSION):
             fresh_token = new_token()
             session_id = await to_thread.run_sync(self.store.create, hash_token(fresh_token))
         scope.setdefault("state", {})["session_id"] = session_id  # None only for NO_FRESH_SESSION (017 D2)

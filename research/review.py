@@ -144,9 +144,13 @@ def _day(ts: str | datetime) -> str:
     return metrics.parse_ts(ts).strftime("%Y-%m-%d")
 
 
+FENCE = "````"  # four: a fence in the data closes a block only with as many backticks as opened it
+
+
 def fenced(lines: list[str]) -> list[str]:
-    """Row text as a fenced block under the data note (017 D4)."""
-    return [DATA_NOTE, "", "```text", *lines, "```", ""]
+    """Row text as a fenced block under the data note (017 D4). A run of four or more backticks in
+    the data is cut to three, so nothing inside can close the block."""
+    return [DATA_NOTE, "", FENCE + "text", *(re.sub(r"`{4,}", "```", line) for line in lines), FENCE, ""]
 
 
 def _group_lines(review: Review, failures: list[Failure], what: str) -> list[str]:

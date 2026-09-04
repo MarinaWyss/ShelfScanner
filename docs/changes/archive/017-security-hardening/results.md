@@ -45,7 +45,25 @@ merge; `supabase db advisors --linked` clean afterwards.
   and the address's rows from one window query, so the check is two round
   trips as before, not three.
 - Reuse: one `sha256_hex`, one `render` helper for every router, the step
-  names owned by `split_step`, `error_kind` a fixed vocabulary.
+  names owned by `split_step`, `error_kind` a fixed vocabulary matched on
+  how a head starts (so "no model configured" is `other`, not `model`),
+  with the pipeline's own "expected N recommendations, got M" as `wrong
+  count` rather than `other`.
+- **`form-action` allows `mailto:`**: the contact form posts to one, and
+  the first cut's policy would have blocked the Send button in silence.
+- **The review's fence is four backticks** and a longer run in the data
+  is cut to three, so a fence inside a title cannot close the block.
+- **The address is the last forwarded value**, the nearest proxy's, not
+  the first, which a client writes; behind no proxy the header is the
+  client's either way, which the spec says.
+- **A stale cookie is not a script**: the no-session refusal is for a
+  `POST /scan` with no cookie at all; an unknown token gets a fresh
+  session as before, so a laptop restart on the in-memory store does not
+  refuse the form.
+- Not taken: refusing every cookieless non-GET (the other POST routes
+  need a session id to do anything and answer 404 or write nothing
+  without one; scoped to `/scan` as D2 says); headers on Starlette's own
+  500 (made outside the stack; noted in the spec).
 
 ## For Marina
 

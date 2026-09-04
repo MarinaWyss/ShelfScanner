@@ -210,9 +210,10 @@ def test_dropping_the_cookie_does_not_reset_the_limit():
     assert post_photo(d, small_jpeg(), headers={"x-forwarded-for": "203.0.113.9"}).status_code == 201
 
 
-def test_the_address_is_the_first_forwarded_value_and_is_stored_hashed():
+def test_the_address_is_the_last_forwarded_value_and_is_stored_hashed():
     client, pipeline, _ = make_client(Limits())
-    res = post_photo(client, small_jpeg(), headers={"x-forwarded-for": "203.0.113.5, 10.0.0.1"})
+    # The last value is the nearest proxy's; a client-written first value is not what counts.
+    res = post_photo(client, small_jpeg(), headers={"x-forwarded-for": "198.51.100.7, 203.0.113.5"})
     assert res.status_code == 201
     row = pipeline.photos[res.json()["id"]]
     assert row["client_hash"] == sessions.hash_address("203.0.113.5")
@@ -234,3 +235,7 @@ def test_a_cookieless_scan_is_refused_and_makes_no_session():
     client.get("/books")  # the way the form gets its session
     assert len(store.rows) == 1
     assert post_photo(client, small_jpeg()).status_code == 201
+
+    store.rows.clear()  # the server forgot the row (a restart on the in-memory store); the browser still has its cookie
+    res = post_photo(client, small_jpeg())
+    assert res.status_code == 201 and "set-cookie" in res.headers and len(store.rows) == 1, "a stale cookie is not a script"

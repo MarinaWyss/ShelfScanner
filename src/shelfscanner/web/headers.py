@@ -1,5 +1,7 @@
-"""Response headers (017 D6): one plain ASGI middleware, outermost, so every response has them, the
-event stream and the 404s included.
+"""Response headers (017 D6): one plain ASGI middleware, outermost of the app's, so every response
+the app produces has them, the event stream and the 404s included. The one exception is the plain
+500 Starlette's own outermost handler sends when a route raises past the app: that response is made
+outside this stack and carries no headers.
 
 The Content-Security-Policy allows the app's own scripts plus the one inline
 script in `base.html` (the theme, before first paint) by a per-request nonce;
@@ -26,7 +28,7 @@ HEADERS = {
 CSP = ("default-src 'self'; script-src 'self' 'nonce-{nonce}'; "
        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; "
        "img-src 'self' data: blob: https://covers.openlibrary.org; connect-src 'self'; "
-       "frame-ancestors 'none'; base-uri 'self'; form-action 'self'")
+       "frame-ancestors 'none'; base-uri 'self'; form-action 'self' mailto:")  # the contact form is a mailto:
 
 _nonce: ContextVar[str] = ContextVar("csp_nonce", default="")
 

@@ -44,11 +44,13 @@ cookie.
 Scans, preferences, saves and feedback belong to the session that made
 them: another device gets 404 for their ids and an empty saved list.
 
-One request must already have a session: a `POST /scan` that carries no
-cookie gets no row and no cookie, and the route refuses it with 400 (017
-D2, `sessions.NO_FRESH_SESSION`). The upload form cannot be reached
-without a session, so a cookieless upload is a script, and making it a
-row would make it a fresh device with fresh limits.
+One request must already carry a cookie: a `POST /scan` with none gets no
+row and no cookie, and the route refuses it with 400 (017 D2,
+`sessions.NO_FRESH_SESSION`). The upload form cannot be reached without a
+session, so a cookieless upload is a script, and making it a row would
+make it a fresh device with fresh limits. A cookie whose token is unknown
+(a deleted row, a restart of the in-memory store) is a browser that did
+come through the form, and gets a fresh session like any other request.
 
 ## Pages
 
@@ -156,8 +158,10 @@ stored, all refused with a message that states the number (008 D1):
   the limit is N per hour. Try again in a while."
 - **Scans per network address per hour** (017 D1):
   `SHELFSCANNER_SCANS_PER_ADDRESS_HOUR`, default 30. The address is the
-  first value of `x-forwarded-for` (Vercel sets it from the connection),
-  else the socket peer; its SHA-256 hex is stored on the `photos` row as
+  last value of `x-forwarded-for` (the nearest proxy's; Vercel overwrites
+  the header with the connection's address), else the socket peer, so
+  with no proxy in front the header is the client's to write and the
+  limit is only as good as the daily cap under it; its SHA-256 hex is stored on the `photos` row as
   `client_hash` and the count is the rows with that hash in the last hour,
   every session together (one read serves both counts; the column is
   indexed with `created_at`, partial on non-null). A session is whatever
@@ -359,8 +363,10 @@ module is the claim rule as a function, shared by the fake and the tests.
 
 ## Headers
 
-Every response, the event stream, static files and 404s included, carries
-(`web/headers.py`, the outermost middleware, 017 D6):
+Every response the app produces, the event stream, static files and 404s
+included, carries (`web/headers.py`, the outermost of the app's
+middleware, 017 D6; the plain 500 Starlette sends when a route raises past
+the app is made outside the stack and has none):
 
 - `X-Content-Type-Options: nosniff`
 - `Referrer-Policy: strict-origin-when-cross-origin`
@@ -369,7 +375,8 @@ Every response, the event stream, static files and 404s included, carries
   'nonce-<nonce>'; style-src 'self' 'unsafe-inline'
   https://fonts.googleapis.com; font-src https://fonts.gstatic.com;
   img-src 'self' data: blob: https://covers.openlibrary.org; connect-src
-  'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'`
+  'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
+  mailto:` (the contact form's action is a `mailto:`)
 
 The nonce is new for every request and is the one on the inline theme
 script in `base.html` (`{{ csp_nonce() }}`, a template global reading the
