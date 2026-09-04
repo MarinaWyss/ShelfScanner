@@ -18,7 +18,10 @@ repository, where `config/models.toml` and `prompts/` are read from.
 the agent folders out of the function bundle; nothing in them is read at
 request time. Dependencies come from `pyproject.toml` and `uv.lock`.
 
-- Production is `main`: every push to `main` deploys.
+- Production is `main`: every merge to `main` deploys. The production
+  address is https://shelfscanner.io (the custom domain, moved over from
+  v1 on 2026-09-04; `shelfscanner.io` redirects to `www.`), alongside the
+  project's `shelfscanner-nu.vercel.app` alias.
 - Every other branch, and every pull request, gets a preview deployment at
   its own URL.
 - GitHub Actions runs lint and the tests on every push (CI); a pull request
