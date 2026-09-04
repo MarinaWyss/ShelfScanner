@@ -25,7 +25,8 @@
   under their API terms. We delete the photo itself 30 days after upload. The record of the scan
   stays: the titles read from it, the books recommended and why, the models used, timings and
   cost. Occasionally we label a photo by hand to test the app; a labeled photo is kept until we
-  remove it.</p>
+  remove it. A hash of the network address the photo was uploaded from is kept with it, to limit
+  how many scans one network can start in an hour; it is removed when the photo is.</p>
 
   <h2>The titles read</h2>
   <p>Each title read from your photo is sent to Open Library to check that it is a real book and to

@@ -7,7 +7,7 @@
 <title>{% block title %}ShelfScanner - AI Book Recommendations{% endblock %}</title>
 <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="/static/apple-touch-icon.png">
-<script>
+<script nonce="{{ csp_nonce() }}">
   // 016: the stored choice wins, else the system setting; set before first paint so nothing flashes.
   (function () { var t; try { t = localStorage.getItem('theme'); } catch (e) {}
     if (t !== 'light' && t !== 'dark') { t = window.matchMedia && matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'; }

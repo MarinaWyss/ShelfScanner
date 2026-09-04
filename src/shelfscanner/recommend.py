@@ -73,8 +73,8 @@ def recs_from(parsed: object) -> list[Recommendation]:
     for it in items:
         if isinstance(it, dict) and isinstance(it.get("title"), str):
             author, cover = it.get("author"), it.get("cover_id")
-            out.append(Recommendation(it["title"], str(it.get("reason", "")), str(author) if author else None,
-                                      str(cover) if cover else None))
+            cover = str(cover) if cover is not None and str(cover).isdigit() else None  # 017: digits or nothing
+            out.append(Recommendation(it["title"], str(it.get("reason", "")), str(author) if author else None, cover))
     return out
 
 

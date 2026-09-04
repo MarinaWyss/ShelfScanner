@@ -19,16 +19,20 @@ from shelfscanner.web.app import create_app
 from shelfscanner.web.fakes import DEFAULT_PICKS, DEFAULT_TITLES, FakeClient, FakePipeline, MemorySessions
 from shelfscanner.web.pipeline import UNKNOWN_TASTE, Reading
 from shelfscanner.web.scan import MAX_BODY_BYTES, MIN_LONG_EDGE
+from shelfscanner.web.sessions import COOKIE
 from tests.web_images import GPS_IFD, ROTATE_90_CW, jpeg_bytes, shelf_image, small_jpeg
 
 
 def make_client(pipeline: FakePipeline | None = None) -> tuple[TestClient, FakePipeline]:
     pipeline = pipeline or FakePipeline()
     client = TestClient(create_app(pipeline=pipeline, sessions=MemorySessions()))
+    client.get("/books")  # 017 D2: a scan needs the session the form always has; every test client starts with one
     return client, pipeline
 
 
 def post_photo(client: TestClient, data: bytes, **kwargs):
+    if COOKIE not in client.cookies and "cookies" not in kwargs:
+        client.get("/books")  # 017 D2: the form always carries a session; a client without one gets it the same way
     return client.post("/scan", files={"photo": ("shelf.jpg", data, "image/jpeg")}, **kwargs)
 
 
@@ -139,7 +143,9 @@ def test_model_failure_names_the_reading_stage():
     scan_id = post_photo(client, small_jpeg()).json()["id"]
     events = events_of(client, scan_id)
     assert [name for name, _ in events] == ["uploaded", "reading", "failed", "close"]
-    assert "Reading the shelf failed" in events[2][1] and "provider 503: overloaded" in events[2][1]
+    # 017 D5: the model and the error's kind, never the provider's text.
+    assert "Reading the shelf failed" in events[2][1] and "gemini-3.8-flash failed: provider 503." in events[2][1]
+    assert "overloaded" not in events[2][1]
     assert 'id="stage-reading" class="failed"' in events[2][1] and 'id="stage-choosing" class="todo"' in events[2][1]
     body = client.get(f"/scan/{scan_id}").json()
     assert body["status"] == "failed" and body["stage"] == "reading" and "503" in body["error"]
@@ -398,3 +404,61 @@ def test_refusals_as_fragments_carry_the_title_and_the_stage():
     res = post_photo(client, small_jpeg(300, 200), headers={"HX-Request": "true"})
     assert res.status_code == 400 and "Upload refused" in res.text and 'data-stage="uploading"' in res.text
     assert 'id="scan-retry"' not in res.text, "a bad photo wants a different photo, not the same one again"
+
+
+# --- change 017 D5: what a failure shows -------------------------------------------------------------
+
+
+def test_a_raised_stage_shows_the_fixed_line_and_no_exception_text():
+    client, pipeline = make_client()
+
+    def read(photo, on_progress):
+        raise RuntimeError("ConnectError: https://abc.supabase.co/rest/v1/photos?select=id")
+
+    pipeline.read = read
+    scan_id = post_photo(client, small_jpeg()).json()["id"]
+    failed = events_of(client, scan_id)[-2][1]
+    assert scan.RAISED["reading"] in failed
+    assert "supabase" not in failed and "RuntimeError" not in failed and "ConnectError" not in failed
+    # A raised stage goes back to pending so a reconnect retries (008); nothing of the exception is in the row.
+    assert client.get(f"/scan/{scan_id}").json() == {"id": scan_id, "status": "pending"}
+
+
+def test_a_double_model_failure_names_both_kinds_and_neither_text():
+    client, pipeline = make_client(FakePipeline(FakeClient(
+        text_error="http 500: internal error at https://api.example.com/v1 (request req_abc123)")))
+    scan_id = post_photo(client, small_jpeg()).json()["id"]
+    failed = events_of(client, scan_id)[-2][1]
+    assert "Both models failed." in failed and failed.count("http 500") == 2
+    assert "api.example.com" not in failed and "req_abc123" not in failed
+    assert pipeline.recommendations[1]["error"].endswith("(request req_abc123)"), "the row keeps the whole text"
+
+
+def test_the_catalogue_checks_own_sentence_is_shown_as_is():
+    client, pipeline = make_client()
+    pipeline.drop_all_titles = True
+    scan_id = post_photo(client, small_jpeg()).json()["id"]
+    failed = events_of(client, scan_id)[-2][1]
+    assert "none of the 7 titles read matched a catalogue record" in failed
+
+
+def test_an_oversized_chunked_body_is_refused_after_a_bounded_read():
+    """017: `Content-Length` is advisory; a chunked upload has none, and the read itself must stop."""
+    client, pipeline = make_client()
+    boundary = "b0undary"
+    head = (f"--{boundary}\r\nContent-Disposition: form-data; name=\"photo\"; filename=\"big.jpg\"\r\n"
+            f"Content-Type: image/jpeg\r\n\r\n").encode()
+    tail = f"\r\n--{boundary}--\r\n".encode()
+    sent = []
+
+    def body():
+        yield head
+        for _ in range(MAX_BODY_BYTES // (64 * 1024) + 2):  # 4 MB and change of chunks
+            chunk = b"\xff" * (64 * 1024)
+            sent.append(len(chunk))
+            yield chunk
+        yield tail
+
+    res = client.post("/scan", content=body(), headers={"content-type": f"multipart/form-data; boundary={boundary}"})
+    assert res.status_code == 413 and res.json()["stage"] == "uploading"
+    assert pipeline.photos == {}

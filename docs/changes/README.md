@@ -29,6 +29,7 @@ out-of-scope list.
 | 015 | The warm look (Marina's design file) on the v1 structure | app | 2026-09-03 | asked for and done 2026-09-03; archived |
 | 016 | Dark/light toggle; readable olive in the dark | app | 2026-09-03 | asked for and done 2026-09-03; archived |
 | 013 | Donations, legal pages, contact | app | after 014 | done 2026-09-03; archived |
+| 017 | Security review follow-ups: address limit, admin login, headers, error text | app | 2026-09-04 | approved and done 2026-09-04; archived |
 
 Where this departs from the earlier plan: CI and the regression gate are
 part of 002, not a testing phase; the test set gets its own phase (006)

@@ -24,7 +24,18 @@ from shelfscanner.extract import titles_from
 from shelfscanner.recommend import prefs_text, recs_from, shelf_text
 from shelfscanner.router import Progress
 from shelfscanner.verify import PROGRESS_MESSAGE as CHECKING_NOTE
-from shelfscanner.web.pipeline import CHOOSING_PROMPT, Choosing, Pick, PickState, Reading, SavedPick, Scan, _states, claimable
+from shelfscanner.web.pipeline import (
+    CHOOSING_PROMPT,
+    Choosing,
+    Pick,
+    PickState,
+    Reading,
+    SavedPick,
+    Scan,
+    _states,
+    claimable,
+    count_scans,
+)
 from shelfscanner.web.sessions import should_touch
 
 DEFAULT_TITLES = ["Dune", "The Left Hand of Darkness", "Piranesi", "Kindred", "Annihilation", "The Dispossessed",
@@ -144,7 +155,7 @@ class FakePipeline:
 
     # --- the scan -------------------------------------------------------------------------------
 
-    def store(self, session_id: int, jpeg: bytes, *, resized_by_client: bool) -> dict:
+    def store(self, session_id: int, jpeg: bytes, *, resized_by_client: bool, client_hash: str | None = None) -> dict:
         if self.fail_store:
             raise RuntimeError(self.fail_store)
         photo_id = next(self._ids)
@@ -153,7 +164,8 @@ class FakePipeline:
         now = self.clock()
         row = {"id": photo_id, "storage_path": storage_path, "titles": [], "partial_titles": [],
                "notes": None, "session_id": session_id, "created_at": now.isoformat(),
-               "status": "pending", "status_at": now, "resized_by_client": resized_by_client}
+               "status": "pending", "status_at": now, "resized_by_client": resized_by_client,
+               "client_hash": client_hash}
         self.photos[photo_id] = row
         return row
 
@@ -190,7 +202,7 @@ class FakePipeline:
         on_progress(CHECKING_NOTE)  # the real pipeline checks the titles against the catalogue first (007)
         if self.drop_all_titles:
             choosing = Choosing(error=f"none of the {len(reading.titles)} titles read matched a catalogue record",
-                                step="checking")
+                                step="checking", verbatim=True)
             self.choosings[photo["id"]] = choosing
             return choosing
         shelf = {"books": [{"title": t} for t in reading.titles]}
@@ -221,9 +233,9 @@ class FakePipeline:
 
     # --- limits (008) ---------------------------------------------------------------------------
 
-    def scan_count(self, session_id: int, since: datetime) -> int:
-        return sum(1 for p in self.photos.values()
-                   if p["session_id"] == session_id and datetime.fromisoformat(p["created_at"]) >= since)
+    def scan_counts(self, session_id: int, client_hash: str | None, since: datetime) -> tuple[int, int]:
+        rows = [p for p in self.photos.values() if datetime.fromisoformat(p["created_at"]) >= since]
+        return count_scans(rows, session_id, client_hash)
 
     def spent_since(self, since: datetime) -> float:
         return sum(float(r["cost_usd"]) for r in self.runs
@@ -253,6 +265,9 @@ class FakePipeline:
                        self._rows(self.feedback_rows, session_id, recommendation_id))
 
     def save(self, session_id: int, recommendation_id: int, pick_index: int) -> None:
+        if any(r["pick_index"] == pick_index and r["removed_at"] is None
+               for r in self._rows(self.saved_rows, session_id, recommendation_id)):
+            return  # idempotent (017), as the real pipeline
         self.saved_rows.append({"id": next(self._row_ids), "session_id": session_id, "recommendation_id": recommendation_id,
                                 "pick_index": pick_index, "created_at": self.clock().isoformat(), "removed_at": None})
 
@@ -262,6 +277,9 @@ class FakePipeline:
                 r["removed_at"] = self.clock().isoformat()
 
     def mark(self, session_id: int, recommendation_id: int, pick_index: int, kind: str) -> None:
+        if any(r["pick_index"] == pick_index and r["kind"] == kind
+               for r in self._rows(self.feedback_rows, session_id, recommendation_id)):
+            return
         self.feedback_rows.append({"id": next(self._row_ids), "session_id": session_id,
                                    "recommendation_id": recommendation_id, "pick_index": pick_index, "kind": kind,
                                    "created_at": self.clock().isoformat()})

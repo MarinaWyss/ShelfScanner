@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% set page = 'admin' %}
+{% block title %}Admin · ShelfScanner{% endblock %}
+{% block content %}
+{#- 017 D3: the key is posted, never put in a URL. One field, one button, no window links. -#}
+<div class="prose">
+  <h1 class="page-title">Admin</h1>
+  <p class="lede">The dashboard reads the same tables the app writes. Enter the admin key to open it.</p>
+  {% if error %}<div class="error" role="alert" id="admin-error">{{ error }}</div>{% endif %}
+  <form class="contact-form" id="admin-form" action="/admin" method="post">
+    <div class="field">
+      <label class="field-label" for="admin-key">Admin key</label>
+      <input class="text-input" id="admin-key" name="key" type="password" autocomplete="current-password" required>
+    </div>
+    <button class="btn primary" type="submit" id="admin-login">Open the dashboard</button>
+  </form>
+</div>
+{% endblock %}

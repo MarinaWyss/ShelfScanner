@@ -250,7 +250,7 @@ And run the app:
 uv run uvicorn shelfscanner.web.app:app --host 0.0.0.0 --port 8000
 ```
 
-`--host 0.0.0.0` puts it on your local network, so your phone on the same Wi-Fi can open `http://<your laptop's IP>:8000` and scan a real shelf. Set `SHELFSCANNER_ADMIN_SECRET` in `.env` and open `/admin?key=<that>` for the dashboard.
+`--host 0.0.0.0` puts it on your local network, so your phone on the same Wi-Fi can open `http://<your laptop's IP>:8000` and scan a real shelf. Set `SHELFSCANNER_ADMIN_SECRET` in `.env`, open `/admin` and type it into the form for the dashboard.
 
 ### The command line
 

@@ -1,32 +1,42 @@
 """The dashboard (009 task 2): `GET /admin?window=7|30|all`, the numbers of `web.metrics` as
 server-rendered tables and two inline SVG sparklines, behind one shared secret.
 
-The page is a 404 unless the request carries `?key=` or the admin cookie matching
-`SHELFSCANNER_ADMIN_SECRET`; with no secret in the environment it is always a 404,
-so a deployment that never set one exposes nothing. An authorised response sets
-the cookie, so the window links need no key.
+With no `SHELFSCANNER_ADMIN_SECRET` in the environment the page is always a 404, so a
+deployment that never set one exposes nothing. With one, `GET /admin` without the admin
+cookie is a small form (017 D3); `POST /admin` with the right key sets the cookie and
+redirects to the dashboard. The cookie is an HMAC of the secret, never the secret itself,
+so a leaked cookie is a thirty-day pass and rotating the secret revokes every cookie.
+The key is never read from the query string: a URL is logged and remembered, a form
+body is not.
 """
 
 from __future__ import annotations
 
+import hashlib
+import hmac
 import os
 import secrets
 from datetime import datetime
+from typing import Annotated
 
 from anyio import to_thread
 from dotenv import load_dotenv
-from fastapi import APIRouter, HTTPException, Request
-from fastapi.responses import HTMLResponse
+from fastapi import APIRouter, Form, HTTPException, Request
+from fastapi.responses import HTMLResponse, RedirectResponse
 
 from shelfscanner.settings import REPO_ROOT
 from shelfscanner.web import metrics
 from shelfscanner.web.metrics import Dashboard, StageStats, Summary
+from shelfscanner.web.render import render
+from shelfscanner.web.sessions import is_https
 
 router = APIRouter()
 
 SECRET_ENV = "SHELFSCANNER_ADMIN_SECRET"
 COOKIE = "shelfscanner_admin"
 COOKIE_MAX_AGE = 30 * 24 * 3600
+COOKIE_PURPOSE = b"shelfscanner-admin-v1"  # what the HMAC signs; bump to revoke every cookie without a new secret
+WRONG_KEY = "That key is not right."
 SPARK_WIDTH, SPARK_HEIGHT, SPARK_PAD = 240, 40, 2
 WINDOW_LABELS = {"7": "Last 7 days", "30": "Last 30 days", "all": "All time"}
 STAGE_LABELS = {"reading": "Reading", "checking": "Checking", "choosing": "Choosing"}
@@ -38,29 +48,56 @@ def secret() -> str:
     return os.environ.get(SECRET_ENV, "")
 
 
+def cookie_value(secret_value: str) -> str:
+    """The admin cookie for this secret: derived, so the cookie never carries the secret (017 D3)."""
+    return hmac.new(secret_value.encode("utf-8"), COOKIE_PURPOSE, hashlib.sha256).hexdigest()
+
+
+def _same(given: str, expected: str) -> bool:
+    # Bytes, not str: `compare_digest` raises on non-ASCII text, and a 500 would reveal the route.
+    return secrets.compare_digest(given.encode("utf-8"), expected.encode("utf-8"))
+
+
 def authorised(request: Request) -> bool:
     secret_value = secret()
     if not secret_value:
         return False
-    given = (request.query_params.get("key"), request.cookies.get(COOKIE))
-    # Bytes, not str: `compare_digest` raises on non-ASCII text, and a 500 would reveal the route.
-    return any(g is not None and secrets.compare_digest(g.encode("utf-8"), secret_value.encode("utf-8")) for g in given)
+    given = request.cookies.get(COOKIE)
+    return given is not None and _same(given, cookie_value(secret_value))
+
+
+def _login_page(request: Request, *, wrong: bool = False) -> HTMLResponse:
+    return HTMLResponse(render(request, "admin_login.html", error=WRONG_KEY if wrong else None),
+                        status_code=403 if wrong else 200)
 
 
 @router.get("/admin")
 async def admin(request: Request, window: str = metrics.DEFAULT_WINDOW):
-    if not authorised(request):
+    if not secret():
         raise HTTPException(status_code=404, detail="Not Found")
+    if not authorised(request):
+        return _login_page(request)
     if window not in metrics.WINDOWS:
         window = metrics.DEFAULT_WINDOW
     source: metrics.Source = request.app.state.metrics_source
     rows = await to_thread.run_sync(source, window)
     board = metrics.dashboard(rows, window)
-    html = request.app.state.templates.get_template("admin.html").render(**view(board))
-    response = HTMLResponse(html)
-    # No `Secure` until the app is served over https (010), like the session cookie.
-    response.set_cookie(COOKIE, secret(), max_age=COOKIE_MAX_AGE, path="/admin", httponly=True,
-                        samesite="lax")
+    return HTMLResponse(render(request, "admin.html", **view(board)))
+
+
+@router.post("/admin")
+async def admin_login(request: Request, key: Annotated[str, Form()] = ""):
+    """The key, posted once (017 D3). Right: the cookie and a redirect to the dashboard with no query
+    string. Wrong: the form again, 403. No secret configured: the same 404 as the page."""
+    secret_value = secret()
+    if not secret_value:
+        raise HTTPException(status_code=404, detail="Not Found")
+    if not _same(key, secret_value):
+        return _login_page(request, wrong=True)
+    response = RedirectResponse("/admin", status_code=303)
+    # `Secure` over https exactly as the session cookie (010); `Strict` because nothing links into /admin.
+    response.set_cookie(COOKIE, cookie_value(secret_value), max_age=COOKIE_MAX_AGE, path="/admin", httponly=True,
+                        samesite="strict", secure=is_https(request.scope))
     return response
 
 

@@ -1,12 +1,14 @@
 """Save and feedback (005 task 4): rows tied to the recommendation row and the pick's position, the
 saved list, and the metric computed from the rows."""
 
+import pytest
 from fastapi.testclient import TestClient
 
 from shelfscanner.web import metrics
 from shelfscanner.web.app import create_app
 from shelfscanner.web.fakes import DEFAULT_PICKS, FakeClient, FakePipeline, MemorySessions
 from shelfscanner.web.picks import scan_date
+from shelfscanner.web.pipeline import Pick, SavedPick
 from tests.test_web_scan import events_of, post_photo
 from tests.web_images import small_jpeg
 
@@ -146,3 +148,59 @@ def test_save_rate_ignores_failed_runs_and_is_empty_without_scans():
     failed = [{"id": 7, "parsed_recommendations": None, "error": "http 500"}]
     rate = metrics.compute(failed, [{"recommendation_id": 7, "pick_index": 0, "removed_at": None}], [])
     assert rate.scans == 0 and rate.saves == 0
+
+
+# --- change 017: a second click is not a second row ----------------------------------------------------
+
+
+def test_save_and_not_for_me_are_idempotent():
+    client, pipeline = make_client()
+    rid = scan(client)
+    assert client.post(f"/picks/{rid}/0/save").status_code == 200
+    assert client.post(f"/picks/{rid}/0/save").status_code == 200
+    assert len(pipeline.saved_rows) == 1
+    client.post(f"/picks/{rid}/0/unsave")
+    client.post(f"/picks/{rid}/0/save")
+    assert len(pipeline.saved_rows) == 2, "a save after an unsave is a new live row: the history stays"
+    assert client.post(f"/picks/{rid}/1/not-for-me").status_code == 200
+    assert client.post(f"/picks/{rid}/1/not-for-me").status_code == 200
+    assert len(pipeline.feedback_rows) == 1
+    assert client.get("/scan/1").json()["picks"][1]["not_for_me"] is True
+
+
+def test_a_cover_id_that_is_not_digits_gets_no_image():
+    assert Pick("t", "r", cover_id="12").cover_url == "https://covers.openlibrary.org/b/id/12-M.jpg"
+    assert Pick("t", "r", cover_id="../x").cover_url is None and Pick("t", "r", cover_id="").cover_url is None
+    assert SavedPick(1, 0, "t", "r", "", "", cover_id="12\"").cover_url is None
+
+
+def test_the_real_pipeline_treats_a_duplicate_insert_as_already_there(monkeypatch):
+    """017: the unique indexes make a second save or mark a 23505; anything else still raises."""
+    from postgrest.exceptions import APIError
+
+    from shelfscanner.web.pipeline import SupabasePipeline
+
+    inserted: list[tuple[str, dict]] = []
+    codes = iter(["23505", "42P01"])
+
+    class Table:
+        def __init__(self, name):
+            self.name = name
+
+        def insert(self, row):
+            inserted.append((self.name, row))
+            return self
+
+        def execute(self):
+            raise APIError({"code": next(codes), "message": "", "details": "", "hint": ""})
+
+    class Db:
+        def table(self, name):
+            return Table(name)
+
+    p = SupabasePipeline()
+    monkeypatch.setattr(p, "_db", lambda: Db())
+    p.save(1, 2, 0)  # 23505: swallowed
+    assert inserted == [("saved", {"session_id": 1, "recommendation_id": 2, "pick_index": 0})]
+    with pytest.raises(APIError):
+        p.mark(1, 2, 0, "not_for_me")  # 42P01: not ours to hide

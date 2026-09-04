@@ -69,9 +69,12 @@ request time. Dependencies come from `pyproject.toml` and `uv.lock`.
 
 ## Limits that stand between a stranger and the bill
 
-Both are the app's (`web.md`, Limits), not the platform's: ten scans per
-device per rolling hour (429), and five dollars of app spend per UTC day
-across every device (503), read from the runs tables. A hard budget in each
+All three are the app's (`web.md`, Limits), not the platform's: ten scans
+per device per rolling hour (429), thirty per network address per rolling
+hour keyed on a hash of Vercel's `x-forwarded-for` (429, 017 D1), and five
+dollars of app spend per UTC day across every device (503), read from the
+runs tables. A `POST /scan` with no session cookie is refused before any
+of them (017 D2). A hard budget in each
 provider's console is the layer under that, and is set by hand outside the
 repo.
 

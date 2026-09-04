@@ -204,3 +204,8 @@ def test_record_from_a_sparse_doc():
     assert lk.to_record({"key": "/works/OL1W", "title": " "}) is None
     many = lk.to_record({"key": "/works/OL2W", "title": "Anthology", "author_name": ["A", "B", "C", "D"], "cover_i": 7})
     assert many is not None and many.author == "A, B, C" and many.cover_id == "7"
+    # 017: a cover id is digits or nothing
+    assert lk.to_record({"key": "/works/OL3W", "title": "T", "cover_i": "15"}).cover_id == "15"
+    assert lk.to_record({"key": "/works/OL3W", "title": "T", "cover_i": -1}).cover_id is None
+    assert lk.to_record({"key": "/works/OL3W", "title": "T", "cover_i": "1e3"}).cover_id is None
+    assert lk.to_record({"key": "/works/OL3W", "title": "T", "cover_i": True}).cover_id is None

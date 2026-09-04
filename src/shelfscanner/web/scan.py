@@ -29,6 +29,8 @@ from shelfscanner.images import resize
 from shelfscanner.verify import PROGRESS_MESSAGE as CHECKING_NOTE
 from shelfscanner.web import limits
 from shelfscanner.web.pipeline import Choosing, PickState, Pipeline, Reading, Scan, prefs_for_scan
+from shelfscanner.web.render import render as _render
+from shelfscanner.web.sessions import client_hash
 
 MAX_BODY_BYTES = 4 * 1024 * 1024
 MIN_LONG_EDGE = 400  # px; anything smaller has no legible spines
@@ -39,6 +41,7 @@ ALLOWED_FORMATS = {"JPEG": "JPEG", "MPO": "JPEG", "PNG": "PNG"}
 KEEPALIVE_S = 15.0
 POLL_S = 1.0  # how often a connection that did not get the stage lock looks again
 NO_PHOTO = "Choose a photo first."
+NO_SESSION = "Open the scanner page first, then choose a photo."  # 017 D2: a cookieless POST is not the form
 CLOSE_EVENT = "close"  # sent after done or failed so the browser stops reconnecting
 
 TOO_BIG = ("That photo is over 4 MB. The page shrinks photos before sending when the browser can; "
@@ -55,6 +58,10 @@ STAGE_LABELS = [("uploaded", "Photo uploaded"), ("reading", "Reading the shelf")
 FAILED_TITLES = {"reading": "Reading the shelf failed", "checking": "Checking the titles failed",
                  "choosing": "Choosing failed"}
 REFUSAL_TITLES = {"uploading": "Upload refused", "rate": "Scan limit reached", "cap": "Daily budget reached"}
+# 017 D5: what the page says when a stage raised (not a model failure, which is in the row); the exception
+# itself goes to the log, never to the page.
+RAISED = {"reading": "Reading the shelf failed on our side. Try again.",
+          "choosing": "Choosing failed on our side. Try again."}
 
 router = APIRouter()
 log = logging.getLogger("shelfscanner.web")
@@ -106,10 +113,6 @@ def _now(request: Request) -> datetime:
 
 def _wants_html(request: Request) -> bool:
     return "hx-request" in request.headers
-
-
-def _render(request: Request, name: str, **context) -> str:
-    return request.app.state.templates.get_template(name).render(**context)
 
 
 def panel(request: Request, scan_id: int, stage: str, *, scan: Scan | None = None,
@@ -165,6 +168,10 @@ async def create_scan(request: Request, photo: Annotated[UploadFile | None, File
                       resized: Annotated[str, Form()] = "0"):
     session_id = request.state.session_id
     pipeline = _pipeline(request)
+    if session_id is None:
+        # 017 D2: the middleware made no session for a cookieless POST /scan; the form always has one.
+        log.info("scan: cookieless upload refused")
+        return _refuse(request, 400, NO_SESSION, "uploading")
     if photo is None or not photo.filename:
         # 012: iOS Safari submits a form with an empty `required` file input without a word; say one.
         return _refuse(request, 400, NO_PHOTO, "uploading")
@@ -172,13 +179,17 @@ async def create_scan(request: Request, photo: Annotated[UploadFile | None, File
     if length.isdigit() and int(length) > MAX_BODY_BYTES:
         return _refuse(request, 413, TOO_BIG, "uploading")
 
-    # 008: the limits, before anything is read or stored (D1: refused with the number).
-    refusal = await to_thread.run_sync(limits.check, pipeline, session_id, request.app.state.limits, _now(request))
+    # 008: the limits, before anything is read or stored (D1: refused with the number). 017 D1: the
+    # address counts too, as a hash of where the upload came from.
+    address = client_hash(request.scope)
+    refusal = await to_thread.run_sync(limits.check, pipeline, session_id, request.app.state.limits, _now(request),
+                                       address)
     if refusal is not None:
         log.info("scan: session %s refused (%s): %s", session_id, refusal.kind, refusal.message)
         return _refuse(request, refusal.status, refusal.message, refusal.kind)
 
-    data = await photo.read()
+    # Read at most one byte over the limit (017): `Content-Length` above is advisory, a chunked body has none.
+    data = await photo.read(MAX_BODY_BYTES + 1)
     if len(data) > MAX_BODY_BYTES:
         return _refuse(request, 413, TOO_BIG, "uploading")
     problem = inspect_upload(photo.content_type, data)
@@ -194,7 +205,8 @@ async def create_scan(request: Request, photo: Annotated[UploadFile | None, File
         return _refuse(request, 400, NOT_AN_IMAGE, "uploading")
 
     try:
-        row = await to_thread.run_sync(lambda: pipeline.store(session_id, img.jpeg, resized_by_client=resized_by_client))
+        row = await to_thread.run_sync(lambda: pipeline.store(session_id, img.jpeg, resized_by_client=resized_by_client,
+                                                              client_hash=address))
     except Exception:
         log.exception("scan: storing the photo for session %s failed", session_id)
         return _refuse(request, 500, STORE_FAILED, "uploading", retry=True)
@@ -215,7 +227,7 @@ async def _owned_photo(request: Request, scan_id: int) -> dict:
 async def _run_stage(scan_id: int, fn: Callable[..., Any], *args) -> AsyncIterator[tuple[str, Any]]:
     """Run a pipeline stage in a worker thread. Yields ("note", text) for each progress note,
     ("keepalive", None) every KEEPALIVE_S while nothing happens, then ("result", value) or
-    ("error", message) last."""
+    ("error", None) last; the exception is logged, and the caller says the fixed sentence (017 D5)."""
     loop = asyncio.get_running_loop()
     notes: asyncio.Queue[str] = asyncio.Queue()
     future = loop.run_in_executor(None, fn, *args, lambda note: loop.call_soon_threadsafe(notes.put_nowait, note))
@@ -234,10 +246,10 @@ async def _run_stage(scan_id: int, fn: Callable[..., Any], *args) -> AsyncIterat
         yield "note", notes.get_nowait()
     try:
         yield "result", future.result()
-    except (Exception, SystemExit) as e:  # model failures are in the row; this is anything else, and a
+    except (Exception, SystemExit):  # model failures are in the row; this is anything else, and a
         # SystemExit (the CLI-shaped failure) must never reach the event loop, which would exit the server
         log.exception("scan %s: %s raised", scan_id, fn.__name__)
-        yield "error", f"{type(e).__name__}: {e}"
+        yield "error", None
 
 
 # --- the stage runners (008). Each runs in the worker thread and writes the status the stage leaves
@@ -285,7 +297,7 @@ async def _reading(request: Request, photo: dict) -> AsyncIterator[Any]:
         elif kind == "result":
             yield value
         elif kind == "error":
-            yield Reading(error=value)
+            yield Reading(error=RAISED["reading"], verbatim=True)
 
 
 async def _choosing(request: Request, photo: dict, reading: Reading) -> AsyncIterator[Any]:
@@ -307,7 +319,7 @@ async def _choosing(request: Request, photo: dict, reading: Reading) -> AsyncIte
         elif kind == "result":
             yield value
         elif kind == "error":
-            yield Choosing(error=value)
+            yield Choosing(error=RAISED["choosing"], verbatim=True)
 
 
 async def _events(request: Request, photo: dict):

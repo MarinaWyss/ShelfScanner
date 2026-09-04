@@ -147,11 +147,12 @@ def delete_photo_object(client: Any, candidate: Candidate, now: datetime) -> Non
     """Remove the object, then null the row's path. Object first: a failure
     between the two leaves a row pointing at nothing, which the next run
     repairs (removing a missing key is not an error); the reverse order would
-    leave an orphaned object nobody can find."""
+    leave an orphaned object nobody can find. The address hash (017 D1) goes
+    in the same update: it lives as long as the photo does."""
     client.storage.from_(PHOTO_BUCKET).remove([candidate.storage_path])
     (
         client.table("photos")
-        .update({"storage_path": None, "photo_deleted_at": now.isoformat()})
+        .update({"storage_path": None, "photo_deleted_at": now.isoformat(), "client_hash": None})
         .eq("id", candidate.id)
         .execute()
     )

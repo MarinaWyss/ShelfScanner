@@ -14,16 +14,13 @@ from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 
 from shelfscanner.web.pipeline import NOT_FOR_ME, Pick, PickState, Pipeline, SavedPick
+from shelfscanner.web.render import render as _render
 
 router = APIRouter()
 
 
 def _pipeline(request: Request) -> Pipeline:
     return request.app.state.pipeline
-
-
-def _render(request: Request, name: str, **context) -> str:
-    return request.app.state.templates.get_template(name).render(**context)
 
 
 async def _owned_pick(request: Request, recommendation_id: int, pick_index: int) -> Pick:

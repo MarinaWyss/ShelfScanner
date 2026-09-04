@@ -13,9 +13,9 @@ uv run uvicorn shelfscanner.web.app:app --host 0.0.0.0 --port 8000
 Bound to `0.0.0.0`, the laptop's address on the local network (for example
 `http://192.168.1.20:8000`) opens the page on a phone on the same Wi-Fi.
 Add `--reload` while editing. The app reads `.env` for Supabase and the
-provider keys, the same way the CLI does, and for the two scan limits
-(`SHELFSCANNER_SCANS_PER_HOUR`, `SHELFSCANNER_APP_DAILY_CAP_USD`; see
-Limits).
+provider keys, the same way the CLI does, and for the three scan limits
+(`SHELFSCANNER_SCANS_PER_HOUR`, `SHELFSCANNER_SCANS_PER_ADDRESS_HOUR`,
+`SHELFSCANNER_APP_DAILY_CAP_USD`; see Limits).
 
 With `SHELFSCANNER_FAKE_PIPELINE=1` the app runs without Supabase or a
 provider: sessions, photos, preferences, saves and feedback live in memory
@@ -28,8 +28,8 @@ FastAPI preset (`deployment.md`).
 ## Sessions
 
 A device is identified by a cookie, `shelfscanner_session`, set on the
-first response (`HttpOnly`, `SameSite=Lax`, one year, path `/`; no `Secure`
-until the app is served over https). The cookie holds a random 32-byte
+first response (`HttpOnly`, `SameSite=Lax`, one year, path `/`; `Secure`
+when the request came over https, 010). The cookie holds a random 32-byte
 token; the `sessions` row stores only its SHA-256 hex in `token_hash`,
 with `created_at` and `last_seen_at`. A request that carries a known token
 touches `last_seen_at` when the stored value is ten minutes old or more
@@ -43,6 +43,14 @@ cookie.
 
 Scans, preferences, saves and feedback belong to the session that made
 them: another device gets 404 for their ids and an empty saved list.
+
+One request must already carry a cookie: a `POST /scan` with none gets no
+row and no cookie, and the route refuses it with 400 (017 D2,
+`sessions.NO_FRESH_SESSION`). The upload form cannot be reached without a
+session, so a cookieless upload is a script, and making it a row would
+make it a fresh device with fresh limits. A cookie whose token is unknown
+(a deleted row, a restart of the in-memory store) is a browser that did
+come through the form, and gets a fresh session like any other request.
 
 ## Pages
 
@@ -137,10 +145,10 @@ A scan with an empty object still runs (005 D2): see Events.
 
 ## Limits
 
-Two limits guard `POST /scan`, both read at startup from the environment
+Three limits guard `POST /scan`, all read at startup from the environment
 or `.env` by `web/limits.py:from_env` (a value that is not a number refuses
-to start), both checked before the upload is read and before anything is
-stored, both refused with a message that states the number (008 D1):
+to start), all checked before the upload is read and before anything is
+stored, all refused with a message that states the number (008 D1):
 
 - **Scans per device per hour**: `SHELFSCANNER_SCANS_PER_HOUR`, default
   10. The count is the session's `photos` rows created in the last hour at
@@ -148,6 +156,21 @@ stored, both refused with a message that states the number (008 D1):
   row and do not count). At or over the limit the response is `429` with
   stage `rate`: "This device has scanned N shelves in the last hour, and
   the limit is N per hour. Try again in a while."
+- **Scans per network address per hour** (017 D1):
+  `SHELFSCANNER_SCANS_PER_ADDRESS_HOUR`, default 30. The address is the
+  last value of `x-forwarded-for` (the nearest proxy's; Vercel overwrites
+  the header with the connection's address), else the socket peer, so
+  with no proxy in front the header is the client's to write and the
+  limit is only as good as the daily cap under it; its SHA-256 hex is stored on the `photos` row as
+  `client_hash` and the count is the rows with that hash in the last hour,
+  every session together (one read serves both counts; the column is
+  indexed with `created_at`, partial on non-null). A session is whatever
+  the cookie says; the address is what the connection says, so dropping
+  the cookie does not reset the count. The refusal is `429` with stage `rate`: "This network
+  has scanned N shelves in the last hour, and the limit is N per hour for
+  one network. Try again in a while." Skipped when no address is known.
+  The hash is removed by retention with the photo (`photo-storage.md`) and
+  the privacy page says it is kept.
 - **The app's daily spend**: `SHELFSCANNER_APP_DAILY_CAP_USD`, default 5.
   `cost_usd` summed over the `extractions` and `recommendations` rows of
   photos with a session stored since midnight UTC, every session
@@ -156,8 +179,9 @@ stored, both refused with a message that states the number (008 D1):
   is `503` with stage `cap`: "ShelfScanner has spent $X on scans today,
   which reaches its daily limit of $Y. Scans start again tomorrow (UTC)."
 
-The device limit is checked first, so a device at its limit is told that
-even when the app is also out of budget. The CLI's spend cap
+The device limit is checked first, then the address, then the budget, so
+a device at its limit is told that even when the app is also out of
+budget. The CLI's spend cap
 (`SHELFSCANNER_SPEND_CAP_USD`, `run-logging.md`) does not apply to the app:
 the web pipeline calls the stages with `guard=False`, so the CLI's
 `SystemExit` can never reach the event loop. A stage that raises anything,
@@ -169,24 +193,28 @@ to `pending` for a retry; the server stays up.
 `POST /scan`, multipart with a `photo` file and a `resized` field (`1` when
 the page shrank the photo in the browser, otherwise `0`). In order:
 
-1. A body over 4 MB is refused with 413.
-2. The limits above are checked; a refusal is 429 or 503.
-3. The file is refused with 400 unless its declared content type is
+1. A request with no session cookie is refused with 400 (017 D2).
+2. A body over 4 MB is refused with 413: by `Content-Length` when there
+   is one, and by reading at most 4 MB plus one byte of the file when
+   there is not (a chunked body).
+3. The limits above are checked; a refusal is 429 or 503.
+4. The file is refused with 400 unless its declared content type is
    `image/jpeg` or `image/png`, its bytes decode as a JPEG or PNG (a
    header claiming a decompression-bomb size counts as not an image; the
    bytes decide: a GIF named `.jpg` is refused as a GIF; a phone JPEG with
    an embedded second picture, which Pillow calls MPO, is a JPEG), and its long edge
    is at least 400 px (`web/scan.py:MIN_LONG_EDGE`; the message gives the
    dimensions). Only the header is read for this.
-4. The image is re-encoded with `images.resize`: EXIF orientation applied
+5. The image is re-encoded with `images.resize`: EXIF orientation applied
    to the pixels, long edge at most `default_max_edge` from
    `config/models.toml` (1568 px), JPEG quality 95, no EXIF and no XMP.
    This is a no-op resize when the page already did it.
-5. The bytes go to the `shelf-photos` bucket under
+6. The bytes go to the `shelf-photos` bucket under
    `sessions/<session id>/<uuid>.jpg` and a `photos` row is inserted with
-   `session_id` set, no labels, `status = 'pending'` and
-   `resized_by_client` from the form field (true for `1`), so the
-   browser-resize fallback rate can be read from the table. Upload is
+   `session_id` set, no labels, `status = 'pending'`, `client_hash` (the
+   address hash of the Limits section, 017 D1) and `resized_by_client`
+   from the form field (true for `1`), so the browser-resize fallback
+   rate can be read from the table. Upload is
    refused if metadata survived. A store failure is 500 with a retry.
 
 The response is `201` with `{"id": <photo id>, "status": "pending"}`, or,
@@ -247,15 +275,23 @@ status back (`pending`, or `reading` for the choosing) so a reconnect can
 try again.
 
 **Failures.** A failed stage's panel names the stage ("Reading the shelf
-failed", "Checking the titles failed", "Choosing failed"), shows the error,
-and offers "Try again", which submits the form again and starts a new scan
-of the photo still in the picker (a new `photos` row; the failed one keeps
-its status). When the stage failed over and the fallback failed too (the
-row has `failover_from` and `failover_error`), the error names both:
-"Both models failed. <primary slug>: <its error>. Then <fallback slug>:
-<its error>." The checking step fails when every title read was dropped
-by the catalogue check. Nothing the page shows was not checked: picks are
-the verified picks of `recommendation.md`, and errors are the rows'.
+failed", "Checking the titles failed", "Choosing failed"), says what
+failed, and offers "Try again", which submits the form again and starts a
+new scan of the photo still in the picker (a new `photos` row; the failed
+one keeps its status). A model failure is shown as the model and the
+error's kind (`errors.error_kind`: `http 429`, `truncated`, `parse`,
+`timeout`, ..., or `other`), never the provider's text, which can carry a
+URL or a request id (017 D5): "<slug> failed: <kind>." When the stage
+failed over and the fallback failed too (the row has `failover_from` and
+`failover_error`), both are named: "Both models failed. <primary slug>:
+<kind>. Then <fallback slug>: <kind>." The full text stays in the row for
+the dashboard and the weekly review. The app's own sentences are shown as
+they are: the checking step's, when every title read was dropped by the
+catalogue check; and a stage that raised, which shows "Reading the shelf
+failed on our side. Try again." or "Choosing failed on our side. Try
+again." (`scan.RAISED`) while the exception goes to the log. Nothing the
+page shows was not checked: picks are the verified picks of
+`recommendation.md`, and errors are the rows'.
 
 The handoff from reading to choosing is one place in `web/scan.py:_events`,
 marked in the code; the reading's titles are what the choosing stage is
@@ -324,6 +360,30 @@ with the claim rule as its filter); `fakes.FakePipeline` keeps the same
 rows in memory, shaped like the tables, goes through `router.with_failover`
 so the failover is exercised, and takes a clock. `claimable` in the same
 module is the claim rule as a function, shared by the fake and the tests.
+
+## Headers
+
+Every response the app produces, the event stream, static files and 404s
+included, carries (`web/headers.py`, the outermost of the app's
+middleware, 017 D6; the plain 500 Starlette sends when a route raises past
+the app is made outside the stack and has none):
+
+- `X-Content-Type-Options: nosniff`
+- `Referrer-Policy: strict-origin-when-cross-origin`
+- `X-Frame-Options: DENY`
+- `Content-Security-Policy: default-src 'self'; script-src 'self'
+  'nonce-<nonce>'; style-src 'self' 'unsafe-inline'
+  https://fonts.googleapis.com; font-src https://fonts.gstatic.com;
+  img-src 'self' data: blob: https://covers.openlibrary.org; connect-src
+  'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
+  mailto:` (the contact form's action is a `mailto:`)
+
+The nonce is new for every request and is the one on the inline theme
+script in `base.html` (`{{ csp_nonce() }}`, a template global reading the
+request's context variable); no other inline script exists. Inline styles
+stay allowed because the templates, `app.js` and htmx set `style=`; the
+photo preview is a `blob:` URL. Tests: `tests/test_web_headers.py`, and
+the Playwright suite runs every page under the policy.
 
 ## Metrics
 

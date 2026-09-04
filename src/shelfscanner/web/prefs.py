@@ -17,6 +17,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 
 from shelfscanner import preferences
 from shelfscanner.web.pipeline import Pipeline
+from shelfscanner.web.render import render as _render
 
 # 012 D4: the original ShelfScanner's eighteen, verbatim.
 GENRES = ["Fiction", "Non-Fiction", "Business", "Design", "Self-Help", "Science", "Mystery", "Romance", "Fantasy",
@@ -31,10 +32,6 @@ router = APIRouter()
 
 def _pipeline(request: Request) -> Pipeline:
     return request.app.state.pipeline
-
-
-def _render(request: Request, name: str, **context) -> str:
-    return request.app.state.templates.get_template(name).render(**context)
 
 
 def import_note(prefs: dict) -> str | None:
