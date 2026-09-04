@@ -29,6 +29,7 @@ from shelfscanner.images import resize
 from shelfscanner.verify import PROGRESS_MESSAGE as CHECKING_NOTE
 from shelfscanner.web import limits
 from shelfscanner.web.pipeline import Choosing, PickState, Pipeline, Reading, Scan, prefs_for_scan
+from shelfscanner.web.render import render as _render
 from shelfscanner.web.sessions import client_hash
 
 MAX_BODY_BYTES = 4 * 1024 * 1024
@@ -112,10 +113,6 @@ def _now(request: Request) -> datetime:
 
 def _wants_html(request: Request) -> bool:
     return "hx-request" in request.headers
-
-
-def _render(request: Request, name: str, **context) -> str:
-    return request.app.state.templates.get_template(name).render(**context)
 
 
 def panel(request: Request, scan_id: int, stage: str, *, scan: Scan | None = None,

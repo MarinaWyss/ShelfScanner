@@ -27,6 +27,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from shelfscanner.settings import REPO_ROOT
 from shelfscanner.web import metrics
 from shelfscanner.web.metrics import Dashboard, StageStats, Summary
+from shelfscanner.web.render import render
 from shelfscanner.web.sessions import is_https
 
 router = APIRouter()
@@ -66,8 +67,7 @@ def authorised(request: Request) -> bool:
 
 
 def _login_page(request: Request, *, status: int, wrong: bool = False) -> HTMLResponse:
-    html = request.app.state.templates.get_template("admin_login.html").render(error=WRONG_KEY if wrong else None)
-    return HTMLResponse(html, status_code=status)
+    return HTMLResponse(render(request, "admin_login.html", error=WRONG_KEY if wrong else None), status_code=status)
 
 
 @router.get("/admin")
@@ -81,7 +81,7 @@ async def admin(request: Request, window: str = metrics.DEFAULT_WINDOW):
     source: metrics.Source = request.app.state.metrics_source
     rows = await to_thread.run_sync(source, window)
     board = metrics.dashboard(rows, window)
-    return HTMLResponse(request.app.state.templates.get_template("admin.html").render(**view(board)))
+    return HTMLResponse(render(request, "admin.html", **view(board)))
 
 
 @router.post("/admin")

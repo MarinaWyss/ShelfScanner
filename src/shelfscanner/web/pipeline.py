@@ -54,11 +54,6 @@ def failure_text(error: str | None, failover_from: str | None, failover_error: s
     return f"{model or 'The model'} failed: {error_kind(error)}."
 
 
-def has_step_prefix(error: str) -> bool:
-    """Whether a stored choosing error is one of ours (`<step>: <message>`, see `split_step`)."""
-    return error.startswith(("checking: ", "choosing: "))
-
-
 @dataclass(frozen=True)
 class Reading:
     """What the reading stage produced for a photo: titles, or the error that stopped it."""
@@ -276,13 +271,22 @@ def _states(saved_rows: list[dict], feedback_rows: list[dict]) -> dict[int, Pick
     return {i: PickState(saved=i in live, not_for_me=i in marked) for i in live | marked}
 
 
+STEPS = ("checking", "choosing")
+
+
 def split_step(error: str) -> tuple[str, str]:
     """A stored choosing error is `<step>: <message>` when the failure was the catalogue check (007) or
-    an empty list, and a bare message when a model failed. Returns (step, message)."""
-    for step in ("checking", "choosing"):
+    an empty list, and a bare message when a model failed. Returns (step, message); `ours(error)` says
+    which it was."""
+    for step in STEPS:
         if error.startswith(f"{step}: "):
             return step, error[len(step) + 2:]
     return "choosing", error
+
+
+def ours(error: str) -> bool:
+    """Whether a stored choosing error carries a step prefix, i.e. is the app's own sentence (017 D5)."""
+    return any(error.startswith(f"{step}: ") for step in STEPS)
 
 
 def claimable(status: str | None, status_at: datetime | None, stage: str, now: datetime) -> bool:
@@ -390,21 +394,22 @@ class SupabasePipeline:
         if rec["error"]:
             step, message = split_step(rec["error"])
             return Scan(reading, Choosing(error=message, step=step, recommendation_id=rec["id"],
-                                          verbatim=has_step_prefix(rec["error"]), **attempts))
+                                          verbatim=ours(rec["error"]), **attempts))
         picks = [Pick(r.title, r.reason, r.author, r.cover_id) for r in recommend.recs_from(rec["parsed_recommendations"])]
         return Scan(reading, Choosing(picks=picks, recommendation_id=rec["id"], **attempts))
 
     # --- limits (008) ---------------------------------------------------------------------------
 
-    def scan_count(self, session_id: int, since: datetime) -> int:
-        res = (self._db().table("photos").select("id", count="exact").eq("session_id", session_id)
+    def _photos_since(self, column: str, value, since: datetime) -> int:
+        res = (self._db().table("photos").select("id", count="exact").eq(column, value)
                .gte("created_at", since.isoformat()).execute())
         return res.count if res.count is not None else len(res.data)
 
+    def scan_count(self, session_id: int, since: datetime) -> int:
+        return self._photos_since("session_id", session_id, since)
+
     def address_scan_count(self, client_hash: str, since: datetime) -> int:
-        res = (self._db().table("photos").select("id", count="exact").eq("client_hash", client_hash)
-               .gte("created_at", since.isoformat()).execute())
-        return res.count if res.count is not None else len(res.data)
+        return self._photos_since("client_hash", client_hash, since)
 
     def spent_since(self, since: datetime) -> float:
         """The app's own spend: rows joined to session photos stored since `since`. Research and nightly

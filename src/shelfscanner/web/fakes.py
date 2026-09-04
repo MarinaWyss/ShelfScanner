@@ -222,13 +222,15 @@ class FakePipeline:
 
     # --- limits (008) ---------------------------------------------------------------------------
 
-    def scan_count(self, session_id: int, since: datetime) -> int:
+    def _photos_since(self, column: str, value, since: datetime) -> int:
         return sum(1 for p in self.photos.values()
-                   if p["session_id"] == session_id and datetime.fromisoformat(p["created_at"]) >= since)
+                   if p.get(column) == value and datetime.fromisoformat(p["created_at"]) >= since)
+
+    def scan_count(self, session_id: int, since: datetime) -> int:
+        return self._photos_since("session_id", session_id, since)
 
     def address_scan_count(self, client_hash: str, since: datetime) -> int:
-        return sum(1 for p in self.photos.values()
-                   if p.get("client_hash") == client_hash and datetime.fromisoformat(p["created_at"]) >= since)
+        return self._photos_since("client_hash", client_hash, since)
 
     def spent_since(self, since: datetime) -> float:
         return sum(float(r["cost_usd"]) for r in self.runs

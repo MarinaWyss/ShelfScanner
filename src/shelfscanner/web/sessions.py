@@ -54,8 +54,12 @@ def new_token() -> str:
     return secrets.token_urlsafe(32)
 
 
+def sha256_hex(text: str) -> str:
+    return hashlib.sha256(text.encode()).hexdigest()
+
+
 def hash_token(token: str) -> str:
-    return hashlib.sha256(token.encode()).hexdigest()
+    return sha256_hex(token)
 
 
 def cookie_header(token: str, *, secure: bool = False) -> str:
@@ -91,7 +95,7 @@ def client_address(scope: Scope) -> str | None:
 
 
 def hash_address(address: str) -> str:
-    return hashlib.sha256(address.encode()).hexdigest()
+    return sha256_hex(address)
 
 
 def client_hash(scope: Scope) -> str | None:
