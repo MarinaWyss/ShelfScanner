@@ -1,13 +1,42 @@
-# ShelfScanner
+# ShelfScanner 📚
 
-Point your phone at a bookshelf and get five books off that shelf you'd actually like, each with a reason written to you.
+**Never leave a bookstore empty-handed again!**
 
-Live at [shelfscanner.io](https://shelfscanner.io). The first version of ShelfScanner ([a different codebase](https://github.com/MarinaWyss/ShelfScanner-v1)) was something I vibe coded in 2025, and it kinda worked, which was the problem. This is the rebuild, and it's me doing the thing properly: measured model choices, a real test set, an eval gate in CI, monitoring, and a written spec for every behavior. I'm making a YouTube series about the process, so this README is also the "how did you build that" answer for anyone who asks.
+Have you ever been at a book sale, library, or friend's house looking at shelves of books but didn't recognize any titles or authors? ShelfScanner solves the problem of figuring out what to read by using AI to help you discover what you'll enjoy.
 
-If you only read one file in this repo, read this one. `docs/scoping.md` is the plan it follows, `docs/specs/` is what the code actually does today, and `docs/changes/` has every proposal with the numbers that decided it.
+[ShelfScanner.io](https://shelfscanner.io)
 
-- [The problem](#the-problem)
-- [What it does](#what-it-does)
+## What It Does
+
+📸 **Scan Shelves** → Take a photo of an entire bookshelf  
+🤖 **AI Analysis** → Get book recommendations based on your reading preferences  
+📖 **Real Books Only** → Every title is checked against Open Library before it can be recommended  
+💬 **Match Reasoning** → See exactly why each book is a fit for you, written to you  
+📚 **Build Lists** → Save interesting books to your reading list  
+
+## Key Features
+
+### Smart Book Discovery
+- **Shelf Scanning**: Photograph entire bookshelves to identify multiple books at once
+- **AI Recommendations**: Personalized suggestions based on your Goodreads data and preferences
+- **Match Reasoning**: Understand exactly why each book is recommended for you
+- **Verified Titles**: Every book is matched to a real Open Library record, with its cover and author
+
+### User Experience
+- **Mobile-First Design**: Optimized for smartphones and tablets
+- **Device-Based Sessions**: No account required, preferences stored per device
+- **Responsive Design**: Works well on all screen sizes, with a light and a dark mode
+
+### Performance & Reliability
+- **Lookup Caching**: Repeated titles resolve from a cache in about 0.3 s instead of 4.5 s
+- **Rate Limiting**: Built-in protection against API abuse, per device and per day
+- **Error Handling**: Graceful fallbacks when a model provider is unavailable
+- **Monitoring**: A dashboard of scans, cost, latency, errors, and failovers, plus a weekly review
+
+## Under the hood
+
+The rest of this README is the technical story: how it works, the decisions and the numbers behind them, how I evaluate it, and how to run it yourself.
+
 - [How it works](#how-it-works)
 - [The decisions, and the numbers behind them](#the-decisions-and-the-numbers-behind-them)
 - [How I evaluate it](#how-i-evaluate-it)
@@ -17,22 +46,11 @@ If you only read one file in this repo, read this one. `docs/scoping.md` is the 
 - [Deployment](#deployment)
 - [Repository layout](#repository-layout)
 - [Questions people ask me about this](#questions-people-ask-me-about-this)
-
-## The problem
-
-If you've ever stood in a bookstore staring at a wall of spines, you know the feeling. You can only judge a shelf by the titles you already recognize. And honestly, the moment you're most able to pick up a book is the moment you know the least about it.
-
-Google Lens will identify one book at a time and tell you nothing about whether you'd like it. Goodreads knows your taste but can't see the shelf. Nothing takes "here's what's physically in front of me" as the input.
-
-So that's the goal. One photo, and in about fifteen seconds, five books that are really on that shelf, each with a reason that names something true about your taste, and a way to save the ones you want. The one number I care about is whether you save at least one book per scan.
-
-## What it does
-
-1. **Preferences.** Pick some genres, name a few favorite authors, say in your own words what you like, and optionally upload your Goodreads export. The export gets read once and never stored. What I keep is your rated books, your to-read list, and the stuff you didn't finish.
-2. **Photo.** Take or choose a photo of a shelf. Your phone resizes it and strips the metadata before anything leaves the device.
-3. **Recommendations.** You watch three stages tick through (reading the shelf, checking titles, choosing), then you get five picks with covers, authors, and a reason each. Save any of them, or mark one "not for me." Your reading list lives on your device. No account, no login.
+- [About this rebuild](#about-this-rebuild)
 
 ## How it works
+
+The goal is one photo and, in about fifteen seconds, five books that are really on that shelf, each with a reason that names something true about your taste. The one number I care about is whether you save at least one book per scan.
 
 Five boxes. The first four are one pipeline that runs both from the command line and as the stages of a web scan, and the fifth one lives in the web app.
 
@@ -62,7 +80,7 @@ sequenceDiagram
     participant OL as Open Library
     participant T as Language model
     Phone->>App: POST /scan (resized JPEG)
-    App-->>Phone: scan id; the page connects to the event stream
+    App-->>Phone: scan id, and the page connects to the event stream
     App->>V: prompt + image (Gemini 3.8 Flash, Sonnet 5 if it fails)
     V-->>App: JSON: the titles and authors it read
     App-->>Phone: event "reading" done
@@ -304,3 +322,9 @@ Short answers. Each one is backed by a section above or a file in `docs/`.
 - **How do you keep costs bounded?** About a cent a scan, a per-device hourly limit, a daily cap for the whole app, a spend cap on every CLI command, and cost logged per call from tokens and config prices.
 - **What would you do with more traffic?** Watch save rate and failovers first. Add retrieval over the preferences if people's Goodreads histories outgrow the prompt. And only look at a cheaper reading model once one stops inventing titles on a few hundred labeled photos.
 - **How was it built?** Spec-driven, with an AI coding agent working under a rulebook in the repo: proposal before code, specs kept true, decisions recorded with their numbers, and `main` protected behind CI. The whole process is the YouTube series.
+
+## About this rebuild
+
+The first version of ShelfScanner ([a different codebase](https://github.com/MarinaWyss/ShelfScanner-v1)) was something I vibe coded in 2025, and it kinda worked, which was the problem. This is the rebuild, and it's me doing the thing properly: measured model choices, a real test set, an eval gate in CI, monitoring, and a written spec for every behavior. I'm making a YouTube series about the process, so this README is also the "how did you build that" answer for anyone who asks.
+
+If you want to go deeper than this file: `docs/scoping.md` is the plan the project follows, `docs/specs/` is what the code actually does today, and `docs/changes/` has every proposal with the numbers that decided it.
